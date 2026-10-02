@@ -1,0 +1,2 @@
+<footer class="footer"><div class="container footer-grid"><div><a class="brand" href="index.php">edu<span>2</span>impact<span class="brand-dot">.</span></a><p><?= e($site['university']) ?></p></div><div><strong>สำรวจเว็บไซต์</strong><div class="footer-links"><a href="research.php">งานวิจัย</a><a href="innovations.php">นวัตกรรม</a><a href="news.php">ข่าวสาร</a></div></div><div><strong>เชื่อมต่อกับเรา</strong><p><a href="contact.php">ข้อมูลติดต่อและความร่วมมือ ↗</a></p><span class="small">© <?= date('Y') ?> <?= e($site['name']) ?></span></div></div></footer>
+</body></html>
