@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-base = Path(__file__).resolve().parents[1] / 'site'
+base = Path(__file__).resolve().parents[1]
 errors = []
 for name in ('site', 'research', 'innovations', 'news'):
     try:

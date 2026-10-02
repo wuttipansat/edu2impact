@@ -1,17 +1,40 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 $currentPage = 'home';
-$pageTitle = 'Edu2Impact | เชื่อมงานวิจัยสู่การใช้ประโยชน์';
-$research = load_data('research');
-$news = load_data('news');
+$pageTitle = 'Edu2Impact | From Research to Use, Scale & Impact';
+$innovations = load_data('innovations');
 require __DIR__ . '/includes/header.php';
 ?>
 <main id="main">
-<section class="container hero"><div class="hero-copy"><p class="eyebrow">FROM EDUCATION TO IMPACT</p><h1>เชื่อมงานวิจัย<br>สู่การเปลี่ยนแปลง<br><em>ที่มีความหมาย</em></h1><p class="lead"><?= e($site['description']) ?></p><div class="actions"><a class="button" href="research.php">สำรวจงานวิจัย ↗</a><a class="button secondary" href="contact.php">ร่วมสร้างความร่วมมือ</a></div></div>
-<aside class="hero-art"><div class="orbit" aria-hidden="true"><div class="orbit-center">e<span>2</span>i</div><span class="orbit-node node-a">องค์ความรู้</span><span class="orbit-node node-b">ความร่วมมือ</span><span class="orbit-node node-c">การนำไปใช้</span></div><div class="art-caption"><span class="eyebrow">OUR PURPOSE</span><h2>ความรู้ที่ส่งต่อได้<br>ผลลัพธ์ที่เกิดขึ้นจริง</h2><p>จากคำถามในห้องเรียน สู่แนวทางใหม่ที่พัฒนาต่อได้</p></div></aside></section>
-<section class="search-band"><div class="container"><form class="search-form" action="research.php" method="get" role="search"><label for="home-query">ค้นพบองค์ความรู้ใหม่</label><div class="search-controls"><input id="home-query" type="search" name="q" placeholder="ค้นหางานวิจัยหรือคำสำคัญ…" maxlength="200"><button class="button" type="submit">ค้นหา</button></div></form></div></section>
-<section class="section container"><div class="section-heading"><div><p class="eyebrow">EXPLORE OUR WORK</p><h2>งานวิจัยและนวัตกรรม</h2></div><a class="text-link" href="research.php">ดูงานวิจัยทั้งหมด ↗</a></div><div class="card-grid"><?php $count = 0; foreach ($research as $record) { if (!empty($record['featured'])) { render_card($record, 'research'); $count++; if ($count === 3) { break; } } } if ($count === 0): ?><p>ยังไม่มีผลงานแนะนำ</p><?php endif; ?></div></section>
-<section class="mission-band"><div class="container mission-inner"><div><p class="eyebrow">KNOWLEDGE INTO ACTION</p><h2>เชื่อมคน เชื่อมความรู้<br>สร้างโอกาสใหม่ให้การศึกษา</h2></div><div><p>สำรวจองค์ความรู้ที่นำไปต่อยอดได้ แลกเปลี่ยนแนวคิด และร่วมพัฒนาแนวทางที่เหมาะกับบริบทของสถานศึกษาและชุมชน</p><a class="text-link" href="about.php">รู้จัก Edu2Impact ↗</a></div></div></section>
-<section class="section container"><div class="section-heading"><div><p class="eyebrow">NEWS & KNOWLEDGE</p><h2>ข่าวสารและองค์ความรู้</h2></div><a class="text-link" href="news.php">ดูข่าวทั้งหมด ↗</a></div><div class="news-grid"><?php foreach (array_slice($news, 0, 2) as $record): ?><article class="news-row"><span class="eyebrow"><?= e($record['category']) ?></span><h3><a href="<?= e(detail_url('news', $record['id'])) ?>"><?= e($record['title']) ?></a></h3><p><?= e($record['summary']) ?></p><a class="text-link" href="<?= e(detail_url('news', $record['id'])) ?>">อ่านต่อ ↗</a></article><?php endforeach; ?><?php if (!$news): ?><p>ยังไม่มีข่าวสาร</p><?php endif; ?></div></section>
-<section class="contact-band"><div class="container contact-inner"><div><p class="eyebrow">LET’S CREATE IMPACT TOGETHER</p><h2>เริ่มต้นความร่วมมือใหม่</h2><p>สำหรับสถานศึกษา นักวิจัย และหน่วยงานที่สนใจ</p></div><a class="button" href="contact.php">ติดต่อเรา ↗</a></div></section>
+<section class="home-hero hero-slider" data-slider aria-label="Edu2Impact highlights">
+  <div class="hero-slides">
+    <article class="hero-slide hero-slide-home is-active" data-slide="0">
+      <div class="home-hero-overlay"></div><div class="container home-hero-inner">
+        <div class="hero-copy"><p class="eyebrow">WELCOME TO EDU2IMPACT</p><h1>From Research<br>to <em>Real-World</em><br>Impact</h1><p class="lead"><?= e($site['description']) ?></p><div class="actions"><a class="button hero-primary" href="explore-impact.php">Explore Impact</a><a class="button hero-outline" href="innovations.php">Find Innovation</a></div><div class="hero-stats"><div><strong><?= e(count($innovations)) ?></strong><span>Innovations in portfolio</span></div><div><strong>—</strong><span>Verified impact records</span></div><div><strong>—</strong><span>Partner organizations</span></div></div></div>
+      </div>
+    </article>
+    <article class="hero-slide hero-slide-impact" data-slide="1">
+      <div class="home-hero-overlay"></div><div class="container home-hero-inner">
+        <div class="hero-copy"><p class="eyebrow">EXPLORE IMPACT</p><h1>Research That<br>Creates <em>Real Change</em></h1><p class="lead">ติดตามการนำงานวิจัยและนวัตกรรมไปใช้ในโรงเรียน ชุมชน และหน่วยงานต่าง ๆ พร้อมหลักฐานที่ตรวจสอบได้</p><div class="actions"><a class="button hero-primary" href="explore-impact.php">Explore Impact</a><a class="button hero-outline" href="impact-stories.php">View Impact Stories</a></div></div>
+      </div>
+    </article>
+    <article class="hero-slide hero-slide-innovation" data-slide="2">
+      <div class="home-hero-overlay"></div><div class="container home-hero-inner">
+        <div class="hero-copy"><p class="eyebrow">INNOVATION PORTFOLIO</p><h1>Ideas Ready<br>for <em>Practical Use</em></h1><p class="lead">ค้นพบนวัตกรรมจากงานวิจัย พร้อมข้อมูลปัญหา ผู้ใช้ หลักฐาน และโอกาสในการนำไปทดลองใช้หรือขยายผล</p><div class="actions"><a class="button hero-primary" href="innovations.php">Find Innovation</a><a class="button hero-outline" href="register-impact.php">Register Impact</a></div></div>
+      </div>
+    </article>
+    <article class="hero-slide hero-slide-partners" data-slide="3">
+      <div class="home-hero-overlay"></div><div class="container home-hero-inner">
+        <div class="hero-copy"><p class="eyebrow">PARTNERS &amp; USERS</p><h1>Build Impact<br><em>Together</em></h1><p class="lead">เชื่อมโยงนักวิจัย ผู้ใช้ หน่วยงานภาครัฐ ชุมชน มหาวิทยาลัย และภาคเอกชน เพื่อเปลี่ยนความรู้ให้เกิดการใช้จริง</p><div class="actions"><a class="button hero-primary" href="partners.php">Meet Our Partners</a><a class="button hero-outline" href="contact.php">Start a Conversation</a></div></div>
+      </div>
+    </article>
+    <article class="hero-slide hero-slide-resources" data-slide="4">
+      <div class="home-hero-overlay"></div><div class="container home-hero-inner">
+        <div class="hero-copy"><p class="eyebrow">RESEARCH &amp; RESOURCES</p><h1>Knowledge<br>You Can <em>Use</em></h1><p class="lead">เข้าถึงงานวิจัย หลักฐาน และทรัพยากรที่ช่วยให้การตัดสินใจ การทดลองใช้ และการขยายผลทำได้อย่างมีข้อมูล</p><div class="actions"><a class="button hero-primary" href="research.php">Explore Research</a><a class="button hero-outline" href="resources.php">Browse Resources</a></div></div>
+      </div>
+    </article>
+  </div>
+  <button class="hero-arrow hero-arrow-prev" type="button" data-slider-prev aria-label="สไลด์ก่อนหน้า">‹</button><button class="hero-arrow hero-arrow-next" type="button" data-slider-next aria-label="สไลด์ถัดไป">›</button>
+  <div class="hero-slider-controls" role="tablist" aria-label="เลือกหัวข้อ Hero"><button class="hero-dot is-active" type="button" role="tab" aria-selected="true" aria-label="Home" data-slider-dot="0"><span>Home</span></button><button class="hero-dot" type="button" role="tab" aria-selected="false" aria-label="Impact" data-slider-dot="1"><span>Impact</span></button><button class="hero-dot" type="button" role="tab" aria-selected="false" aria-label="Innovation" data-slider-dot="2"><span>Innovation</span></button><button class="hero-dot" type="button" role="tab" aria-selected="false" aria-label="Partners" data-slider-dot="3"><span>Partners</span></button><button class="hero-dot" type="button" role="tab" aria-selected="false" aria-label="Resources" data-slider-dot="4"><span>Resources</span></button></div>
+</section>
 </main><?php require __DIR__ . '/includes/footer.php'; ?>

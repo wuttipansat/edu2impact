@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/auth.php';
+try { auth_start(); } catch (Throwable $exception) { auth_service_error($exception); }
 header('Content-Type: text/html; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
