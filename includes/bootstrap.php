@@ -1,11 +1,9 @@
 <?php
 require_once __DIR__ . '/functions.php';
-require_once __DIR__ . '/auth.php';
-try { auth_start(); } catch (Throwable $exception) { auth_service_error($exception); }
 header('Content-Type: text/html; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header("Content-Security-Policy: default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
+header("Content-Security-Policy: default-src 'self'; img-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
 try {
     $site = load_data('site');
 } catch (Throwable $exception) {

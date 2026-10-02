@@ -20,7 +20,7 @@ require __DIR__ . '/includes/header.php';
     </article>
     <article class="hero-slide hero-slide-innovation" data-slide="2">
       <div class="home-hero-overlay"></div><div class="container home-hero-inner">
-        <div class="hero-copy"><p class="eyebrow">INNOVATION PORTFOLIO</p><h1>Ideas Ready<br>for <em>Practical Use</em></h1><p class="lead">ค้นพบนวัตกรรมจากงานวิจัย พร้อมข้อมูลปัญหา ผู้ใช้ หลักฐาน และโอกาสในการนำไปทดลองใช้หรือขยายผล</p><div class="actions"><a class="button hero-primary" href="innovations.php">Find Innovation</a><a class="button hero-outline" href="register-impact.php">Register Impact</a></div></div>
+        <div class="hero-copy"><p class="eyebrow">INNOVATION PORTFOLIO</p><h1>Ideas Ready<br>for <em>Practical Use</em></h1><p class="lead">ค้นพบนวัตกรรมจากงานวิจัย พร้อมข้อมูลปัญหา ผู้ใช้ หลักฐาน และโอกาสในการนำไปทดลองใช้หรือขยายผล</p><div class="actions"><a class="button hero-primary" href="innovations.php">Find Innovation</a></div></div>
       </div>
     </article>
     <article class="hero-slide hero-slide-partners" data-slide="3">
