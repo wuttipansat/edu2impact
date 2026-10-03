@@ -1,34 +1,38 @@
 # EDU2Impact website structure
 
-This build is a demo web app focused on a simpler public navigation and a clearer editorial experience. It preserves the PHP/JSON architecture and existing detail URLs while redesigning the public pages around five entry points: Home, News, Research, Partners and About. Authenticated account workflows are not included.
+This update reorganizes the existing PHP website using the supplied menu document. It preserves the public JSON content and existing detail URLs. The current build is a public content site; authenticated account workflows are not included.
 
 ## Navigation
 
-| Header item | Destination |
+| Header group | Destination |
 | --- | --- |
 | Home | index.php |
-| News | news.php |
-| Research | research.php |
+| Impact | explore-impact.php, adoption-scale.php, impact-stories.php |
+| Innovations | innovations.php, enterprise.php |
 | Partners | partners.php |
-| About | about.php |
+| Research | research.php, resources.php |
 
-Contact remains accessible from the footer and collaboration calls to action.
+About, news and contact remain accessible from the footer.
 
-## Demo page experience
+## All 15 document pages
 
-| Page | Implementation | Experience |
+| Document page | Implementation | Status |
 | --- | --- | --- |
-| Home | index.php | Existing hero-led landing page |
-| News | news.php | Date-sorted one-column listing with keyword and category filters |
-| Research | research.php | Auto-rotating popular research slider plus one-column research library with filters |
-| Partners | partners.php | Six partner pathways, collaboration journey and demo-directory notice |
-| About | about.php | Purpose, Research-to-Impact journey, principles and demo scope |
-
-Legacy detail and section routes remain available for future expansion: research-detail.php, news-detail.php, innovation-detail.php, explore-impact.php, adoption-scale.php, impact-stories.php, enterprise.php, innovations.php, resources.php and request-use.php.
+| Home | index.php | Journey, unavailable KPI states, featured demo innovations, stories and partners entry points |
+| Explore Impact | explore-impact.php | Public empty state; map, filters and verified records require real data |
+| Innovation Portfolio | innovations.php | Existing searchable, category-filtered JSON listing |
+| Innovation Profile | innovation-detail.php?id=… | Existing content plus problem, users, evidence, readiness, adoption, impact and IP sections |
+| Adoption & Scale | adoption-scale.php | Stage journey and empty adoption history |
+| Impact Stories | impact-stories.php | Story journey and empty verified-story state |
+| Enterprise & Spin-off | enterprise.php | Enterprise journey and support entry |
+| Partners & Users | partners.php | Organization categories and empty public directory |
+| Research & Evidence | research.php | Existing searchable research listing |
+| Request to Use / Collaborate | request-use.php?id=… | Innovation context and contact entry; online lead submission unavailable |
+| Resources & Downloads | resources.php | Empty resource library; no invented downloads |
 
 ## Data and permissions
 
-The current site is marked as demo mode in data/site.json. News, research and partner records are illustrative content for demonstrating layout and interaction. No figures are presented as verified impact data. The global demo notice is shown from data/site.json demo_mode.
+There are currently no verified impact, adoption, partner, resource or story datasets. No figures are inferred from demo content. Home metrics display an unavailable marker, not a hardcoded zero. The global sample-content notice follows data/site.json demo_mode.
 
 Impact submission and verified dashboard data are not implemented in this public build. Public content remains backed by the existing JSON files; no account credentials or authentication database files are required.
 

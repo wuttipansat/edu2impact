@@ -4,7 +4,7 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function load_data($name) {
-    $allowed = ['site', 'research', 'innovations', 'news', 'partners'];
+    $allowed = ['site', 'research', 'innovations', 'news'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
     $text = file_get_contents(__DIR__ . '/../data/' . $name . '.json');
     if ($text === false) { throw new RuntimeException('Cannot read dataset'); }
