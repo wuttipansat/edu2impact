@@ -10,12 +10,12 @@ require __DIR__ . '/includes/header.php';
   <div class="hero-slides">
     <article class="hero-slide hero-slide-home is-active" data-slide="0">
       <div class="home-hero-overlay"></div><div class="container home-hero-inner">
-        <div class="hero-copy"><p class="eyebrow">WELCOME TO EDU2IMPACT</p><h1>From Research<br>to <em>Real-World</em><br>Impact</h1><p class="lead"><?= e($site['description']) ?></p><div class="actions"><a class="button hero-primary" href="explore-impact.php">Explore Impact</a><a class="button hero-outline" href="innovations.php">Find Innovation</a></div><div class="hero-stats"><div><strong><?= e(count($innovations)) ?></strong><span>Innovations in portfolio</span></div><div><strong>—</strong><span>Verified impact records</span></div><div><strong>—</strong><span>Partner organizations</span></div></div></div>
+        <div class="hero-copy"><p class="eyebrow">WELCOME TO EDU2IMPACT</p><h1>From Research<br>to <em>Real-World</em><br>Impact</h1><p class="lead"><?= e($site['description']) ?></p><div class="hero-stats"><div><strong><?= e(count($innovations)) ?></strong><span>Innovations in portfolio</span></div><div><strong>—</strong><span>Verified impact records</span></div><div><strong>—</strong><span>Partner organizations</span></div></div></div>
       </div>
     </article>
     <article class="hero-slide hero-slide-impact" data-slide="1">
       <div class="home-hero-overlay"></div><div class="container home-hero-inner">
-        <div class="hero-copy"><p class="eyebrow">EXPLORE IMPACT</p><h1>Research That<br>Creates <em>Real Change</em></h1><p class="lead">ติดตามการนำงานวิจัยและนวัตกรรมไปใช้ในโรงเรียน ชุมชน และหน่วยงานต่าง ๆ พร้อมหลักฐานที่ตรวจสอบได้</p><div class="actions"><a class="button hero-primary" href="explore-impact.php">Explore Impact</a><a class="button hero-outline" href="impact-stories.php">View Impact Stories</a></div></div>
+        <div class="hero-copy"><p class="eyebrow">EXPLORE IMPACT</p><h1>Research That<br>Creates <em>Real Change</em></h1><p class="lead">ติดตามการนำงานวิจัยและนวัตกรรมไปใช้ในโรงเรียน ชุมชน และหน่วยงานต่าง ๆ พร้อมหลักฐานที่ตรวจสอบได้</p><div class="actions"><a class="button hero-primary" href="explore-impact.php">Explore Impact</a></div></div>
       </div>
     </article>
     <article class="hero-slide hero-slide-innovation" data-slide="2">
@@ -25,12 +25,12 @@ require __DIR__ . '/includes/header.php';
     </article>
     <article class="hero-slide hero-slide-partners" data-slide="3">
       <div class="home-hero-overlay"></div><div class="container home-hero-inner">
-        <div class="hero-copy"><p class="eyebrow">PARTNERS &amp; USERS</p><h1>Build Impact<br><em>Together</em></h1><p class="lead">เชื่อมโยงนักวิจัย ผู้ใช้ หน่วยงานภาครัฐ ชุมชน มหาวิทยาลัย และภาคเอกชน เพื่อเปลี่ยนความรู้ให้เกิดการใช้จริง</p><div class="actions"><a class="button hero-primary" href="partners.php">Meet Our Partners</a><a class="button hero-outline" href="contact.php">Start a Conversation</a></div></div>
+        <div class="hero-copy"><p class="eyebrow">PARTNERS &amp; USERS</p><h1>Build Impact<br><em>Together</em></h1><p class="lead">เชื่อมโยงนักวิจัย ผู้ใช้ หน่วยงานภาครัฐ ชุมชน มหาวิทยาลัย และภาคเอกชน เพื่อเปลี่ยนความรู้ให้เกิดการใช้จริง</p><div class="actions"><a class="button hero-primary" href="partners.php">Meet Our Partners</a></div></div>
       </div>
     </article>
     <article class="hero-slide hero-slide-resources" data-slide="4">
       <div class="home-hero-overlay"></div><div class="container home-hero-inner">
-        <div class="hero-copy"><p class="eyebrow">RESEARCH &amp; RESOURCES</p><h1>Knowledge<br>You Can <em>Use</em></h1><p class="lead">เข้าถึงงานวิจัย หลักฐาน และทรัพยากรที่ช่วยให้การตัดสินใจ การทดลองใช้ และการขยายผลทำได้อย่างมีข้อมูล</p><div class="actions"><a class="button hero-primary" href="research.php">Explore Research</a><a class="button hero-outline" href="resources.php">Browse Resources</a></div></div>
+        <div class="hero-copy"><p class="eyebrow">RESEARCH &amp; RESOURCES</p><h1>Knowledge<br>You Can <em>Use</em></h1><p class="lead">เข้าถึงงานวิจัย หลักฐาน และทรัพยากรที่ช่วยให้การตัดสินใจ การทดลองใช้ และการขยายผลทำได้อย่างมีข้อมูล</p><div class="actions"><a class="button hero-primary" href="research.php">Explore Research</a></div></div>
       </div>
     </article>
   </div>
