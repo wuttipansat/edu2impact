@@ -33,4 +33,4 @@ $currentPage = $currentPage ?? '';
 <?php endforeach; ?></div></details>
 <?php else: ?><a href="<?= e($item['file']) ?>"<?= $active ? ' aria-current="page"' : '' ?>><?= e($item['label']) ?></a><?php endif; ?>
 <?php endforeach; ?>
-</nav></div></header>
+</nav></div><?php if (!empty($site['demo_mode'])): ?><div class="demo-bar"><div class="container"><span>DEMO WEB APP</span><span>ข้อมูลตัวอย่างสำหรับทดลองโครงสร้างเว็บไซต์</span></div></div><?php endif; ?></header>

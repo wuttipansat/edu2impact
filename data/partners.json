@@ -1,0 +1,50 @@
+[
+  {
+    "key": "schools",
+    "number": "01",
+    "title": "Schools & Teachers",
+    "thai": "โรงเรียนและครู",
+    "description": "ร่วมทดลองใช้แนวทาง เครื่องมือ และนวัตกรรมที่ตอบโจทย์ห้องเรียนจริง",
+    "icon": "↗"
+  },
+  {
+    "key": "government",
+    "number": "02",
+    "title": "Government",
+    "thai": "หน่วยงานภาครัฐ",
+    "description": "เชื่อมหลักฐานจากงานวิจัยกับการออกแบบนโยบายและการพัฒนาระบบการศึกษา",
+    "icon": "◌"
+  },
+  {
+    "key": "community",
+    "number": "03",
+    "title": "Communities",
+    "thai": "ชุมชนและสังคม",
+    "description": "พัฒนาโครงการที่ตอบสนองความต้องการของพื้นที่และผู้เรียนในบริบทจริง",
+    "icon": "⌁"
+  },
+  {
+    "key": "university",
+    "number": "04",
+    "title": "Universities",
+    "thai": "มหาวิทยาลัยและนักวิจัย",
+    "description": "นำเสนอผลงาน สร้างเครือข่าย และต่อยอดงานวิจัยให้เกิดการใช้ประโยชน์",
+    "icon": "✦"
+  },
+  {
+    "key": "private",
+    "number": "05",
+    "title": "Private Sector",
+    "thai": "ภาคเอกชน",
+    "description": "ร่วมพัฒนา ทดลองใช้ หรือสนับสนุนการขยายผลของนวัตกรรมการศึกษา",
+    "icon": "+"
+  },
+  {
+    "key": "international",
+    "number": "06",
+    "title": "International Network",
+    "thai": "เครือข่ายนานาชาติ",
+    "description": "แลกเปลี่ยนองค์ความรู้และเชื่อมโยงโอกาสความร่วมมือข้ามบริบท",
+    "icon": "∞"
+  }
+]
