@@ -1,4 +1,4 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
-$kind = 'news';
+$kind = 'workshops';
 require __DIR__ . '/includes/detail.php';

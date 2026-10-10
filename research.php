@@ -1,18 +1,11 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
-$currentPage = 'research'; $pageTitle = 'Research | ' . $site['name'];
-$records = load_data('research'); usort($records, static fn (array $a, array $b): int => strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? ''))); $featured = array_slice($records, 0, 6);
-$q = query_string('q'); $category = query_string('category'); $categories = array_values(array_unique(array_column($records, 'category')));
-$filtered = array_values(array_filter($records, static function ($record) use ($q, $category) { $haystack = implode(' ', [$record['title'] ?? '', $record['summary'] ?? '', $record['category'] ?? '', $record['author'] ?? '']); return ($category === '' || $category === ($record['category'] ?? '')) && ($q === '' || stripos($haystack, $q) !== false); }));
-require __DIR__ . '/includes/header.php';
-?>
-<main id="main" class="page-shell page-shell--research">
-  <section class="page-hero page-hero--editorial"><div class="container page-hero-content"><p class="eyebrow">EDU2IMPACT / RESEARCH</p><h1>Research with a way forward.</h1><p>ค้นพบผลงานวิจัยล่าสุดที่ช่วยอธิบายปัญหาและเปิดโอกาสให้เกิดการนำไปใช้จริง</p></div></section>
-  <section class="container editorial-canvas">
-    <div class="page-heading"><div><span class="section-kicker">LATEST RESEARCH</span><h2>ผลงานวิจัยล่าสุด</h2></div><span class="item-count"><?= count($featured) ?> latest works</span></div>
-    <section class="research-carousel" data-auto-carousel tabindex="0" aria-label="ผลงานวิจัยล่าสุด"><div class="carousel-viewport"><div class="carousel-track"><?php foreach ($featured as $record): ?><article class="carousel-card research-card"><a class="carousel-card-media" href="<?= e(detail_url('research', $record['id'])) ?>"><img src="<?= e(image_path($record) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a><div class="carousel-card-body"><div class="post-meta"><span><?= e($record['category'] ?? 'Research') ?></span><span><?= e($record['date'] ?? 'Coming soon') ?></span></div><h3><a href="<?= e(detail_url('research', $record['id'])) ?>"><?= e($record['title']) ?></a></h3><div class="post-footer"><span>By <?= e($record['author'] ?? 'Researcher to be added') ?></span><a href="<?= e(detail_url('research', $record['id'])) ?>">Read</a></div></div></article><?php endforeach; ?></div></div><button class="carousel-arrow carousel-arrow--prev" type="button" data-carousel-prev aria-label="ก่อนหน้า">‹</button><button class="carousel-arrow carousel-arrow--next" type="button" data-carousel-next aria-label="ถัดไป">›</button></section>
-    <div class="page-heading page-heading--all"><div><span class="section-kicker">RESEARCH LIBRARY</span><h2>ผลงานวิจัยทั้งหมด</h2></div><span class="item-count"><?= count($records) ?> works</span></div>
-    <form class="compact-search" method="get" action="research.php" role="search"><div class="search-field"><span aria-hidden="true">⌕</span><input id="research-search" type="search" name="q" value="<?= e($q) ?>" placeholder="Search research..." maxlength="200"><kbd>Ctrl K</kbd></div><label class="visually-hidden" for="research-category">สาขา</label><select id="research-category" name="category"><option value="">All fields</option><?php foreach ($categories as $option): ?><option value="<?= e($option) ?>"<?= $category === $option ? ' selected' : '' ?>><?= e($option) ?></option><?php endforeach; ?></select><button type="submit">Search</button></form>
-    <div class="feed-heading"><span>Research library</span><span><?= count($filtered) ?> results</span></div><div class="editorial-feed" aria-live="polite"><?php foreach ($filtered as $record): ?><article class="editorial-post editorial-post--research"><a class="post-media" href="<?= e(detail_url('research', $record['id'])) ?>"><img src="<?= e(image_path($record) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a><div class="post-body"><div class="post-meta"><span><?= e($record['category'] ?? 'Research') ?></span><span><?= e($record['date'] ?? 'Coming soon') ?></span></div><h3><a href="<?= e(detail_url('research', $record['id'])) ?>"><?= e($record['title']) ?></a></h3><p><?= e($record['summary']) ?></p><div class="post-footer"><span>By <?= e($record['author'] ?? 'Researcher to be added') ?></span><a href="<?= e(detail_url('research', $record['id'])) ?>">Read</a></div></div></article><?php endforeach; ?></div>
-  </section>
-</main><?php require __DIR__ . '/includes/footer.php'; ?>
+$kind = 'research';
+$listing = [
+    'layout' => 'research', 'cta' => 'อ่านงานวิจัย',
+    'page_title' => 'Research',
+    'latest_kicker' => 'LATEST RESEARCH', 'latest_heading' => 'ผลงานวิจัยล่าสุด', 'noun' => 'works',
+    'library_kicker' => 'RESEARCH LIBRARY', 'library_heading' => 'ผลงานวิจัยทั้งหมด',
+    'fallback_category' => 'Research', 'fallback_author' => 'Researcher to be added',
+];
+require __DIR__ . '/includes/editorial-listing.php';

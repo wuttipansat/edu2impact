@@ -1,4 +1,5 @@
 <?php
+// Reserved for future authenticated phase. Not loaded by any public page.
 require_once __DIR__ . '/functions.php';
 
 function auth_https() {

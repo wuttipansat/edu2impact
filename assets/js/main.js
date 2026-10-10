@@ -56,12 +56,6 @@
 })();
 
 (() => {
-  const input = document.querySelector('.compact-search input[type="search"]');
-  if (!input) return;
-  document.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); input.focus(); input.select(); } });
-})();
-
-(() => {
   const slider = document.querySelector('[data-slider]');
   if (!slider) return;
   const slides = [...slider.querySelectorAll('[data-slide]')];
@@ -104,4 +98,44 @@
   });
   show(0);
   schedule();
+})();
+
+(() => {
+  // Site search: header icon opens the dialog; Ctrl/⌘ K and "/" too. On search.php they focus the page's own field.
+  // Without <dialog> support the icon stays a plain link to search.php.
+  const trigger = document.querySelector('.header-search');
+  const dialog = document.getElementById('site-search');
+  const pageInput = document.getElementById('search-page-q');
+  const canDialog = !!dialog && typeof dialog.showModal === 'function';
+  const dialogInput = dialog && dialog.querySelector('input[name="q"]');
+  function open() {
+    if (pageInput) { pageInput.focus(); pageInput.select(); return true; }
+    if (!canDialog || !dialogInput) return false;
+    if (!dialog.open) { dialog.showModal(); document.documentElement.classList.add('search-open'); }
+    dialogInput.focus(); dialogInput.select();
+    return true;
+  }
+  trigger?.addEventListener('click', event => { if (open()) event.preventDefault(); });
+  if (canDialog) {
+    dialog.addEventListener('close', () => { document.documentElement.classList.remove('search-open'); trigger?.focus(); });
+    dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
+    dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close());
+    // Keep Tab inside the dialog (some browsers let it reach the browser UI).
+    dialog.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return;
+      const items = [...dialog.querySelectorAll('input, button, a[href]')].filter(item => !item.disabled && item.offsetParent !== null);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+  }
+  document.addEventListener('keydown', event => {
+    const key = event.key.toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && key === 'k') { if (open()) event.preventDefault(); return; }
+    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target;
+    if (target instanceof Element && (target.closest('input, textarea, select') || target.isContentEditable)) return;
+    if (open()) event.preventDefault();
+  });
 })();

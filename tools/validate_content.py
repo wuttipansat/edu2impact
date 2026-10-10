@@ -7,7 +7,7 @@ from pathlib import Path
 
 base = Path(__file__).resolve().parents[1]
 errors = []
-for name in ('site', 'research', 'innovations', 'news'):
+for name in ('site', 'research', 'innovations', 'workshops', 'events'):
     try:
         data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
         if name == 'site':
@@ -17,6 +17,19 @@ for name in ('site', 'research', 'innovations', 'news'):
             assert isinstance(data.get('demo_mode'), bool), 'demo_mode must be true or false'
             continue
         assert isinstance(data, list), 'must be an array'
+        if name == 'events':
+            seen = set()
+            for index, event in enumerate(data):
+                assert isinstance(event, dict), 'event must be an object'
+                for key in ('id', 'date', 'type', 'title', 'meta'):
+                    assert isinstance(event.get(key), str) and event[key].strip(), f'event {index}: {key} is required'
+                assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', event['id']), 'invalid id ' + event['id']
+                assert event['id'] not in seen, 'duplicate id ' + event['id']
+                seen.add(event['id'])
+                assert re.fullmatch(r'\d{4}-\d{2}-\d{2}', event['date']), f'event {index}: date must be YYYY-MM-DD'
+                datetime.date.fromisoformat(event['date'])
+                assert isinstance(event.get('featured'), bool), 'featured must be boolean'
+            continue
         seen = set()
         for index, record in enumerate(data):
             assert isinstance(record, dict), 'record must be an object'
@@ -39,4 +52,4 @@ for name in ('site', 'research', 'innovations', 'news'):
 if errors:
     print('\n'.join(errors))
     sys.exit(1)
-print('All four content files passed validation.')
+print('All content files passed validation.')

@@ -1,4 +1,5 @@
 <?php
+// Reserved for future authenticated phase. Not loaded by any public page.
 require __DIR__ . '/bootstrap.php';
 header('Cache-Control: no-store, private');
 try {
