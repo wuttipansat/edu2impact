@@ -147,3 +147,7 @@ body{background:var(--paper);color:var(--ink)}
 .nav>a:focus-visible,.nav-submenu a:focus-visible,.menu-toggle:focus-visible{outline:3px solid var(--purple-300);outline-offset:2px;border-radius:8px}
 /* Sample-content notice (data/site.json demo_mode) */
 .demo-bar{width:100%;padding:8px 0;border-bottom:1px solid #f3dcc4;font-size:14px;line-height:1.6;text-align:center}
+
+/* Optional record details (innovations with a web tool): audience, subjects, features, references. */
+.record-facts{display:grid;gap:18px;margin:32px 0 0;padding-top:28px;border-top:1px solid var(--minimal-line)}.record-facts>div{display:grid;grid-template-columns:190px 1fr;gap:16px}.record-facts dt{font-size:14px;font-weight:700;color:var(--minimal-ink)}.record-facts dd{margin:0}.record-facts ul{margin:0;padding-left:1.1em;color:var(--minimal-muted)}.record-facts li{margin-bottom:4px}.record-references{margin-top:32px;padding-top:24px;border-top:1px solid var(--minimal-line)}.record-references h2{font-size:18px;margin-bottom:10px;color:var(--minimal-ink)}.record-references ul{margin:0;padding-left:1.1em;font-size:14px;color:var(--minimal-muted);overflow-wrap:anywhere}.record-references li{margin-bottom:6px}
+@media(max-width:760px){.record-facts>div{grid-template-columns:1fr;gap:4px}}

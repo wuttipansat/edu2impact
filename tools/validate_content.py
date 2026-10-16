@@ -47,6 +47,20 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
             if record['image']:
                 assert re.fullmatch(r'assets/images/[a-zA-Z0-9_/-]+\.(png|jpg|jpeg|webp)', record['image']), 'invalid image path'
                 assert (base / record['image']).is_file(), 'missing image ' + record['image']
+            # Optional fields (used by innovations, e.g. a web tool). Absent fields are fine.
+            if 'tool_url' in record:
+                url = record['tool_url']
+                assert isinstance(url, str) and url, f'{record["id"]}: tool_url must be text'
+                if not url.startswith('https://'):
+                    assert re.fullmatch(r'apps/[a-z0-9-]+/', url), f'{record["id"]}: tool_url must be https://… or apps/<name>/'
+                    assert (base / url / 'index.html').is_file(), 'missing ' + url + 'index.html'
+            if 'tool_label' in record:
+                assert isinstance(record['tool_label'], str) and record['tool_label'].strip(), f'{record["id"]}: tool_label must be text'
+                assert 'tool_url' in record, f'{record["id"]}: tool_label needs tool_url'
+            for key in ('audience', 'subjects', 'features', 'references'):
+                if key in record:
+                    value = record[key]
+                    assert isinstance(value, list) and all(isinstance(v, str) and v.strip() for v in value), f'{record["id"]}: {key} must be an array of text'
     except (ValueError, AssertionError, OSError) as error:
         errors.append(f'{name}.json: {error}')
 if errors:

@@ -1,26 +1,3 @@
 [
-  {
-    "id": "research-to-practice-forum",
-    "date": "2026-11-12",
-    "type": "SEMINAR",
-    "title": "Research to Practice Forum",
-    "meta": "เวทีแลกเปลี่ยนงานวิจัยสู่การใช้จริง",
-    "featured": true
-  },
-  {
-    "id": "learning-design-lab",
-    "date": "2026-12-05",
-    "type": "WORKSHOP",
-    "title": "Learning Design Lab",
-    "meta": "ห้องทดลองออกแบบการเรียนรู้ร่วมกับเครือข่าย",
-    "featured": true
-  },
-  {
-    "id": "edu2impact-annual-meeting",
-    "date": "2027-01-22",
-    "type": "CONFERENCE",
-    "title": "Edu2Impact Annual Meeting",
-    "meta": "พบงานวิจัย ผู้ใช้ และพันธมิตรในพื้นที่เดียวกัน",
-    "featured": true
-  }
+
 ]

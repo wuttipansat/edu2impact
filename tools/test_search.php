@@ -37,4 +37,16 @@ check('AND logic narrows results', search_run('STEM ครู')['total'] <= min(
 check('partner group is indexed', (bool) search_run('Government')['groups']['pages']);
 check('event is indexed', (bool) search_run('Research to Practice Forum')['groups']['events']);
 check('nonsense finds nothing', search_run('zzzz')['total'] === 0);
+// Optional innovation fields (audience, subjects, features) are searchable.
+$pck = search_run('PCK Canvas')['groups']['innovations'] ?? [];
+check('PCK Canvas is the top innovation for its name', $pck && $pck[0]['url'] === 'innovation-detail.php?id=pck-canvas');
+// The post body is indexed, so words that appear only in the body find the post.
+$byBody = search_run('ข้อมูลย้อนกลับ')['groups']['innovations'] ?? [];
+check('PCK Canvas body text is searchable', (bool) array_filter($byBody, static fn ($r) => $r['url'] === 'innovation-detail.php?id=pck-canvas'));
+// The pck-canvas post no longer has audience/features; their words must not linger in the index.
+$byAudience = search_run('ศึกษานิเทศก์')['groups']['innovations'] ?? [];
+check('removed audience text is not indexed', !array_filter($byAudience, static fn ($r) => $r['url'] === 'innovation-detail.php?id=pck-canvas'));
+// Optional list fields still count as keywords when a record has them.
+$fake = search_join([['ครูทดสอบ'], ['ฟีเจอร์ทดสอบ']]);
+check('list fields join into keyword text', $fake === 'ครูทดสอบ ฟีเจอร์ทดสอบ');
 exit($failed ? 1 : 0);

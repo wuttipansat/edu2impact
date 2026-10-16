@@ -14,15 +14,7 @@ $homeSections = [
     ['kind' => 'workshops', 'id' => '', 'kicker' => 'WORKSHOPS', 'heading' => 'เวิร์กช็อป', 'fallback' => 'Workshop', 'records' => array_slice($workshops, 0, 3)],
 ];
 // Upcoming events from data/events.json: today or later (Bangkok time), soonest first, max 3.
-$today = (new DateTimeImmutable('today', new DateTimeZone('Asia/Bangkok')))->format('Y-m-d');
-$events = array_values(array_filter(load_data('events'), static fn (array $event): bool => is_string($event['date'] ?? null) && $event['date'] >= $today));
-usort($events, static fn (array $a, array $b): int => strcmp($a['date'], $b['date']));
-$events = array_map(static function (array $event): array {
-    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $event['date']);
-    $event['day'] = $date ? $date->format('d') : '';
-    $event['month'] = $date ? strtoupper($date->format('M')) : '';
-    return $event;
-}, array_slice($events, 0, 3));
+
 // Slide text comes from config/heroes.php so it matches the hero banner of the page each slide links to.
 $heroSlides = array_map(static function (array $slide): array {
     $hero = hero_text($slide['key']);
@@ -47,6 +39,4 @@ require __DIR__ . '/includes/header.php';
     <div class="hero-slider-controls" role="tablist" aria-label="เลือกหน้าเว็บไซต์"><?php foreach ($heroSlides as $index => $slide): ?><button class="hero-dot<?= $index === 0 ? ' is-active' : '' ?>" type="button" role="tab" aria-selected="<?= $index === 0 ? 'true' : 'false' ?>" aria-label="<?= e($slide['label']) ?>" data-slider-dot="<?= $index ?>"><span><?= e($slide['label']) ?></span></button><?php endforeach; ?></div>
   </section>
   <?php foreach ($homeSections as $block): ?><section<?= $block['id'] ? ' id="' . e($block['id']) . '"' : '' ?> class="home-section home-section--research home-section--<?= e($block['kind']) ?>"><div class="container"><div class="home-section-heading"><div><span class="section-kicker"><?= e($block['kicker']) ?></span><h2><?= e($block['heading']) ?></h2></div><a class="home-section-link" href="<?= e($block['kind']) ?>.php">View all <span>↗</span></a></div><div class="home-research-grid"><?php foreach ($block['records'] as $record): ?><article class="home-research-card"><a class="home-card-media" href="<?= e(detail_url($block['kind'], $record['id'])) ?>"><img src="<?= e(image_path($record) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a><div class="home-card-body"><div class="post-meta"><span><?= e($record['category'] ?? $block['fallback']) ?></span><span><?= e($record['date'] ?? 'Coming soon') ?></span></div><h3><a href="<?= e(detail_url($block['kind'], $record['id'])) ?>"><?= e($record['title']) ?></a></h3><a class="read-link" href="<?= e(detail_url($block['kind'], $record['id'])) ?>">Read</a></div></article><?php endforeach; ?></div></div></section><?php endforeach; ?>
-  <section id="events" class="home-section home-section--events"><div class="container"><div class="home-section-heading"><div><span class="section-kicker">MEET THE NETWORK</span><h2>การจัดงานประชุม / สัมมนา</h2></div><span class="home-section-note">Connect through shared practice</span></div><?php if (!$events): ?><p class="event-empty">ยังไม่มีกิจกรรมที่กำลังจะจัดขึ้น ดูเวิร์กช็อปทั้งหมดได้ที่<a href="workshops.php">หน้าเวิร์กช็อป</a></p><?php else: ?><div class="event-list"><?php foreach ($events as $event): ?><article class="event-row"><div class="event-date"><strong><?= e($event['day']) ?></strong><span><?= e($event['month']) ?></span></div><div class="event-info"><span class="event-type"><?= e($event['type']) ?></span><h3><?= e($event['title']) ?></h3><p><?= e($event['meta']) ?></p></div><span class="event-arrow">↗</span></article><?php endforeach; ?></div><?php endif; ?></div></section>
-</main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

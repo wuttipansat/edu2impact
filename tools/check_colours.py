@@ -1,4 +1,4 @@
-"""Fail if any green or teal colour remains in the CSS or SVG files. Python 3; no packages.
+"""Fail if any green or teal colour remains in the CSS, SVG or apps/ HTML files. Python 3; no packages.
 
 A colour counts as green/teal when its hue is between 70 and 215 degrees (yellow-green
 through teal), its HSL saturation is above 4% and its lightness is below 99%. That also
@@ -37,7 +37,8 @@ def selector_before(text, pos):
 
 
 hits = []
-files = sorted((root / 'assets/css').glob('*.css')) + sorted((root / 'assets/images').glob('*.svg'))
+files = (sorted((root / 'assets/css').glob('*.css')) + sorted((root / 'assets/images').glob('*.svg'))
+         + sorted((root / 'apps').glob('**/*.html')))  # web tools linked from records (tool_url)
 for path in files:
     text = path.read_text(encoding='utf-8')
     for match in token.finditer(text):

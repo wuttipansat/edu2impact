@@ -30,6 +30,20 @@ function image_path($record) {
         && is_file(__DIR__ . '/../' . $path)) { return $path; }
     return '';
 }
+// Optional link to a web tool: https:// URLs or a local apps/<name>/ folder that exists.
+function tool_url($record) {
+    $url = $record['tool_url'] ?? '';
+    if (!is_string($url) || $url === '') { return ''; }
+    if (preg_match('~\Ahttps://[^\s<>"]+\z~', $url)) { return $url; }
+    if (preg_match('~\Aapps/[a-z0-9-]+/\z~', $url) && is_file(__DIR__ . '/../' . $url . 'index.html')) { return $url; }
+    return '';
+}
+// Optional list of non-empty strings (audience, subjects, features, references).
+function text_list($record, $key) {
+    $value = $record[$key] ?? [];
+    if (!is_array($value)) { return []; }
+    return array_values(array_filter($value, static fn ($item) => is_string($item) && trim($item) !== ''));
+}
 function detail_url($kind, $id) {
     $routes = ['research' => 'research-detail.php', 'innovations' => 'innovation-detail.php', 'workshops' => 'workshop-detail.php'];
     return $routes[$kind] . '?id=' . rawurlencode($id);

@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PCK Canvas | EDU2IMPACT</title>
+<meta name="description" content="PCK Canvas ฉบับปรับตามผู้ใช้ เครื่องมือออกแบบการเรียนรู้สำหรับครูทุกกลุ่มสาระ พัฒนาโดยคณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  /* edu2impact palette (assets/css/minimal-palette.css) */
+  --purple-900:#2b0f35; --purple-800:#441752; --purple-700:#5b2470; --purple-600:#743a8c; --purple-500:#8e55a8;
+  --purple-300:#c7a2da; --purple-200:#e0c9ec; --purple-100:#f2eaf4; --purple-50:#faf6fb; --accent-warm:#f29f58;
+  --bg:#F3EDF4; --surface:#FFFFFF; --ink:#281d29; --muted:#6e6370; --line:#E9DDE3; --field:#8c7a89; --rule:#e6d9e3; --soft:var(--purple-100);
+  --ku:var(--purple-700); --ku-ink:var(--purple-800); --on-ku:#FFFFFF; --focus:var(--purple-800);
+  --tip-bg:#FDEEDF; --tip-ink:#7A3B0C; --ok-bg:var(--purple-100); --ok-ink:var(--purple-800);
+  --r-s:8px; --r-m:12px;
+  --sans:"Noto Sans Thai","Manrope",sans-serif;
+  --head:"Manrope","Noto Sans Thai",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important;animation:none!important} }
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+h1,h2,h3{margin:0;line-height:1.35}
+p{margin:0 0 .6em}
+.muted{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+
+/* header */
+.top{background:var(--purple-800);color:#fff;position:sticky;top:env(safe-area-inset-top, 0px);z-index:30}
+.top :focus-visible{outline-color:var(--accent-warm)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:56px}
+.brand{display:flex;align-items:center;min-height:44px;color:#fff;text-decoration:none;font-family:var(--head);font-weight:700;font-size:1.1rem}
+.top .back{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid rgba(255,255,255,.4);border-radius:999px;color:#fff;text-decoration:none;font-weight:600;white-space:nowrap}
+.top .back:hover{background:rgba(255,255,255,.1)}
+.top .back .bk-s{display:none}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:1px solid var(--field);background:var(--surface);padding:0 14px;border-radius:var(--r-s);cursor:pointer;font-weight:500;text-decoration:none;color:var(--ink);line-height:1.3;white-space:nowrap}
+.btn:hover{background:var(--purple-50)}
+.btn.primary{background:var(--ku);border-color:var(--ku);color:var(--on-ku);font-weight:600}
+.btn.primary:hover{background:var(--purple-800)}
+.btn.small{min-height:36px;padding:0 10px;font-size:.875rem}
+.btn.link{border:0;background:none;color:var(--ku-ink);text-decoration:underline;padding:0 4px;min-height:36px}
+
+
+/* sticky strip: plan name, save state, print, menu */
+.strip{position:sticky;top:var(--hdr,56px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 6px 14px -12px rgba(43,15,53,.35)}
+.strip[hidden]{display:none}
+.strip .wrap{display:flex;align-items:center;gap:8px 12px;padding-top:8px;padding-bottom:8px}
+.stat{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.35}
+.stat b{font-size:.95rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat span{font-size:.8125rem;color:var(--muted)}
+.stat .msg{color:var(--ku-ink);font-weight:600}
+.tools{display:flex;gap:6px}
+.more{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:230px;margin:0;padding:6px;list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);box-shadow:0 14px 32px rgba(43,15,53,.18)}
+.menu[hidden]{display:none}
+.more-bd{position:fixed;inset:0;z-index:49}
+.more-bd[hidden]{display:none}
+.menu button{display:block;width:100%;min-height:44px;padding:8px 12px;border:0;border-radius:var(--r-s);background:none;text-align:left;cursor:pointer}
+.menu button:hover,.menu button:focus-visible{background:var(--soft)}
+.menu-note{padding:8px 12px 4px;font-size:.8125rem;color:var(--muted);border-top:1px solid var(--line);margin-top:4px}
+
+/* layout */
+.cv{padding-top:20px;padding-bottom:64px}
+
+/* the paper: a lesson-plan sheet like the template */
+.paper{max-width:880px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;box-shadow:0 20px 44px rgba(43,15,53,.10);padding:26px 28px 22px;display:grid;gap:14px}
+.ph{border:1.5px solid var(--purple-200);border-radius:16px;background:var(--purple-50);padding:14px 18px 12px}
+.ph-k{font-family:var(--head);font-weight:800;color:var(--purple-800);font-size:1rem;letter-spacing:.2px;text-align:center}
+.ph-title{display:block;width:100%;text-align:center;font-size:1.4rem;font-weight:700;border:0;border-bottom:1.5px dotted var(--field);background:transparent;padding:2px 4px 4px;margin:2px 0 10px;border-radius:0}
+.ph-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 14px}
+.dl{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.dl.w2{grid-column:span 2}.dl.w3{grid-column:span 3}.dl.w4{grid-column:span 4}
+.dl label{font-weight:600;font-size:.9rem;white-space:nowrap;color:var(--purple-800)}
+.dl input,.dl select{flex:1;min-width:0;border:0;border-bottom:1.5px dotted var(--field);background:transparent;min-height:36px;padding:2px 4px;border-radius:0}
+.dl select{cursor:pointer}
+.dl .unit{font-size:.9rem;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch}
+.col{display:grid;gap:14px;align-content:start}
+.col.l{grid-template-rows:auto 1fr}
+.sec.grow{display:flex;flex-direction:column}
+.sec.grow .sec-b{flex:1;display:flex;flex-direction:column}
+.sec.grow textarea.ln{flex:1 1 auto;height:auto}
+.sec{border:1.5px solid var(--purple-200);border-radius:14px;background:var(--surface);overflow:hidden;scroll-margin-top:calc(var(--hdr,56px) + var(--strip,60px) + 12px)}
+.sec-h{display:flex;align-items:center;gap:8px;background:var(--purple-100);padding:6px 8px 6px 12px;min-height:46px}
+.sec-h h2{font-size:1rem;font-weight:700;color:var(--purple-800);flex:1;min-width:0}
+.sec-h h2 small{font-weight:500;color:var(--muted);font-size:.8125rem;margin-left:6px}
+.sec-b{padding:10px 12px 12px;display:grid;gap:8px}
+.sub-l{font-size:.8125rem;font-weight:600;color:var(--muted);margin-bottom:2px;display:block}
+.sub-l{font-size:.8125rem;font-weight:600;color:var(--muted);margin-bottom:2px;display:block}
+/* writing lines */
+.ln{display:block;width:100%;resize:none;overflow:hidden;border:1px dashed var(--field);border-radius:6px;padding:4px 8px;line-height:1.75;min-height:calc(1.75em + 10px);
+  background:#fff repeating-linear-gradient(to bottom,transparent 0,transparent calc(1.75em - 1px),var(--rule) calc(1.75em - 1px),var(--rule) 1.75em);background-position:0 4px;background-attachment:local}
+.ln:focus{border-style:solid;border-color:var(--ku);outline:none;box-shadow:0 0 0 3px var(--purple-200)}
+.ln::placeholder{color:#857a86}
+.cnt{font-size:.8125rem;color:var(--muted);text-align:right}
+.kpa{display:grid;gap:6px}
+.kpa .r{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start}
+.kpa .r>b{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ku);color:#fff;font-size:.875rem;margin-top:4px}
+.ticks{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.ck{display:flex;align-items:flex-start;gap:8px;min-height:36px;padding:4px 2px;cursor:pointer;font-size:.92rem;line-height:1.45}
+.ck input{width:18px;height:18px;margin:3px 0 0;accent-color:var(--ku);flex:none}
+.acts-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.acts-top label{font-size:.875rem;color:var(--muted)}
+.acts-top select{border:1px solid var(--field);border-radius:6px;min-height:36px;padding:0 8px;background:#fff}
+.acts{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:8px}
+.act{display:grid;gap:6px;align-content:start}
+.act .pill{background:var(--purple-700);color:#fff;border-radius:10px;padding:4px 8px;font-size:.875rem;font-weight:600;text-align:center;line-height:1.35;min-height:44px;display:grid;place-items:center}
+.act .pill input{width:100%;border:0;background:transparent;color:#fff;text-align:center;font-weight:600}
+.rows{display:grid;gap:8px}
+.drow{display:grid;grid-template-columns:repeat(var(--c,2),minmax(0,1fr)) auto;gap:8px;align-items:start}
+.del{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;min-height:36px;padding:0 4px;align-self:end}
+.add{justify-self:start}
+.paper-f{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.8125rem;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
+.extra{max-width:880px;margin:14px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:0 16px}
+.extra summary{cursor:pointer;min-height:48px;display:flex;align-items:center;font-weight:600;color:var(--ku-ink)}
+.extra[open]{padding-bottom:14px}
+.extra .grid{display:grid;gap:10px}
+.extra .note{font-size:.875rem;color:var(--muted);margin:0 0 8px}
+
+/* dialogs */
+dialog{border:1px solid var(--line);border-radius:var(--r-m);padding:0;max-width:720px;width:calc(100% - 32px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(43,15,53,.45)}
+.dlg-h{padding:18px 22px 10px;border-bottom:1px solid var(--line)}
+.dlg-h h2{font-size:1.3rem}
+.dlg-h p{margin:4px 0 0;font-size:.92rem;color:var(--muted)}
+.dlg-b{padding:16px 22px;max-height:65vh;overflow:auto}
+.dlg-f{padding:12px 22px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid var(--line)}
+.ob-meta{display:grid;grid-template-columns:2fr 1.3fr 1fr;gap:10px}
+.ob-meta label{font-size:.8125rem;color:var(--muted);display:block}
+.ob-meta input,.ob-meta select{width:100%;border:1px solid var(--field);border-radius:var(--r-s);padding:8px 10px;background:var(--surface);min-height:44px}
+.mylist{list-style:none;margin:0;padding:0}
+.mylist li{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.mylist li .t{flex:1;min-width:0}
+.mylist li .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mylist li .t small{color:var(--muted)}
+.empty{padding:20px;text-align:center;color:var(--muted)}
+.fitlist{margin:0;padding-left:1.2em}
+.fitlist li{margin-bottom:6px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:var(--r-s);font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:calc(100% - 32px)}
+.toast.on{opacity:1}
+
+
+@media (max-width:760px){
+  .paper{padding:16px 12px;border-radius:0;border-left:0;border-right:0;gap:12px}
+  .cv{padding-top:12px;padding-left:0;padding-right:0}
+  .ph{padding:12px}
+  .ph-title{font-size:1.2rem;min-height:44px}
+  .ph-grid{grid-template-columns:1fr 1fr}
+  .dl,.dl.w2,.dl.w3,.dl.w4{grid-column:span 1}
+  .dl.wide{grid-column:1/-1}
+  .dl input,.dl select{min-height:44px}
+  .row2{grid-template-columns:1fr}
+  .acts{grid-template-columns:1fr}
+  .drow{grid-template-columns:1fr}
+  .ticks{grid-template-columns:1fr}
+  .ck{min-height:44px}
+  .btn.small,.del,.acts-top select{min-height:44px}
+  .top .back .bk-l{display:none}
+  .top .back .bk-s{display:inline}
+  .extra{border-radius:0;border-left:0;border-right:0}
+}
+
+/* ---- one A4 portrait page, fixed boxes (print and fit check use the same markup) ---- */
+.ps{--ln:5mm;--dot:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='20'%3E%3Cline x1='0' y1='19.4' x2='10' y2='19.4' stroke='%23a894a6' stroke-width='1' stroke-dasharray='1.4 2.6'/%3E%3C/svg%3E");
+  width:194mm;height:280mm;overflow:hidden;font-family:var(--sans);color:#1f1520;font-size:9pt;line-height:var(--ln);background:#fff;
+  display:grid;grid-template-rows:24mm 88mm 19mm minmax(0,1fr) 42mm 5mm;gap:2mm}
+.ps *{box-sizing:border-box}
+.ps .hd{border:1.2pt solid #c7a2da;border-radius:3mm;background:#faf6fb;padding:.8mm 3mm;overflow:hidden;display:grid;grid-template-rows:auto auto 1fr}
+.ps .hd .k{font-family:var(--head);font-weight:800;color:#441752;text-align:center}
+.ps .hd .t{font-size:13pt;font-weight:700;text-align:center;line-height:6.4mm;border-bottom:.3mm dotted #a894a6;min-height:6.4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps .hd .meta{display:flex;flex-wrap:wrap;gap:0 4mm;align-content:center}
+.ps .hd .f{display:flex;gap:1.5mm;min-width:0;flex:1 1 auto}
+.ps .hd .f span{white-space:nowrap;color:#441752;font-weight:600}
+.ps .hd .f b{flex:1;font-weight:500;min-width:12mm;border-bottom:.3mm dotted #a894a6;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ps .ra{display:grid;grid-template-columns:1fr 1fr;gap:2mm;min-height:0}
+.ps .rl{display:grid;grid-template-rows:36mm minmax(0,1fr);gap:2mm;min-height:0}
+.ps .rr{display:grid;grid-template-rows:32mm 29mm minmax(0,1fr);gap:2mm;min-height:0}
+.ps .rb{display:grid;grid-template-columns:1.35fr 1fr;gap:2mm;min-height:0}
+.ps .box{position:relative;border:1pt solid #c9b3c6;border-radius:2.2mm;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0}
+.ps .box h3{margin:0;background:#f2eaf4;color:#441752;font-size:9pt;font-weight:700;padding:.4mm 2.2mm;line-height:5.4mm}
+.ps .box h3 small{font-weight:500;color:#5f5560;margin-left:1.5mm}
+.ps .bb{padding:0 2.2mm;overflow:hidden;min-height:0;background:var(--dot) 0 0/3mm var(--ln) repeat}
+.ps .bb.plain{background:none;padding:.6mm 2.2mm}
+.ps .v{white-space:pre-wrap;overflow-wrap:anywhere}
+.ps .kpa .row{display:grid;grid-template-columns:4mm minmax(0,1fr)}
+.ps .kpa i{font-style:normal;font-weight:700;color:#5b2470}
+.ps .tk{display:flex;flex-wrap:wrap;gap:0 3.2mm}
+.ps .tk span{display:inline-flex;align-items:center;gap:1.2mm;white-space:nowrap}
+.ps .tk span::before{content:"";width:2.8mm;height:2.8mm;border:.3mm solid #5b2470;border-radius:.5mm;flex:none}
+.ps .tk span.on::before{background:#5b2470 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.8 5.4l2.4 2.4 4-5' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E") center/100% no-repeat}
+.ps .tk span.on{font-weight:600}
+.ps .ind{background:var(--dot) 0 0/3mm var(--ln) repeat}
+.ps .ind b{font-weight:600;color:#441752}
+.ps .acts{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:1.6mm;padding:1mm 1.6mm;min-height:0}
+.ps .act{display:grid;grid-template-rows:auto minmax(0,1fr);border:.8pt solid #d9c4e6;border-radius:1.6mm;overflow:hidden;min-height:0}
+.ps .act b{display:grid;place-items:center;background:#5b2470;color:#fff;font-size:9pt;line-height:4.6mm;padding:.5mm 1mm;text-align:center;min-height:10mm}
+.ps .act .bb{padding:0 1.4mm}
+.ps .ev{display:grid;grid-template-columns:1fr 1fr;gap:0 2mm;padding:0 2.2mm}
+.ps .ev .h{font-weight:700;color:#441752;border-bottom:.3mm solid #c9b3c6;line-height:5mm}
+.ps .ev .c{min-height:10mm;background:var(--dot) 0 0/3mm var(--ln) repeat}
+.ps .foot{display:flex;justify-content:space-between;align-items:center;color:#5f5560;border-top:.8pt solid #c9b3c6;line-height:4mm}
+.ps .box.clip::after{content:"ข้อความถูกตัด";position:absolute;right:1.5mm;bottom:1mm;background:#f29f58;color:#2b0f35;font-weight:700;font-size:9pt;line-height:4.6mm;padding:0 1.6mm;border-radius:1mm}
+#print-sheet{display:none}
+#fit-probe{position:absolute;left:-10000px;top:0;visibility:hidden}
+@media print{
+  @page{size:A4 portrait;margin:8mm}
+  html,body{background:#fff;margin:0}
+  body>*:not(#print-sheet):not(#fit-probe){display:none!important}
+  #print-sheet{display:block}
+  .ps{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#">PCK Canvas</a>
+    <a class="back" href="../../innovation-detail.php?id=pck-canvas" aria-label="กลับ EDU2IMPACT"><span aria-hidden="true">←</span> <span class="bk-l" aria-hidden="true">EDU2IMPACT</span><span class="bk-s" aria-hidden="true">กลับ</span></a>
+  </div>
+</header>
+
+<div class="strip" id="strip" hidden>
+  <div class="wrap">
+    <div class="stat"><b id="strip-title"></b><span id="save-state" aria-live="polite"></span></div>
+    <span class="tools">
+      <button class="btn primary" type="button" id="b-print">พิมพ์ / PDF</button>
+      <span class="more">
+        <button class="btn" type="button" id="b-more" aria-haspopup="true" aria-expanded="false" aria-controls="more-menu">เพิ่มเติม <span aria-hidden="true">▾</span></button>
+        <span class="more-bd" id="more-bd" hidden></span>
+        <ul class="menu" id="more-menu" role="menu" aria-label="เพิ่มเติม" hidden>
+          <li role="none"><button type="button" role="menuitem" id="b-mine">แผนของฉัน</button></li>
+          <li role="none"><button type="button" role="menuitem" id="b-new">สร้างแผนใหม่</button></li>
+          <li role="none"><button type="button" role="menuitem" data-sample="math">ตัวอย่างคณิตศาสตร์</button></li>
+          <li role="none"><button type="button" role="menuitem" data-sample="sci">ตัวอย่างวิทยาศาสตร์</button></li>
+          <li role="none"><button type="button" role="menuitem" data-sample="thai">ตัวอย่างภาษาไทย</button></li>
+          <li role="none" class="menu-note">งานเก็บในเบราว์เซอร์นี้เท่านั้น</li>
+        </ul>
+      </span>
+    </span>
+  </div>
+</div>
+
+<main class="wrap cv" id="cv">
+  <div id="sheet"></div>
+</main>
+
+<dialog id="dlg-ob" aria-labelledby="ob-title">
+  <form method="dialog" id="ob-form">
+    <div class="dlg-h"><h2 id="ob-title">เริ่มแผนใหม่</h2></div>
+    <div class="dlg-b">
+      <div class="ob-meta">
+        <div><label for="ob-topic">เรื่องที่จะสอน</label><input id="ob-topic" placeholder="เช่น การอ่านจับใจความ"></div>
+        <div><label for="ob-subject">กลุ่มสาระ</label><select id="ob-subject"></select></div>
+        <div><label for="ob-grade">ชั้น</label><input id="ob-grade" placeholder="ม.2"></div>
+      </div>
+    </div>
+    <div class="dlg-f">
+      <button class="btn primary" value="go" type="submit">เริ่มเขียนแผน</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-mine" aria-labelledby="mine-title">
+  <div class="dlg-h"><h2 id="mine-title">แผนของฉัน</h2><p>เก็บในเบราว์เซอร์นี้เท่านั้น</p></div>
+  <div class="dlg-b"><ul class="mylist" id="mine-list"></ul></div>
+  <div class="dlg-f">
+    <button class="btn primary" type="button" id="mine-close">ปิด</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-fit" aria-labelledby="fit-title">
+  <div class="dlg-h"><h2 id="fit-title">แผนยาวเกิน 1 หน้า</h2><p>ย่อช่องเหล่านี้ให้สั้นลง แล้วแผนจะพอดี 1 หน้า</p></div>
+  <div class="dlg-b"><ul class="fitlist" id="fit-list"></ul></div>
+  <div class="dlg-f">
+    <button class="btn" type="button" id="fit-anyway">พิมพ์ต่อ (เกิน 1 หน้า)</button>
+    <button class="btn primary" type="button" id="fit-close">กลับไปแก้</button>
+  </div>
+</dialog>
+
+<div id="print-sheet"></div>
+<div id="fit-probe" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+<script>
+(function(){
+"use strict";
+document.documentElement.lang="th";
+
+/* ---------------- data ---------------- */
+var SUBJECTS = {
+  sci:{name:"วิทยาศาสตร์และเทคโนโลยี", model:"5e",},
+  math:{name:"คณิตศาสตร์", model:"math",},
+  thai:{name:"ภาษาไทย", model:"read",},
+  foreign:{name:"ภาษาต่างประเทศ", model:"read",},
+  social:{name:"สังคมศึกษา ศาสนา และวัฒนธรรม", model:"inquiry",},
+  health:{name:"สุขศึกษาและพลศึกษา", model:"skill",},
+  arts:{name:"ศิลปะ", model:"skill",},
+  career:{name:"การงานอาชีพ", model:"design",},
+  stem:{name:"บูรณาการ / สะเต็มศึกษา", model:"design",}
+};
+var SUBJ_ORDER = ["sci","math","thai","foreign","social","health","arts","career","stem"];
+
+
+var MODELS = {
+  "5e":{name:"สืบเสาะแบบ 5E", phases:["สร้างความสนใจ (Engage)","สำรวจและค้นหา (Explore)","อธิบายและลงข้อสรุป (Explain)","ขยายความรู้ (Elaborate)","ประเมินผล (Evaluate)"]},
+  inquiry:{name:"สืบเสาะจากหลักฐาน", phases:["ตั้งคำถาม","วางแผนสืบค้น","เก็บและวิเคราะห์หลักฐาน","สร้างคำอธิบาย","สื่อสารและโต้แย้ง"]},
+  math:{name:"สร้างข้อสรุปทางคณิตศาสตร์", phases:["สถานการณ์ปัญหา","สำรวจหลายกรณี","สร้างข้อสรุปทั่วไป","ตรวจสอบและให้เหตุผล","นำไปใช้"]},
+  design:{name:"กระบวนการออกแบบ", phases:["ระบุปัญหาและเกณฑ์","รวบรวมข้อมูลและแนวคิด","ออกแบบทางเลือก","สร้างและทดสอบ","ปรับปรุงและนำเสนอ"]},
+  read:{name:"อ่าน-คิด-สื่อสาร", phases:["ก่อนอ่าน: ดึงความรู้เดิม","ระหว่างอ่าน: ตีความและเก็บหลักฐาน","หลังอ่าน: อภิปรายและเขียน"]},
+  skill:{name:"ฝึกทักษะสู่สถานการณ์จริง", phases:["สังเกตและวิเคราะห์ตัวอย่าง","ฝึกแบบมีผู้ช่วย","ฝึกในสถานการณ์จริง","สะท้อนและปรับ"]},
+  pbl:{name:"ปัญหาเป็นฐาน", phases:["พบปัญหา","ระบุสิ่งที่ต้องรู้","สืบค้นและทำงาน","นำเสนอทางออก","ประเมินและสะท้อน"]},
+  custom:{name:"กำหนดเอง", phases:["ขั้นที่ 1","ขั้นที่ 2","ขั้นที่ 3"]}
+};
+var COMPS = ["การจัดการตนเอง","การคิดขั้นสูง","การสื่อสาร","การรวมพลังทำงานเป็นทีม","การเป็นพลเมืองที่เข้มแข็ง","การอยู่ร่วมกับธรรมชาติและวิทยาการอย่างยั่งยืน"];
+var DIFFS = [
+  {id:"content",name:"ด้านเนื้อหา",d:"ขาดความรู้พื้นฐาน หรือมีความเข้าใจคลาดเคลื่อนที่ทำให้คิดต่อไม่ได้"},
+  {id:"represent",name:"ด้านการตีความปัญหา",d:"เข้าใจโจทย์ เป้าหมาย เกณฑ์ ข้อจำกัด หรือตัวแปรคลาดเคลื่อน"},
+  {id:"process",name:"ด้านกระบวนการคิด",d:"เริ่มไม่ถูก คิดได้ทางเดียว เชื่อมโยงหรือใช้หลักฐานไม่ได้"},
+  {id:"strategic",name:"ด้านกลยุทธ์",d:"รู้ว่าต้องทำอะไร แต่ไม่มีวิธีทำต่อ"},
+  {id:"metacog",name:"ด้านการกำกับความคิด",d:"ไม่รู้ว่าตนติดตรงไหน ไม่ตรวจสอบความคิดของตนเอง"}
+];
+var SCAFF = [
+  {k:"con",name:"เชิงแนวคิด",d:"ช่วยให้เห็นว่าควรพิจารณาอะไร",s:"ภาพหรือคำถามที่ชี้ว่าควรพิจารณาอะไร: "},
+  {k:"str",name:"เชิงกลยุทธ์",d:"ให้วิธีคิดต่อเมื่อติด",s:"เมื่อติด ให้ผู้เรียนลอง: "},
+  {k:"pro",name:"เชิงขั้นตอน",d:"เครื่องมือหรือตัวแทนที่ช่วยทำงาน",s:"ตารางหรือแผนภาพที่ช่วยจัดข้อมูล: "},
+  {k:"met",name:"เชิงอภิปัญญา",d:"ช่วยตรวจและกำกับความคิดตนเอง",s:"คำถามให้ตรวจความคิดตัวเอง: 'หลักฐานไหนทำให้ฉันมั่นใจ'"},
+  {k:"thi",name:"เฉพาะการคิดเป้าหมาย",d:"กระตุ้นการคิดที่ต้องการโดยตรง",s:"กระตุ้นการคิด เช่น 'คิดอีก 2 ทางที่ต่างจากเดิม'"}
+];
+var PROG = [
+  {k:"e",name:"เริ่มต้น (Emerging)",s:"ทำได้เมื่อครูช่วยชี้ "},
+  {k:"d",name:"กำลังพัฒนา (Developing)",s:"เริ่มทำเองได้ แต่ยัง "},
+  {k:"p",name:"ทำได้ (Proficient)",s:"ทำได้เองพร้อมเหตุผล "},
+  {k:"a",name:"ก้าวหน้า (Advanced)",s:"ปรับหรือนำไปใช้กับสถานการณ์ใหม่ได้ "}
+];
+
+/* ---------------- samples ---------------- */
+function SAMPLE(kind){
+  var base={teacher:"ตัวอย่างจาก PCK Canvas",sample:true,mentor:{},diff:[],scaff:{},prog:{}};
+  function mk(o){ for(var k in base) if(!(k in o)) o[k]=JSON.parse(JSON.stringify(base[k])); return o; }
+  function acts(list){ return list.map(function(t,i){ return {name:t[0],act:t[1],min:""}; }); }
+  if(kind==="sci") return mk({
+    title:"ตารางธาตุและสมบัติของธาตุ", subject:"sci", grade:"ม.4", minutes:"100", model:"5e",
+    f:{unit:"ตารางธาตุ",attrs:"ใฝ่เรียนรู้|มุ่งมั่นในการทำงาน",
+      smk_standard:"ตัวชี้วัดเคมี ม.4 เรื่องตารางธาตุและแนวโน้มสมบัติของธาตุ (ตรวจรหัสกับหลักสูตรของโรงเรียน)",
+      smk_core:"ตารางธาตุเรียงตามเลขอะตอม ธาตุหมู่เดียวกันมีสมบัติคล้ายกัน จึงใช้ทำนายสมบัติของธาตุได้",
+      st_ideas:"\"ตารางธาตุเรียงตามมวลอย่างเดียว\" \"ตารางธาตุเป็นแค่ตารางรายชื่อ ไม่ได้บอกอะไร\" \"ธาตุที่อยู่แถวเดียวกันต้องคล้ายกัน\"",
+      obj_k:"อธิบายว่าธาตุหมู่เดียวกันมีสมบัติคล้ายกัน",
+      obj_p:"ทำนายสมบัติของธาตุจากตำแหน่งในตารางได้",
+      obj_a:"ปรับการจัดบัตรของกลุ่มเมื่อเจอข้อมูลที่ขัด",
+      comp_ind:"ใช้ข้อมูลของธาตุเป็นเหตุผลในการทำนาย",
+      suggest:"บัตร 20 ใบมากเกินไปสำหรับเวลา 25 นาที ครั้งหน้าลดเหลือ 16 ใบ กลุ่มที่เสร็จเร็วให้หาบัตรที่ขัดกับระบบของตนเอง"},
+    comp:["การคิดขั้นสูง","การสื่อสาร"],
+    phases:acts([
+      ["สร้างความสนใจ (Engage)","1. ครูชูบัตรธาตุ 4 ใบ ถามว่า \"ใบไหนไม่เข้าพวก เพราะอะไร\"\n2. นักเรียนยกมือเลือกและบอกเหตุผลสั้นๆ"],
+      ["สำรวจและค้นหา (Explore)","3. แบ่งกลุ่ม 4 คน แจกบัตรข้อมูลธาตุ 20 ใบ ปิดชื่อไว้\n4. จัดบัตรเป็นกลุ่มตามเกณฑ์ที่กลุ่มคิด จดเหตุผลลงกระดาษ\n5. วางบัตรเป็นตารางตามระบบของกลุ่ม เว้นที่ว่าง 2 ที่ไว้ให้ธาตุที่ไม่มีบัตร"],
+      ["อธิบายและลงข้อสรุป (Explain)","6. กลุ่มออกมาเล่าวิธีจัดบัตรกลุ่มละ 1 นาที\n7. ครูเปิดตารางธาตุจริงให้เทียบกับของกลุ่ม แล้วสรุปว่าธาตุหมู่เดียวกันมีสมบัติคล้ายกัน"],
+      ["ขยายความรู้ (Elaborate)","8. กลุ่มทำนายสมบัติธาตุที่เว้นช่องไว้ 2 ตัว พร้อมเขียนเหตุผล\n9. ครูเฉลยข้อมูลจริง กลุ่มตรวจคำทำนายของตน"],
+      ["ประเมินผล (Evaluate)","10. แต่ละคนเขียนตอบในกระดาษครึ่งแผ่นว่า \"ระบบของกลุ่มเรากับตารางจริง แบบไหนทำนายได้ดีกว่า เพราะอะไร\""]]),
+    evidence:[{when:"ขยายความรู้",what:"คำทำนายธาตุที่เว้นช่องพร้อมเหตุผล",tells:"นักเรียนร้อยละ 80 ทำนายถูกอย่างน้อย 1 ใน 2 ธาตุ และมีเหตุผล"},
+      {when:"ประเมินผล",what:"กระดาษครึ่งแผ่นท้ายคาบ",tells:"นักเรียนร้อยละ 70 อ้างข้อมูลเทียบ 2 ระบบได้อย่างน้อย 1 ข้อ"}]
+  });
+  if(kind==="thai") return mk({
+    title:"คำถิ่นกับความหมายของคำ", subject:"thai", grade:"ม.4", minutes:"60", model:"5e",
+    f:{unit:"ธรรมชาติของภาษา",attrs:"ใฝ่เรียนรู้|รักความเป็นไทย",
+      smk_standard:"ท 4.1 ม.4-6/1 อธิบายธรรมชาติของภาษา พลังของภาษา และลักษณะของภาษา (ตรวจรหัสกับหลักสูตรของโรงเรียน)",
+      smk_core:"คำแต่ละคำมีความหมายตามที่คนในกลุ่มใช้ร่วมกัน คนต่างถิ่นจึงใช้คำเดียวกันด้วยความหมายต่างกันได้",
+      st_ideas:"\"ภาษาถิ่นพูดผิด\" \"คำนี้ต้องแปลว่าอย่างเดียวกันทั่วประเทศ\" \"พูดภาษาถิ่นแล้วดูบ้านนอก\"",
+      obj_k:"ยกตัวอย่างคำที่ความหมายต่างกันตามถิ่น 3 คำ",
+      obj_p:"เปรียบเทียบคำถิ่นกับคำไทยกลางได้ 5 คำ",
+      obj_a:"ฟังเพื่อนเล่าคำถิ่นจนจบก่อนพูดแทรก",
+      comp_ind:"พูดอธิบายคำถิ่นให้เพื่อนเข้าใจได้",
+      suggest:"บางกลุ่มถามที่บ้านไม่ทันจึงมีคำไม่ครบ ครั้งหน้าบอกการบ้านล่วงหน้า 2 วัน และเตรียมคำสำรองให้กลุ่มละ 3 คำ"},
+    comp:["การสื่อสาร","การรวมพลังทำงานเป็นทีม"],
+    phases:acts([
+      ["สร้างความสนใจ (Engage)","1. ครูถามว่า \"ใครเคยฟังคนต่างจังหวัดพูดแล้วไม่เข้าใจบ้าง คำว่าอะไร\"\n2. นักเรียน 3 คนเล่า ครูเขียนคำบนกระดาน"],
+      ["สำรวจและค้นหา (Explore)","3. กลุ่มละ 4 คน เอาคำถิ่นที่ถามจากที่บ้านมาคนละ 2 คำ\n4. กรอกตาราง คำถิ่น ความหมาย ประโยคตัวอย่าง คำไทยกลาง\n5. เลือกคำที่คนต่างถิ่นน่าจะเข้าใจผิดที่สุด 1 คำ"],
+      ["อธิบายและลงข้อสรุป (Explain)","6. สุ่ม 4 กลุ่มเล่าคำที่เลือกกลุ่มละ 1 นาที เพื่อนบอกว่าเข้าใจตรงกันไหม\n7. ครูสรุปบนกระดานว่าความหมายมาจากที่คนในกลุ่มใช้ร่วมกัน ให้จดลงสมุด"],
+      ["ขยายความรู้ (Elaborate)","8. กลุ่มทำพจนานุกรมคำถิ่นของห้อง 5 คำ ลงกระดาษ A4\n9. ทุกคำมีประโยคตัวอย่างและหมายเหตุว่าคนต่างถิ่นอาจเข้าใจผิดอย่างไร"],
+      ["ประเมินผล (Evaluate)","10. สุ่ม 3 กลุ่มนำเสนอกลุ่มละ 1 นาที แล้วตอบว่า \"ถ้าเป็นคนต่างถิ่นจะเข้าใจคำนี้ผิดเป็นอะไร\""]]),
+    evidence:[{when:"ขยายความรู้",what:"พจนานุกรมคำถิ่น 5 คำของกลุ่ม",tells:"กลุ่มร้อยละ 80 ทำครบ 5 คำ มีประโยคตัวอย่างและหมายเหตุ"},
+      {when:"ประเมินผล",what:"คำตอบของกลุ่มที่นำเสนอ",tells:"ทั้ง 3 กลุ่มบอกได้ว่าคนต่างถิ่นจะเข้าใจคำนี้ผิดเป็นอะไร"}]
+  });
+  return mk({
+    title:"การลบจำนวนเต็มด้วยเหรียญสองสี", subject:"math", grade:"ม.1", minutes:"60", model:"math",
+    f:{unit:"จำนวนเต็ม",attrs:"ใฝ่เรียนรู้|มุ่งมั่นในการทำงาน",
+      smk_standard:"ตัวชี้วัดคณิตศาสตร์ ม.1 เรื่องการบวก ลบจำนวนเต็มและนำไปแก้ปัญหา (ตรวจรหัสกับหลักสูตรของโรงเรียน)",
+      smk_core:"จำนวนบวกกับจำนวนลบที่เท่ากันหักล้างกันเป็นศูนย์ การลบด้วยจำนวนใดจึงเท่ากับการบวกด้วยจำนวนตรงข้ามของจำนวนนั้น",
+      st_ideas:"\"ลบแล้วต้องน้อยลงเสมอ\" \"5 − (−3) ต้องได้ 2\" \"ไม่มีเหรียญลบให้หยิบออก ลบไม่ได้\"",
+      obj_k:"อธิบายการลบจำนวนเต็มโดยใช้จำนวนตรงข้าม",
+      obj_p:"หาผลลบจำนวนเต็มด้วยเหรียญสองสีได้ถูกต้อง",
+      obj_a:"ฟังเหตุผลของเพื่อนจนจบก่อนแสดงความเห็น",
+      comp_ind:"บอกเหตุผลของคำตอบให้เพื่อนฟังได้",
+      suggest:"บางกลุ่มติดตอนไม่มีเหรียญให้หยิบออกแล้วนั่งรอ ครั้งหน้าทำให้ดู 1 ข้อก่อน และเผื่อเวลาขั้นสรุปอีก 5 นาที"},
+    comp:["การคิดขั้นสูง","การสื่อสาร"],
+    phases:acts([
+      ["สถานการณ์ปัญหา","1. ครูถามว่า \"ในตู้แช่ไอศกรีมติดลบ 3 องศา พอเอาออกมาวางนอกตู้ได้ 5 องศา อุณหภูมิเปลี่ยนกี่องศา\"\n2. เขียนคำตอบและวิธีคิดลงกระดาษ แล้วบอกเพื่อนข้างๆ"],
+      ["สำรวจหลายกรณี","3. กลุ่มละ 4 คน รับเหรียญแดง (ลบ) เหรียญเหลือง (บวก) กลุ่มละ 20 เหรียญ\n4. ทำ 5 − 2, 5 − (−2), −4 − 1, −4 − (−1) จดผลลงตาราง\n5. ถ้าไม่มีเหรียญให้หยิบออก ลองเติมเหรียญแดงกับเหลืองอย่างละเท่ากันก่อน"],
+      ["สร้างข้อสรุปทั่วไป","6. กลุ่มดูตารางของตนแล้วบอกว่าเห็นอะไรซ้ำกัน\n7. ครูเขียนสรุปบนกระดาน ลบจำนวนใดเท่ากับบวกด้วยจำนวนตรงข้าม ให้จดลงสมุด"],
+      ["ตรวจสอบและให้เหตุผล","8. กลุ่มลองข้อสรุปกับโจทย์ใหม่ 3 ข้อ เช่น −7 − (−9) แล้วใช้เหรียญตรวจ\n9. สุ่ม 2 กลุ่มออกมาทำโจทย์ 1 ข้อด้วยเหรียญหน้าห้อง ให้เพื่อนดูว่าตรงกับข้อสรุปไหม"],
+      ["นำไปใช้","10. ทำใบงาน 4 ข้อ ข้อ 4 เขียนอธิบายว่าทำไม 5 − (−3) ได้ 8"]]),
+    evidence:[{when:"สำรวจหลายกรณี",what:"ตารางผลลบที่จดจากเหรียญ",tells:"นักเรียนร้อยละ 80 ทำถูกอย่างน้อย 3 ใน 4 กรณี"},
+      {when:"นำไปใช้",what:"ใบงาน 4 ข้อท้ายคาบ",tells:"นักเรียนร้อยละ 70 ตอบถูก 3 ใน 4 ข้อ และข้อ 4 เขียนเหตุผลโดยใช้จำนวนตรงข้าม"}]
+  });
+}
+
+/* ---------------- utils ---------------- */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function uid(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function filled(t){return !!(t&&String(t).trim().length>=5)}
+var toastT;
+var lastSave="", closeMenu=function(){};
+function toast(m){
+  var s=$("#save-state"), strip=$("#strip");
+  if(s&&strip&&!strip.hidden){ clearTimeout(toastT); s.textContent=m; s.classList.add("msg"); toastT=setTimeout(function(){ s.classList.remove("msg"); s.innerHTML=lastSave; },3500); return; }
+  var el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove("on")},2600);
+}
+function debounce(fn,ms){var t;return function(){var a=arguments,s=this;clearTimeout(t);t=setTimeout(function(){fn.apply(s,a)},ms)}}
+
+/* ---------------- storage ---------------- */
+var KEY="pckcanvas.v1";
+var store={list:[],current:null};
+function load(){try{var raw=localStorage.getItem(KEY);if(raw){var d=JSON.parse(raw);if(d&&Array.isArray(d.list))store=d;}}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(store));lastSave="✓ บันทึกแล้ว"; var ss=$("#save-state"); if(!ss.classList.contains("msg")) ss.innerHTML=lastSave;}catch(e){$("#save-state").textContent="บันทึกในเบราว์เซอร์ไม่ได้ ลองพิมพ์ PDF เก็บไว้ก่อน";}}
+var persistSoon=debounce(persist,500);
+function cur(){for(var i=0;i<store.list.length;i++){if(store.list[i].id===store.current)return store.list[i]}return null}
+function normalize(c){
+  c.f=c.f||{}; c.comp=c.comp||[]; c.diff=c.diff||[]; c.scaff=c.scaff||{}; c.prog=c.prog||{}; c.mentor=c.mentor||{};
+  c.levels=c.levels||{};
+  if(!SUBJECTS[c.subject]) c.subject="sci";
+  if(!MODELS[c.model]) c.model=SUBJECTS[c.subject].model;
+  if(!Array.isArray(c.phases)||!c.phases.length) c.phases=MODELS[c.model].phases.map(function(n){return {name:n,act:"",min:""}});
+  if(!Array.isArray(c.decisions)||!c.decisions.length) c.decisions=[{moment:"",see:"",means:"",do:""}];
+  if(!Array.isArray(c.evidence)||!c.evidence.length) c.evidence=[{when:"",what:"",tells:""}];
+  return c;
+}
+function newCanvas(o){
+  o=o||{}; var c=normalize({id:uid(),title:o.title||"",subject:o.subject||"sci",grade:o.grade||"",minutes:"",teacher:"",levels:{},model:null,updated:Date.now()});
+  store.list.unshift(c); store.current=c.id; persist(); return c;
+}
+function openSample(kind){
+  var s=SAMPLE(kind); s.id=uid(); s.updated=Date.now(); normalize(s);
+  store.list.unshift(s); store.current=s.id; persist();
+  closeDlg("#dlg-mine"); closeMenu(false);
+  renderCanvas(); window.scrollTo(0,0);
+  toast("เปิดตัวอย่างแล้ว");
+}
+
+/* ---------------- one-page lesson plan: sections ---------------- */
+// The sheet follows the school lesson-plan template; every section still maps to the
+// original Canvas data (pckcanvas.v1), so nothing written before is lost.
+var ATTRS=["รักชาติ ศาสน์ กษัตริย์","ซื่อสัตย์สุจริต","มีวินัย","ใฝ่เรียนรู้","อยู่อย่างพอเพียง","มุ่งมั่นในการทำงาน","รักความเป็นไทย","มีจิตสาธารณะ"];
+// Suggested length per field (it matches the fixed boxes of the printed page).
+var LIM={title:70,smk_standard:130,smk_core:150,obj_k:56,obj_p:56,obj_a:56,comp_ind:90,st_ideas:150,act:200,what:64,tells:64,suggest:200};
+var PH={smk_standard:"ตัวชี้วัดที่สอนในคาบนี้",smk_core:"สิ่งสำคัญที่อยากให้นักเรียนเข้าใจจากเรื่องนี้",
+  obj_k:"นักเรียนบอกได้ว่า …",obj_p:"นักเรียนทำ … ได้",obj_a:"นักเรียนเห็นคุณค่าของ …",
+  comp_ind:"ดูได้จากที่นักเรียน … (ไม่บังคับ)",st_ideas:"นักเรียนมักเข้าใจผิดว่า …",
+  act:"1. ครู … นักเรียน …",what:"วัดจากอะไร เช่น ใบงาน คำตอบ",tells:"นักเรียนร้อยละ … ทำได้ …",suggest:"ครั้งหน้าจะปรับ …"};
+// The sheet follows the school template: the Canvas core (big idea, objectives, misconceptions, activities, evidence) in nine boxes.
+var SECTIONS=[
+  {id:"standard",title:"มาตรฐานการเรียนรู้และตัวชี้วัด"},
+  {id:"core",title:"สาระสำคัญ"},
+  {id:"obj",title:"จุดประสงค์การเรียนรู้"},
+  {id:"comp",title:"สมรรถนะสำคัญของผู้เรียน"},
+  {id:"attrs",title:"คุณลักษณะอันพึงประสงค์"},
+  {id:"ideas",title:"สิ่งที่นักเรียนมักเข้าใจผิด"},
+  {id:"acts",title:"การจัดกิจกรรมการเรียนรู้"},
+  {id:"eval",title:"การวัดและประเมินผล"},
+  {id:"suggest",title:"ข้อเสนอแนะในการจัดกิจกรรมครั้งต่อไป"}
+];
+var SEC={}; SECTIONS.forEach(function(s){SEC[s.id]=s;});
+// which section shows a field (for the fit check's "go to field")
+var FIELD_SEC={smk_standard:"standard",smk_core:"core",obj_k:"obj",obj_p:"obj",obj_a:"obj",comp:"comp",comp_ind:"comp",attrs:"attrs",
+  st_ideas:"ideas",phases:"acts",evidence:"eval",suggest:"suggest",unit:"head",school:"head",title:"head"};
+// fields kept in the data but not on the sheet (shown in "ข้อมูลเพิ่มเติมจากแผนเดิม" when they hold text)
+var LEGACY_AREAS=["smk_know", "task_action", "nt_attend", "nt_interpret", "nt_respond", "smk_emphasize", "smk_reduce", "smk_before", "smk_why", "smk_after", "smk_limits", "st_frame", "st_diff_note", "st_context", "rep_choice", "rep_limit", "task_context", "task_conditions", "fading", "ev_min", "ev_nonex", "nt_transfer"];
+var LEGACY_LABEL={"smk_know": "เรารู้เรื่องนี้ได้อย่างไร", "task_action": "ภารกิจหลักของผู้เรียน", "nt_attend": "ฉันเห็นหรือได้ยินอะไรจากผู้เรียน", "nt_interpret": "สิ่งนั้นบอกอะไรเกี่ยวกับการคิดของผู้เรียน", "nt_respond": "ครั้งต่อไปฉันจะปรับอะไร เพราะอะไร", "smk_emphasize": "สิ่งที่ควรเน้น", "smk_reduce": "สิ่งที่ควรลด", "smk_before": "ความรู้ก่อนหน้าที่เป็นราก", "smk_why": "ทำไมผู้เรียนต้องรู้เรื่องนี้", "smk_after": "ความรู้ถัดไปและการเชื่อมข้ามศาสตร์", "smk_limits": "เงื่อนไขและข้อจำกัดของความรู้", "st_frame": "ความคิดนั้นมาจากไหน และใช้เป็นทรัพยากรได้อย่างไร", "st_diff_note": "ความยากที่สำคัญที่สุด", "st_context": "ผู้เรียนของฉันและบริบท", "rep_choice": "ตัวแทนความรู้ที่ใช้ (representations)", "rep_limit": "ตัวแทนนี้แสดงอะไรไม่ได้", "task_context": "บริบทของภารกิจ", "task_conditions": "เงื่อนไขและข้อจำกัดของภารกิจ", "fading": "แผนลดการช่วยเหลือ", "ev_min": "หลักฐานขั้นต่ำ", "ev_nonex": "สิ่งที่ดูเหมือนคิด แต่ยังไม่ใช่ (non-example)", "nt_transfer": "หลักฐานว่าผู้เรียนนำการคิดไปใช้ในภารกิจใหม่ได้"};
+var MENTOR_NAME={z1:"ตัวชี้วัด สาระสำคัญ และวิธีรู้",z2:"ความคิดเดิมของผู้เรียน",z3:"จุดประสงค์ สมรรถนะ และภารกิจ",z4:"กิจกรรมและจุดตัดสินใจ",z5:"การวัดและประเมินผล",z6:"บันทึกหลังสอน"};
+var FIELD_NAME={title:"ชื่อเรื่อง",smk_standard:"ตัวชี้วัด",smk_core:"สาระสำคัญ",st_ideas:"สิ่งที่มักเข้าใจผิด",comp_ind:"สมรรถนะ",obj_k:"จุดประสงค์ K",obj_p:"จุดประสงค์ P",obj_a:"จุดประสงค์ A",suggest:"ข้อเสนอแนะ"};
+function fieldName(id){ return FIELD_NAME[id]||id; }
+
+function attrList(c){ return (c.f.attrs||"").split("|").filter(function(x){return x}); }
+function legacyFilled(c){
+  var out=LEGACY_AREAS.filter(function(id){return filled(c.f[id])});
+  if(c.diff.length) out.push("diff");
+  if(SCAFF.some(function(x){return filled(c.scaff[x.k])})) out.push("scaff");
+  if(PROG.some(function(p){return filled(c.prog[p.k])})) out.push("prog");
+  if(Object.keys(MENTOR_NAME).some(function(z){return filled(c.mentor[z])})) out.push("mentor");
+  if(hiddenRows(c).length) out.push("rows");
+  return out;
+}
+// text inside table rows that the sheet no longer shows (e.g. "แปลว่า" in decisions, "เมื่อไร" in evidence)
+var ROW_HIDDEN={decisions:{moment:"จุดตัดสินใจ: ช่วงที่เกิดขึ้น",see:"จุดตัดสินใจ: ถ้าเห็นหรือได้ยิน",means:"จุดตัดสินใจ: แปลว่า","do":"จุดตัดสินใจ: ครูจะ"},evidence:{when:"การวัด: เมื่อไร"}};
+function hiddenRows(c){
+  var out=[]; Object.keys(ROW_HIDDEN).forEach(function(arr){ c[arr].forEach(function(row,i){ Object.keys(ROW_HIDDEN[arr]).forEach(function(k){ if(filled(row[k])) out.push({arr:arr,i:i,k:k,label:ROW_HIDDEN[arr][k]+(c[arr].length>1?" (แถว "+(i+1)+")":"")}); }); }); });
+  return out;
+}
+
+/* ---------------- sheet rendering ---------------- */
+function ta(key,val,o){
+  // o: {lim, ph, rows, attr (data-* string), label (sr label)}
+  var lim=o.lim||0, n=(val||"").length, id="i-"+key;
+  return (o.label?'<label class="sr" for="'+id+'">'+esc(o.label)+'</label>':'')+
+    '<textarea class="ln" id="'+id+'" rows="'+(o.rows||1)+'" '+o.attr+(lim?' data-lim="'+lim+'"':'')+' placeholder="'+esc(o.ph||"")+'">'+esc(val||"")+'</textarea>'+
+    (lim?'<div class="cnt'+(n>lim?' over':'')+'" id="cn-'+key+'"'+(n>lim*0.8?'':' hidden')+'>'+n+'/'+lim+'</div>':'');
+}
+function fta(id,c,o){ o=o||{}; o.attr='data-f="'+id+'"'; o.lim=o.lim||LIM[id]; o.ph=o.ph||PH[id]; return ta(id,c.f[id],o); }
+function secHtml(s,c,body){
+  return '<section class="sec'+(s.id==="core"?' grow':'')+'" id="sec-'+s.id+'" aria-labelledby="h-'+s.id+'"><div class="sec-h"><h2 id="h-'+s.id+'">'+esc(s.title)+(s.tag?'<small>'+esc(s.tag)+'</small>':'')+'</h2></div>'+
+    '<div class="sec-b">'+body+'</div></section>';
+}
+function bodyFor(s,c){
+  switch(s.id){
+    case "standard": return fta("smk_standard",c,{label:"มาตรฐานการเรียนรู้และตัวชี้วัด",rows:2});
+    case "core": return fta("smk_core",c,{label:"สาระสำคัญ",rows:2});
+    case "obj": return '<div class="kpa">'+[["obj_k","K","ด้านความรู้ (K)"],["obj_p","P","ด้านทักษะและการคิด (P)"],["obj_a","A","ด้านเจตคติ (A)"]].map(function(x){
+        return '<div class="r"><b aria-hidden="true">'+x[1]+'</b><div>'+fta(x[0],c,{label:"จุดประสงค์"+x[2]})+'</div></div>'}).join("")+'</div>';
+    case "comp": return '<div class="ticks" role="group" aria-label="สมรรถนะ">'+COMPS.map(function(x){return '<label class="ck"><input type="checkbox" data-chip="'+esc(x)+'"'+(c.comp.indexOf(x)>=0?' checked':'')+'><span>'+esc(x)+'</span></label>'}).join("")+'</div>'+
+        '<div><span class="sub-l" aria-hidden="true">เห็นได้จาก</span>'+fta("comp_ind",c,{label:"สมรรถนะเห็นได้จาก"})+'</div>';
+    case "attrs": var al=attrList(c); return '<div class="ticks" role="group" aria-label="คุณลักษณะอันพึงประสงค์">'+ATTRS.map(function(x){return '<label class="ck"><input type="checkbox" data-attr="'+esc(x)+'"'+(al.indexOf(x)>=0?' checked':'')+'><span>'+esc(x)+'</span></label>'}).join("")+'</div>';
+    case "ideas": return fta("st_ideas",c,{label:"สิ่งที่นักเรียนมักเข้าใจผิด",rows:2});
+    case "acts":
+      var opts=Object.keys(MODELS).map(function(k){return '<option value="'+k+'"'+(c.model===k?" selected":"")+'>'+esc(MODELS[k].name)+'</option>'}).join("");
+      var h='<div class="acts-top"><label for="i-model">รูปแบบ</label><select id="i-model" data-model>'+opts+'</select></div><div class="acts" style="--n:'+c.phases.length+'">';
+      c.phases.forEach(function(p,i){
+        h+='<div class="act"><div class="pill">'+(c.model==="custom"?'<label class="sr" for="ph-n-'+i+'">ชื่อขั้นที่ '+(i+1)+'</label><input id="ph-n-'+i+'" data-arr="phases" data-i="'+i+'" data-k="name" value="'+esc(p.name)+'">':(i+1)+'. '+esc(p.name))+'</div>'+
+          ta("act"+i,p.act,{attr:'data-arr="phases" data-i="'+i+'" data-k="act"',lim:LIM.act,ph:PH.act,rows:3,label:"ขั้น "+(p.name||(i+1))})+'</div>';
+      });
+      return h+'</div>';
+    case "eval":
+      var e='<div class="rows">';
+      c.evidence.forEach(function(x,i){
+        e+='<div class="drow" style="--c:2"><div><span class="sub-l" aria-hidden="true">การวัด</span>'+ta("what"+i,x.what,{attr:'data-arr="evidence" data-i="'+i+'" data-k="what"',lim:LIM.what,ph:PH.what,label:"การวัด "+(i+1)+" วัดจาก"})+'</div>'+
+          '<div><span class="sub-l" aria-hidden="true">การประเมินผล (เกณฑ์)</span>'+ta("tells"+i,x.tells,{attr:'data-arr="evidence" data-i="'+i+'" data-k="tells"',lim:LIM.tells,ph:PH.tells,label:"การวัด "+(i+1)+" การประเมินผล"})+'</div>'+
+          (c.evidence.length>1?'<button type="button" class="del" data-del="evidence" data-i="'+i+'">ลบ<span class="sr"> การวัด '+(i+1)+'</span></button>':'<span></span>')+'</div>';
+      });
+      return e+'</div><button type="button" class="btn small add" data-add="evidence">+ เพิ่มการวัด</button>';
+    case "suggest": return fta("suggest",c,{label:"ข้อเสนอแนะในการจัดกิจกรรมครั้งต่อไป",rows:3});
+  }
+  return "";
+}
+function headHtml(c){
+  function dl(lab,inner,cls){ return '<div class="dl '+(cls||"")+'">'+lab+inner+'</div>'; }
+  return '<header class="ph" id="sec-head"><div class="ph-k">แผนการจัดการเรียนรู้</div>'+
+    '<label class="sr" for="m-title">เรื่องที่สอน</label><input class="ph-title" id="m-title" data-meta="title" maxlength="120" placeholder="ชื่อเรื่องที่จะสอน" value="'+esc(c.title||"")+'">'+
+    '<div class="ph-grid">'+
+      dl('<label for="m-subject">กลุ่มสาระ</label>','<select id="m-subject" data-meta="subject">'+subjOptions(c.subject)+'</select>','w3 wide')+
+      dl('<label for="m-grade">ชั้น</label>','<input id="m-grade" data-meta="grade" placeholder="ม.1" value="'+esc(c.grade||"")+'">','')+
+      dl('<label for="m-min">เวลา</label>','<input id="m-min" data-meta="minutes" inputmode="numeric" placeholder="60" value="'+esc(c.minutes||"")+'"><span class="unit">นาที</span>','w2')+
+      dl('<label for="i-unit">หน่วยการเรียนรู้</label>','<input id="i-unit" data-f="unit" placeholder="ไม่บังคับ" value="'+esc(c.f.unit||"")+'">','w3 wide')+
+      dl('<label for="m-teacher">ครูผู้สอน</label>','<input id="m-teacher" data-meta="teacher" placeholder="ชื่อ-นามสกุล" value="'+esc(c.teacher||"")+'">','w3 wide')+
+      dl('<label for="i-school">โรงเรียน</label>','<input id="i-school" data-f="school" placeholder="ไม่บังคับ" value="'+esc(c.f.school||"")+'">','w4 wide')+
+    '</div></header>';
+}
+// Everything the earlier Canvas versions stored that is no longer on the sheet stays here, editable, and is not printed.
+function extraHtml(c){
+  var ids=legacyFilled(c); if(!ids.length) return "";
+  var h='<details class="extra" id="extra"><summary>ข้อมูลเพิ่มเติมจากแผนเดิม ('+ids.length+') · ไม่พิมพ์</summary><p class="note">ช่องเหล่านี้มาจาก Canvas รุ่นก่อน ยังแก้ไขได้ และเก็บไว้ครบ แต่ไม่อยู่ในหน้ากระดาษ</p><div class="grid">';
+  LEGACY_AREAS.forEach(function(id){ if(!filled(c.f[id])) return; h+='<div><span class="sub-l" aria-hidden="true">'+esc(LEGACY_LABEL[id])+'</span>'+ta(id,c.f[id],{attr:'data-f="'+id+'"',rows:2,label:LEGACY_LABEL[id]})+'</div>'; });
+  if(c.diff.length) h+='<div class="ticks" role="group" aria-label="ความยากที่น่าจะเกิด">'+DIFFS.map(function(d){return '<label class="ck"><input type="checkbox" data-check="'+d.id+'"'+(c.diff.indexOf(d.id)>=0?' checked':'')+'><span>'+esc(d.name)+'</span></label>'}).join("")+'</div>';
+  SCAFF.forEach(function(x){ if(filled(c.scaff[x.k])) h+='<div><span class="sub-l" aria-hidden="true">การช่วยเหลือ: '+esc(x.name)+'</span>'+ta("scaff-"+x.k,c.scaff[x.k],{attr:'data-obj="scaff" data-k="'+x.k+'"',rows:2,label:"การช่วยเหลือ "+x.name})+'</div>'; });
+  PROG.forEach(function(x){ if(filled(c.prog[x.k])) h+='<div><span class="sub-l" aria-hidden="true">ระดับพัฒนาการ: '+esc(x.name)+'</span>'+ta("prog-"+x.k,c.prog[x.k],{attr:'data-obj="prog" data-k="'+x.k+'"',rows:2,label:"ระดับพัฒนาการ "+x.name})+'</div>'; });
+  Object.keys(MENTOR_NAME).forEach(function(z){ if(filled(c.mentor[z])) h+='<div><span class="sub-l" aria-hidden="true">ความเห็นพี่เลี้ยง: '+esc(MENTOR_NAME[z])+'</span>'+ta("mt-"+z,c.mentor[z],{attr:'data-obj="mentor" data-k="'+z+'"',rows:2,label:"ความเห็นพี่เลี้ยง "+MENTOR_NAME[z]})+'</div>'; });
+  hiddenRows(c).forEach(function(r){ h+='<div><span class="sub-l" aria-hidden="true">'+esc(r.label)+'</span>'+ta("row-"+r.arr+r.i+r.k,c[r.arr][r.i][r.k],{attr:'data-arr="'+r.arr+'" data-i="'+r.i+'" data-k="'+r.k+'"',rows:2,label:r.label})+'</div>'; });
+  return h+'</div></details>';
+}
+function renderCanvas(){
+  var c=cur();
+  if(!c&&store.list.length){ store.current=store.list[0].id; c=cur(); }
+  if(!c){ $("#sheet").innerHTML='<div class="paper"><div class="empty"><p>ยังไม่มีแผนในเบราว์เซอร์นี้</p><p style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" type="button" id="b-first">เริ่มแผนใหม่</button><button class="btn" type="button" data-sample="math">ดูตัวอย่างคณิตศาสตร์</button><button class="btn" type="button" data-sample="sci">ดูตัวอย่างวิทยาศาสตร์</button><button class="btn" type="button" data-sample="thai">ดูตัวอย่างภาษาไทย</button></p></div></div>'; refreshStrip(); var b=$("#b-first"); if(b) b.onclick=openOnboarding; return; }
+  normalize(c);
+  var S=function(id){ return secHtml(SEC[id],c,bodyFor(SEC[id],c)); };
+  var h='<article class="paper" aria-label="แผนการจัดการเรียนรู้">'+headHtml(c)+
+    '<div class="row2"><div class="col l">'+S("standard")+S("core")+'</div><div class="col">'+S("obj")+S("comp")+S("attrs")+'</div></div>'+
+    S("ideas")+S("acts")+'<div class="row2">'+S("eval")+S("suggest")+'</div>'+
+    '<footer class="paper-f"><span>PCK Canvas · Edu2Impact</span><span>ครูผู้สอน '+esc(c.teacher||"…………………")+'</span></footer></article>'+extraHtml(c);
+  $("#sheet").innerHTML=h;
+  $$("#sheet textarea.ln").forEach(autosize);
+  refreshStrip();
+}
+function autosize(el){ el.style.height="auto"; if(el.closest(".grow")){ el.style.minHeight="0"; el.style.minHeight=(el.scrollHeight+2)+"px"; el.style.height=""; } else el.style.height=(el.scrollHeight+2)+"px"; }
+function rerenderSec(id){
+  var c=cur(), s=SEC[id], old=$("#sec-"+id); if(!c||!s||!old) return;
+  var w=document.createElement("div"); w.innerHTML=secHtml(s,c,bodyFor(s,c)); old.replaceWith(w.firstChild);
+  $$("#sec-"+id+" textarea.ln").forEach(autosize);
+}
+function refreshStrip(){
+  var c=cur(), strip=$("#strip"); if(!strip) return;
+  if(!c){ strip.hidden=true; syncHdr(); return; }
+  strip.hidden=false;
+  $("#strip-title").textContent=c.title||"แผนที่ยังไม่มีชื่อ";
+  syncHdr();
+}
+function syncHdr(){
+  var r=document.documentElement.style, top=$(".top"), strip=$("#strip");
+  r.setProperty("--hdr",(top?top.offsetHeight:56)+"px");
+  r.setProperty("--strip",(strip&&!strip.hidden?strip.offsetHeight:0)+"px");
+}
+function goField(id){
+  var sid=FIELD_SEC[id]||id, el=sid==="head"?$("#sec-head"):$("#sec-"+sid); if(!el) return;
+  el.scrollIntoView({block:"start"});
+  var inp=$("#i-"+id)||el.querySelector("textarea,input,select"); if(inp) inp.focus({preventScroll:true});
+}
+function touch(){var c=cur();if(c){c.updated=Date.now();persistSoon();var ss=$("#save-state"); if(!ss.classList.contains("msg")) ss.textContent="กำลังบันทึก…";}}
+function counter(el){
+  var lim=+el.getAttribute("data-lim"); if(!lim) return; var key=el.id.replace(/^i-/,""), cn=$("#cn-"+key); if(!cn) return;
+  var n=el.value.length; cn.textContent=n+"/"+lim; cn.hidden=n<=lim*0.8; cn.classList.toggle("over",n>lim);
+}
+
+/* ---------------- events ---------------- */
+function bindCanvas(){
+  var sheet=$("#sheet");
+  sheet.addEventListener("input",function(e){
+    var t=e.target, c=cur(); if(!c) return;
+    if(t.matches("textarea.ln")){ autosize(t); counter(t); }
+    if(t.hasAttribute("data-meta")){ var k=t.getAttribute("data-meta"); if(t.tagName!=="SELECT"){ c[k]=t.value; if(k==="title") refreshStrip(); touch(); } return; }
+    if(t.hasAttribute("data-f")){ c.f[t.getAttribute("data-f")]=t.value; touch(); return; }
+    if(t.hasAttribute("data-obj")){ c[t.getAttribute("data-obj")][t.getAttribute("data-k")]=t.value; touch(); return; }
+    if(t.hasAttribute("data-arr")){ c[t.getAttribute("data-arr")][+t.getAttribute("data-i")][t.getAttribute("data-k")]=t.value; touch(); return; }
+  });
+  sheet.addEventListener("change",function(e){
+    var t=e.target, c=cur(); if(!c) return;
+    if(t.hasAttribute("data-chip")){ var v=t.getAttribute("data-chip"), i=c.comp.indexOf(v); if(t.checked&&i<0)c.comp.push(v); if(!t.checked&&i>=0)c.comp.splice(i,1); touch(); return; }
+    if(t.hasAttribute("data-attr")){ var al=attrList(c), a=t.getAttribute("data-attr"), j=al.indexOf(a); if(t.checked&&j<0)al.push(a); if(!t.checked&&j>=0)al.splice(j,1); c.f.attrs=al.join("|"); touch(); return; }
+    if(t.hasAttribute("data-check")){ var id=t.getAttribute("data-check"), k=c.diff.indexOf(id); if(t.checked&&k<0)c.diff.push(id); if(!t.checked&&k>=0)c.diff.splice(k,1); touch(); return; }
+    if(t.hasAttribute("data-model")){ var m=t.value, old=c.phases; c.model=m; c.phases=MODELS[m].phases.map(function(n,ix){return {name:n,act:old[ix]?old[ix].act:"",min:old[ix]?old[ix].min:""}}); rerenderSec("acts"); touch(); toast("ใช้ "+MODELS[m].name); return; }
+    if(t.hasAttribute("data-meta")&&t.tagName==="SELECT"){ c.subject=t.value; var empty=c.phases.every(function(p){return !filled(p.act)}); if(empty){ c.model=SUBJECTS[c.subject].model; c.phases=MODELS[c.model].phases.map(function(n){return {name:n,act:"",min:""}}); } touch(); renderCanvas(); toast("เปลี่ยนเป็น "+SUBJECTS[c.subject].name); return; }
+  });
+  sheet.addEventListener("click",function(e){
+    var t=e.target.closest("button"); var c=cur(); if(!c||!t) return;
+    if(t.hasAttribute("data-add")){ var arr=t.getAttribute("data-add"); if(arr==="evidence") c.evidence.push({when:"",what:"",tells:""}); rerenderSec(FIELD_SEC[arr]); touch(); var last=$$("#sec-"+FIELD_SEC[arr]+" textarea"); last=last[last.length-2]; if(last) last.focus(); return; }
+    if(t.hasAttribute("data-del")){ var a=t.getAttribute("data-del"), ix=+t.getAttribute("data-i"); c[a].splice(ix,1); rerenderSec(FIELD_SEC[a]); touch(); return; }
+  });
+  window.addEventListener("resize",debounce(syncHdr,100));
+  // "เพิ่มเติม" menu: click, arrows, Home/End, Esc, Tab; the page behind is inert while it is open
+  var more=$("#b-more"), menu=$("#more-menu"), items=function(){return $$("button",menu)};
+  var behind=function(on){ ["#cv","#strip .stat","#b-print"].forEach(function(s){ var el=$(s); if(el){ if(on) el.setAttribute("inert",""); else el.removeAttribute("inert"); } }); };
+  closeMenu=function(focusBtn){ if(menu.hidden) return; menu.hidden=true; $("#more-bd").hidden=true; behind(false); more.setAttribute("aria-expanded","false"); if(focusBtn) more.focus(); };
+  var openMenu=function(idx){ menu.hidden=false; $("#more-bd").hidden=false; behind(true); more.setAttribute("aria-expanded","true"); var it=items(); (idx<0?it[it.length-1]:it[idx||0]).focus(); };
+  more.addEventListener("click",function(){ if(menu.hidden) openMenu(0); else closeMenu(true); });
+  more.addEventListener("keydown",function(e){ if(e.key==="ArrowDown"){e.preventDefault();openMenu(0);} if(e.key==="ArrowUp"){e.preventDefault();openMenu(-1);} });
+  menu.addEventListener("keydown",function(e){ var it=items(), i=it.indexOf(document.activeElement);
+    if(e.key==="ArrowDown"){e.preventDefault();it[(i+1)%it.length].focus();}
+    else if(e.key==="ArrowUp"){e.preventDefault();it[(i-1+it.length)%it.length].focus();}
+    else if(e.key==="Home"){e.preventDefault();it[0].focus();} else if(e.key==="End"){e.preventDefault();it[it.length-1].focus();}
+    else if(e.key==="Escape"){e.preventDefault();closeMenu(true);} else if(e.key==="Tab"){closeMenu(false);} });
+  menu.addEventListener("click",function(e){ if(e.target.closest("button")) closeMenu(false); });
+  $("#more-bd").addEventListener("click",function(){ closeMenu(false); });
+}
+
+/* ---------------- one A4 page: print and fit check ---------------- */
+// The printed plan is one A4 page made of fixed boxes (same layout whatever is written).
+// Text that does not fit a box is reported before printing; it is never cut silently.
+var PRINT_BOX={standard:{name:"ตัวชี้วัด",go:"smk_standard"},core:{name:"สาระสำคัญ",go:"smk_core"},obj:{name:"จุดประสงค์การเรียนรู้",go:"obj_k"},
+  comp:{name:"สมรรถนะสำคัญ (เห็นได้จาก)",go:"comp_ind"},attrs:{name:"คุณลักษณะอันพึงประสงค์",go:"attrs"},ideas:{name:"สิ่งที่นักเรียนมักเข้าใจผิด",go:"st_ideas"},
+  eval:{name:"การวัดและประเมินผล",go:"what0"},suggest:{name:"ข้อเสนอแนะในการจัดกิจกรรมครั้งต่อไป",go:"suggest"}};
+function boxInfo(key){
+  var m=/^act(\d)$/.exec(key); if(m) return {name:"กิจกรรมขั้นที่ "+(+m[1]+1),go:"act"+m[1]};
+  return PRINT_BOX[key];
+}
+function psHtml(c,clip){
+  clip=clip||[];
+  function v(val){ return '<div class="v">'+esc(val||"")+'</div>'; }
+  function box(key,t,inner,cls){ return '<section class="box'+(clip.indexOf(key)>=0?' clip':'')+'" data-box="'+key+'"><h3>'+t+'</h3><div class="bb'+(cls?' '+cls:'')+'">'+inner+'</div></section>'; }
+  var f=c.f, al=attrList(c);
+  function fld(label,val,flex){ return '<div class="f" style="flex:'+flex+'"><span>'+label+'</span><b>'+esc(val||"")+'</b></div>'; }
+  var h='<div class="ps"><header class="hd"><div class="k">แผนการจัดการเรียนรู้</div><div class="t">'+esc(c.title||"")+'</div><div class="meta">'+
+    fld("กลุ่มสาระ",SUBJECTS[c.subject].name,"3 1 60mm")+fld("ชั้น",c.grade,"1 1 20mm")+fld("เวลา",c.minutes?c.minutes+" นาที":"","1 1 28mm")+
+    fld("หน่วยการเรียนรู้",f.unit,"3 1 60mm")+fld("ครูผู้สอน",c.teacher,"2 1 40mm")+fld("โรงเรียน",f.school,"2 1 40mm")+'</div></header>';
+  h+='<div class="ra"><div class="rl">'+box("standard","มาตรฐานการเรียนรู้และตัวชี้วัด",v(f.smk_standard))+box("core","สาระสำคัญ",v(f.smk_core))+'</div><div class="rr">'+
+    box("obj","จุดประสงค์การเรียนรู้",'<div class="kpa"><div class="row"><i>K</i>'+v(f.obj_k)+'</div><div class="row"><i>P</i>'+v(f.obj_p)+'</div><div class="row"><i>A</i>'+v(f.obj_a)+'</div></div>',"plain")+
+    box("comp","สมรรถนะสำคัญของผู้เรียน",'<div class="tk">'+COMPS.map(function(x){return '<span class="'+(c.comp.indexOf(x)>=0?'on':'')+'">'+esc(x)+'</span>'}).join("")+'</div>'+(String(f.comp_ind||"").trim()?'<div class="ind"><b>เห็นได้จาก</b> '+esc(f.comp_ind)+'</div>':''),"plain")+
+    box("attrs","คุณลักษณะอันพึงประสงค์",'<div class="tk">'+ATTRS.map(function(x){return '<span class="'+(al.indexOf(x)>=0?'on':'')+'">'+esc(x)+'</span>'}).join("")+'</div>',"plain")+'</div></div>';
+  h+=box("ideas","สิ่งที่นักเรียนมักเข้าใจผิด",v(f.st_ideas));
+  h+='<section class="box"><h3>การจัดกิจกรรมการเรียนรู้<small>'+esc(MODELS[c.model].name)+'</small></h3><div class="acts" style="--n:'+c.phases.length+'">'+
+    c.phases.map(function(p,i){ var k="act"+i; return '<div class="act'+'"><b>'+esc(p.name)+'</b><div class="bb'+(clip.indexOf(k)>=0?' clip':'')+'" data-box="'+k+'">'+v(p.act)+'</div></div>'; }).join("")+'</div></section>';
+  var rows=c.evidence.filter(function(e,i){return i<2||filled(e.what)||filled(e.tells)});
+  h+='<div class="rb">'+box("eval","การวัดและประเมินผล",'<div class="ev"><div class="h">การวัด</div><div class="h">การประเมินผล (เกณฑ์)</div>'+rows.map(function(e){return '<div class="c v">'+esc(e.what||"")+'</div><div class="c v">'+esc(e.tells||"")+'</div>'}).join("")+'</div>',"plain")+
+    box("suggest","ข้อเสนอแนะในการจัดกิจกรรมครั้งต่อไป",v(f.suggest))+'</div>';
+  h+='<div class="foot"><span>PCK Canvas · Edu2Impact คณะศึกษาศาสตร์ มก.</span><span>ครูผู้สอน '+esc(c.teacher||"…………………………")+'</span></div></div>';
+  return h;
+}
+// Render the page offscreen at print size and list the boxes whose text does not fit.
+function fitCheck(c){
+  var probe=$("#fit-probe"); probe.innerHTML=psHtml(c); var over=[];
+  $$("[data-box]",probe).forEach(function(b){ var area=b.classList.contains("bb")?b:b.querySelector(".bb"); if(area&&area.scrollHeight>area.clientHeight+1) over.push(b.getAttribute("data-box")); });
+  probe.innerHTML="";
+  return {ok:!over.length,over:over};
+}
+function doPrint(clip){ var c=cur(); if(!c){toast("ยังไม่มีแผน");return;} $("#print-sheet").innerHTML=psHtml(c,clip); window.print(); }
+function printFlow(){
+  var c=cur(); if(!c){toast("ยังไม่มีแผน");return;}
+  var r=fitCheck(c); if(r.ok){ doPrint([]); return; }
+  $("#fit-list").innerHTML=r.over.map(function(k){ var i=boxInfo(k);
+    return '<li>'+esc(i.name)+' <button type="button" class="btn small" data-fitgo="'+i.go+'">ไปที่ช่อง</button></li>'}).join("");
+  $("#fit-anyway").setAttribute("data-clip",r.over.join(","));
+  openDlg("#dlg-fit");
+}
+function bindPrint(){
+  $("#b-print").onclick=printFlow;
+  $("#fit-close").onclick=function(){closeDlg("#dlg-fit")};
+  $("#fit-anyway").onclick=function(){ closeDlg("#dlg-fit"); doPrint(($("#fit-anyway").getAttribute("data-clip")||"").split(",")); toast("พิมพ์แล้ว ข้อความที่ล้นกรอบถูกตัด และมีป้ายบอกในกระดาษ"); };
+  $("#fit-list").addEventListener("click",function(e){ var b=e.target.closest("[data-fitgo]"); if(!b) return; closeDlg("#dlg-fit"); var id=b.getAttribute("data-fitgo");
+    var el=$("#i-"+id); if(el){ var sec=el.closest(".sec,.ph"); if(sec) sec.scrollIntoView({block:"start"}); el.focus({preventScroll:true}); } else goField(id); });
+}
+
+
+/* ---------------- dialogs ---------------- */
+function openDlg(s){var d=$(s); if(d.showModal) d.showModal(); else d.setAttribute("open","");}
+function closeDlg(s){var d=$(s); if(d.open){ if(d.close) d.close(); else d.removeAttribute("open"); }}
+function subjOptions(sel){return SUBJ_ORDER.map(function(k){return '<option value="'+k+'"'+(k===sel?" selected":"")+'>'+esc(SUBJECTS[k].name)+'</option>'}).join("")}
+function openOnboarding(){
+  closeMenu(false);
+  $("#ob-subject").innerHTML=subjOptions((cur()&&cur().subject)||"sci");
+  $("#ob-topic").value=""; $("#ob-grade").value="";
+  openDlg("#dlg-ob");
+}
+function bindDialogs(){
+  $("#ob-form").addEventListener("submit",function(e){
+    newCanvas({title:$("#ob-topic").value.trim(),subject:$("#ob-subject").value,grade:$("#ob-grade").value.trim()});
+    renderCanvas(); window.scrollTo(0,0);
+    toast("เริ่มแล้ว เขียนช่องแรกได้เลย");
+    // <dialog> hands focus back to its opener after "submit"; move it to the first field after that.
+    setTimeout(function(){ var f=document.querySelector("#sheet textarea"); if(f) f.focus(); },60);
+  });
+  $("#b-new").onclick=openOnboarding;
+  $("#b-mine").onclick=function(){closeMenu(false);renderMine();openDlg("#dlg-mine")};
+  $("#mine-close").onclick=function(){closeDlg("#dlg-mine")};
+  $("#mine-list").addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return; var id=b.getAttribute("data-id");
+    if(b.hasAttribute("data-open")){ store.current=id; persist(); closeDlg("#dlg-mine"); renderCanvas(); window.scrollTo(0,0); }
+    if(b.hasAttribute("data-remove")){
+      if(b.getAttribute("data-armed")!=="1"){ b.setAttribute("data-armed","1"); b.textContent="กดอีกครั้งเพื่อลบถาวร"; setTimeout(function(){ if(b.isConnected){ b.removeAttribute("data-armed"); b.textContent="ลบ"; } },4000); return; }
+      store.list=store.list.filter(function(x){return x.id!==id}); if(store.current===id) store.current=store.list[0]?store.list[0].id:null; persist(); renderMine(); renderCanvas(); toast("ลบแล้ว");
+    }
+  });
+  document.addEventListener("click",function(e){ var b=e.target.closest("[data-sample]"); if(b) openSample(b.getAttribute("data-sample")); });
+}
+function renderMine(){
+  var ul=$("#mine-list");
+  if(!store.list.length){ ul.innerHTML='<li class="empty">ยังไม่มีแผนในเบราว์เซอร์นี้</li>'; return; }
+  ul.innerHTML=store.list.map(function(c){ var d=new Date(c.updated||Date.now()); return '<li><span class="t"><b>'+esc(c.title||"ไม่มีชื่อเรื่อง")+(c.id===store.current?' <span class="muted" style="font-weight:400">(กำลังเปิด)</span>':'')+'</b><small>'+esc(SUBJECTS[c.subject]?SUBJECTS[c.subject].name:"")+(c.grade?" "+esc(c.grade):"")+" แก้ไขล่าสุด "+d.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"})+'</small></span><button class="btn small" type="button" data-open data-id="'+c.id+'">เปิด</button><button class="del" type="button" data-remove data-id="'+c.id+'">ลบ</button></li>'; }).join("");
+}
+
+/* ---------------- router ---------------- */
+function route(){
+  renderCanvas();
+  if(!store.list.length) setTimeout(openOnboarding,50);
+}
+
+/* ---------------- init ---------------- */
+load();
+bindCanvas(); bindDialogs(); bindPrint();
+window.addEventListener("hashchange",route);
+window.addEventListener("beforeprint",function(){var c=cur(); if(c&&!$("#print-sheet").innerHTML) $("#print-sheet").innerHTML=psHtml(c,fitCheck(c).over);});
+window.addEventListener("afterprint",function(){$("#print-sheet").innerHTML="";});
+route();
+})();
+</script>
+</body></html>

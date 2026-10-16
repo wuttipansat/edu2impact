@@ -76,6 +76,23 @@ Content files in data/:
 
 Run `python3 tools/validate_content.py` after editing any of these files.
 
+Optional record fields (any listing dataset; currently used by the `pck-canvas` innovation). Omit them and the detail page looks as before:
+
+| Field | Type | Shown on the detail page as |
+| --- | --- | --- |
+| `tool_url` | `https://…` or a local `apps/<name>/` folder containing index.html | An "open the tool" button under the summary |
+| `tool_label` | text (needs `tool_url`) | The button text; defaults to "เปิดใช้เครื่องมือ" |
+| `audience`, `subjects`, `features` | arrays of text | "เหมาะกับ", "ใช้ได้กับกลุ่มสาระ", "ความสามารถหลัก" lists; also indexed by search as keywords |
+| `references` | array of text | "อ้างอิง" list |
+
+## Web tools in apps/
+
+apps/ holds self-contained web tools linked from records via `tool_url`. Upload apps/ with the PHP files.
+
+| Folder | Tool | Record |
+| --- | --- | --- |
+| apps/pck-canvas/ | PCK Canvas, a single-file HTML app for designing lessons (six zones, adaptive scaffolding). Work is saved in the teacher's browser (localStorage) and can be exported/imported as JSON. It loads Google Fonts; everything else is inline. Its colours follow the site's purple palette; the six zone colours are part of the tool's design. | innovations.json `pck-canvas` |
+
 Other checks in tools/: `python3 tools/check_contrast.py` (WCAG AA contrast of the palette pairs, including the search icon, dialog, results and agenda badges), `php tools/test_search.php` (search index, scoring, highlighting and excerpts) and `python3 tools/check_colours.py` (fails if any green or teal colour appears in assets/css/*.css or assets/images/*.svg).
 
 Impact submission and verified dashboard data are not implemented in this public build. Public content remains backed by the existing JSON files; no account credentials or authentication database files are required.
@@ -84,7 +101,7 @@ Future integration should join Project ID, Researcher ID and Innovation ID; main
 
 ## Upload and verification
 
-Back up the existing website. Upload this directory's PHP files plus config/, includes/ and assets/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content; the supplied data files are unchanged demo data from the source repository. Do not upload tools/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
+Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content; the supplied data files are unchanged demo data from the source repository. Do not upload tools/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
 
 Run on a PHP host:
 
