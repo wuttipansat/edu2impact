@@ -77,3 +77,27 @@ function listing_date_parts($value) {
 function listing_today() {
     return (new DateTimeImmutable('today', new DateTimeZone('Asia/Bangkok')))->format('Y-m-d');
 }
+
+// "2026-10-15" -> "15 ต.ค. 2569" (Buddhist era). Returns the input unchanged if it is not a valid Y-m-d date.
+function thai_date($iso) {
+    $iso = (string) $iso;
+    $d = DateTimeImmutable::createFromFormat('!Y-m-d', $iso);
+    if (!$d || $d->format('Y-m-d') !== $iso) { return $iso; }
+    $months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    return (int) $d->format('j') . ' ' . $months[(int) $d->format('n') - 1] . ' ' . ((int) $d->format('Y') + 543);
+}
+// Estimated reading minutes for Thai text (~500 characters per minute, minimum 1). 0 when there is no body.
+function reading_time($body) {
+    if (!is_array($body)) { return 0; }
+    $chars = 0;
+    foreach ($body as $paragraph) {
+        if (is_string($paragraph)) { $chars += mb_strlen(preg_replace('/\s+/u', '', $paragraph)); }
+    }
+    return $chars > 0 ? max(1, (int) ceil($chars / 500)) : 0;
+}
+// First letter for an avatar; skips Thai leading vowels (เ แ โ ใ ไ) that cannot stand alone.
+function author_initial($name) {
+    $name = preg_replace('/^[^\p{L}\p{N}]+/u', '', trim((string) $name));
+    $name = preg_replace('/^[เแโใไ]+/u', '', $name);
+    return $name === '' ? '' : mb_strtoupper(mb_substr($name, 0, 1));
+}

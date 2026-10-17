@@ -22,13 +22,14 @@ $currentPage = $currentPage ?? '';
 <link rel="stylesheet" href="assets/css/modern-theme.css">
 <link rel="stylesheet" href="assets/css/minimal-palette.css">
 <link rel="stylesheet" href="assets/css/search.css">
+<?php if (!empty($postStyles)): ?><link rel="stylesheet" href="assets/css/post-byline.css"><?php endif; ?>
 <?php if (!empty($listingStyles)): ?><link rel="stylesheet" href="assets/css/listing.css"><?php endif; ?>
 <script src="assets/js/main.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">ข้ามไปเนื้อหา</a>
 <header class="header"><div class="header-glow" aria-hidden="true"></div><div class="container header-inner">
-<div class="brand-block"><a class="brand brand--image" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก"><img class="brand-logo" src="assets/images/header-logo.png" alt="Faculty of Education"></a><span class="brand-caption">Research to Impact</span></div>
+<div class="brand-block"><a class="brand brand--image" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก"><img class="brand-logo" src="assets/images/header-logo.png" alt="Faculty of Education"></a></div>
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" hidden>เมนู ☰</button>
 <nav id="main-nav" class="nav" aria-label="เมนูหลัก">
 <?php foreach ($nav as $item): ?>

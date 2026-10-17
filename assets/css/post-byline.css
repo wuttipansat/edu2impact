@@ -1,0 +1,16 @@
+/* Post (detail) header: eyebrow badge, back link, author / date / reading-time bar. Loaded last on detail pages. */
+.article-content .eyebrow{display:inline-flex;align-items:center;margin-bottom:14px;padding:6px 14px;border:1px solid rgba(116,58,140,.18);border-radius:999px;background:var(--purple-50)!important;color:var(--purple-700)!important;line-height:1.5}
+.article-content h1{margin-bottom:0}
+.back-link svg{flex:0 0 auto;transition:transform .2s ease}
+.back-link:hover svg,.back-link:focus-visible svg{transform:translateX(-3px)}
+.post-byline{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;margin:22px 0 28px;padding-block:16px;border-block:1px solid var(--minimal-line)}
+.post-byline__item{display:inline-flex;align-items:center;gap:9px;color:var(--minimal-muted);font-size:var(--fs-sm);line-height:1.5}
+.post-byline__item>svg{flex:0 0 auto;color:var(--purple-600)}
+.post-byline__author{gap:12px}
+.post-byline__avatar{display:grid;place-items:center;flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--purple-600);color:#fff;font:800 var(--fs-base)/1 "Manrope","Noto Sans Thai",sans-serif;object-fit:cover}
+.post-byline__text{display:flex;flex-direction:column;line-height:1.35}
+.post-byline__text small{color:var(--minimal-muted);font-size:var(--fs-xs)}
+.post-byline__text strong{color:var(--minimal-ink);font-weight:800;font-size:var(--fs-base)}
+.post-byline time{color:var(--minimal-ink);font-weight:600}
+@media(max-width:760px){.post-byline{gap:12px 20px;margin:18px 0 22px;padding-block:14px}.post-byline__avatar{width:36px;height:36px}}
+@media(prefers-reduced-motion:reduce){.back-link svg{transition:none}.back-link:hover svg{transform:none}}
