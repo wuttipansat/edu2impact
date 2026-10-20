@@ -91,7 +91,8 @@ apps/ holds self-contained web tools linked from records via `tool_url`. Upload 
 
 | Folder | Tool | Record |
 | --- | --- | --- |
-| apps/pck-canvas/ | PCK Canvas, a single-file HTML app for designing lessons (six zones, adaptive scaffolding). Work is saved in the teacher's browser (localStorage) and can be exported/imported as JSON. It loads Google Fonts; everything else is inline. Its colours follow the site's purple palette; the six zone colours are part of the tool's design. | innovations.json `pck-canvas` |
+| apps/pck-canvas/ | PCK Canvas (current), a single-file HTML app for designing lessons: six zones, a 6-question self-survey that sets a starting level (ระบุ / เชื่อมโยง / ตัดสินใจ) per zone, adaptive scaffolding, mentor mode, research library, A4 print/PDF and JSON export/import. Work is saved in the teacher's browser (localStorage key `pckcanvas.v2`); on first load canvases saved by the earlier version (`pckcanvas.v1`) are copied over, never modified. It loads Google Fonts; everything else is inline. Colours follow the site's purple palette; the six zone colours are part of the tool's design and avoid green/teal. | innovations.json `pck-canvas` |
+| apps/pck-canvas-v1/ | The earlier PCK Canvas, kept so existing users can still open their saved work (key `pckcanvas.v1`). Not linked from any record; reachable from "Canvas ของฉัน" in the current tool. Do not change its storage key. | none |
 
 Other checks in tools/: `python3 tools/check_contrast.py` (WCAG AA contrast of the palette pairs, including the search icon, dialog, results and agenda badges), `php tools/test_search.php` (search index, scoring, highlighting and excerpts) and `python3 tools/check_colours.py` (fails if any green or teal colour appears in assets/css/*.css or assets/images/*.svg).
 
