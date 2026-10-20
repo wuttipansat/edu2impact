@@ -31,7 +31,7 @@ Menu items are defined in config/navigation.php. Each `key` must equal the page'
 
 Hero text (eyebrow, title, highlighted words, one-line intro) for every page and for the home slider lives in config/heroes.php; edit it there and both places stay in sync. Upload config/ with the PHP files.
 
-Research, Innovation and Workshop share includes/editorial-listing.php, which loads the dataset (newest first) for the layout. Each page file sets `$kind` and a `$listing` array of labels, including `layout` and `cta`. The content area is rendered from a partial chosen by `$listing['layout']`:
+Research, Innovation and Workshop share includes/editorial-listing.php, which loads the dataset (newest first) for the layout. On Research, and in the home page's latest-research row, records with `"featured": true` come first (then newest first), so the first featured study is the lead; set `featured` to false on everything else. Each page file sets `$kind` and a `$listing` array of labels, including `layout` and `cta`. The content area is rendered from a partial chosen by `$listing['layout']`:
 
 | `layout` | Page | Partial |
 | --- | --- | --- |

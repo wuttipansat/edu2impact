@@ -57,6 +57,14 @@ function text_list($record, $key) {
     if (!is_array($value)) { return []; }
     return array_values(array_filter($value, static fn ($item) => is_string($item) && trim($item) !== ''));
 }
+// Newest first by date; with $featuredFirst, records marked "featured": true come before the rest.
+function sort_records(array $records, bool $featuredFirst = false): array {
+    usort($records, static function (array $a, array $b) use ($featuredFirst): int {
+        if ($featuredFirst && ($fa = !empty($a['featured'])) !== ($fb = !empty($b['featured']))) { return $fa ? -1 : 1; }
+        return strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? ''));
+    });
+    return $records;
+}
 function detail_url($kind, $id) {
     $routes = ['research' => 'research-detail.php', 'innovations' => 'innovation-detail.php', 'workshops' => 'workshop-detail.php'];
     return $routes[$kind] . '?id=' . rawurlencode($id);

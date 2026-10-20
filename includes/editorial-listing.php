@@ -6,7 +6,8 @@
 $legacyQuery = query_string('q');
 if ($legacyQuery !== '') { header('Location: search.php?q=' . rawurlencode(mb_substr($legacyQuery, 0, 100)), true, 302); exit; }
 $currentPage = $kind; $pageTitle = $listing['page_title'] . ' | ' . $site['name']; $listingStyles = true;
-$records = load_data($kind); usort($records, static fn (array $a, array $b): int => strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? '')));
+// Research leads with featured records (the featured study); the other listings are newest first.
+$records = sort_records(load_data($kind), $kind === 'research');
 $layout = in_array($listing['layout'] ?? '', ['research', 'innovations', 'workshops'], true) ? $listing['layout'] : 'research';
 $fallbackCategory = $listing['fallback_category']; $fallbackAuthor = $listing['fallback_author'];
 require __DIR__ . '/header.php';

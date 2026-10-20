@@ -4,7 +4,7 @@ $currentPage = 'home';
 $pageTitle = 'Edu2Impact | Research to Impact';
 $research = load_data('research');
 $byDate = static function (array $a, array $b): int { return strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? '')); };
-usort($research, $byDate);
+$research = sort_records($research, true); // featured research first, then newest
 $innovations = load_data('innovations'); usort($innovations, $byDate);
 $workshops = load_data('workshops'); usort($workshops, $byDate);
 // Home sections that share the Latest Research card layout: three newest records each.
