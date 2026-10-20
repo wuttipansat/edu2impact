@@ -7,6 +7,9 @@ from pathlib import Path
 
 base = Path(__file__).resolve().parents[1]
 errors = []
+LINK_KINDS = ('research', 'innovations', 'workshops')
+records_by_kind = {}  # dataset -> ids, filled as files load; links are checked once every file is loaded
+links = []  # (dataset, record id, position, kind, id)
 for name in ('site', 'research', 'innovations', 'workshops', 'events'):
     try:
         data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
@@ -33,8 +36,12 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
         seen = set()
         for index, record in enumerate(data):
             assert isinstance(record, dict), 'record must be an object'
-            for key in ('id', 'title', 'category', 'summary'):
+            # Workshops have no category; elsewhere it is required. When present it must be text.
+            required = ('id', 'title', 'summary') if name == 'workshops' else ('id', 'title', 'category', 'summary')
+            for key in required:
                 assert isinstance(record.get(key), str) and record[key].strip(), f'item {index}: {key} is required'
+            if 'category' in record:
+                assert isinstance(record['category'], str), f'item {index}: category must be text'
             assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', record['id']), 'invalid id'
             assert record['id'] not in seen, 'duplicate id ' + record['id']
             seen.add(record['id'])
@@ -76,12 +83,34 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
             if 'download_label' in record:
                 assert isinstance(record['download_label'], str) and record['download_label'].strip(), f'{record["id"]}: download_label must be text'
                 assert 'download_url' in record, f'{record["id"]}: download_label needs download_url'
+            # Optional links to other records: "related": [{"kind": "research", "id": "…"}, …]
+            if 'related' in record:
+                related = record['related']
+                assert isinstance(related, list), f'{record["id"]}: related must be an array'
+                pairs = set()
+                for position, link in enumerate(related):
+                    where = f'{record["id"]}: related[{position}]'
+                    assert isinstance(link, dict), where + ' must be an object {"kind": …, "id": …}'
+                    assert set(link) == {'kind', 'id'}, where + ' must have exactly kind and id'
+                    assert link['kind'] in LINK_KINDS, where + ': kind must be research, innovations or workshops'
+                    assert isinstance(link['id'], str) and re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', link['id']), where + ': invalid id'
+                    assert not (link['kind'] == name and link['id'] == record['id']), where + ': a record cannot link to itself'
+                    assert (link['kind'], link['id']) not in pairs, where + f': duplicate link {link["kind"]}/{link["id"]}'
+                    pairs.add((link['kind'], link['id']))
+                    links.append((name, record['id'], position, link['kind'], link['id']))
             for key in ('audience', 'subjects', 'features', 'references'):
                 if key in record:
                     value = record[key]
                     assert isinstance(value, list) and all(isinstance(v, str) and v.strip() for v in value), f'{record["id"]}: {key} must be an array of text'
+        records_by_kind[name] = seen
     except (ValueError, AssertionError, OSError) as error:
         errors.append(f'{name}.json: {error}')
+# Every link must point at a record that exists (checked after all files are loaded).
+for source, record_id, position, kind, target in links:
+    if kind not in records_by_kind:
+        continue  # that file already failed above
+    if target not in records_by_kind[kind]:
+        errors.append(f'{source}.json: {record_id}: related[{position}] points to {kind}/{target}, which does not exist in {kind}.json')
 if errors:
     print('\n'.join(errors))
     sys.exit(1)

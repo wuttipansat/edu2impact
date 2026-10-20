@@ -81,6 +81,64 @@ function sort_records(array $records, bool $featuredFirst = false): array {
     });
     return $records;
 }
+// ---- Dates and links between records ----
+// True when the record has a real Y-m-d date. Workshop records with "date": "" are posts (articles, not sessions).
+function is_dated($record) {
+    $value = is_array($record) ? ($record['date'] ?? '') : '';
+    if (!is_string($value) || $value === '') { return false; }
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    return $date !== false && $date->format('Y-m-d') === $value;
+}
+// Thai label for a linkable dataset; '' for anything else.
+function kind_label($kind) {
+    $labels = ['research' => 'งานวิจัย', 'innovations' => 'นวัตกรรม', 'workshops' => 'เวิร์กช็อป'];
+    return $labels[$kind] ?? '';
+}
+// Records of a linkable dataset, loaded once per request.
+function linkable_records($kind) {
+    static $cache = [];
+    if (kind_label($kind) === '') { return []; }
+    return $cache[$kind] ??= load_data($kind);
+}
+// What a record links to through its optional "related" list: [['kind' => …, 'record' => […]], …] in list order.
+// Unknown kinds, missing targets, links to the record itself and duplicates are skipped.
+function related_records($kind, $record) {
+    $items = is_array($record['related'] ?? null) ? $record['related'] : [];
+    $selfId = (string) ($record['id'] ?? '');
+    $found = []; $seen = [];
+    foreach ($items as $item) {
+        $targetKind = is_array($item) && is_string($item['kind'] ?? null) ? $item['kind'] : '';
+        $targetId = is_array($item) && is_string($item['id'] ?? null) ? $item['id'] : '';
+        $key = $targetKind . '/' . $targetId;
+        if (kind_label($targetKind) === '' || $targetId === '' || isset($seen[$key]) || ($targetKind === $kind && $targetId === $selfId)) { continue; }
+        $target = find_record(linkable_records($targetKind), $targetId);
+        if (!$target) { continue; }
+        $seen[$key] = true;
+        $found[] = ['kind' => $targetKind, 'record' => $target];
+    }
+    return $found;
+}
+// Links in both directions: what this record links to, then workshops that link to it.
+// Workshops hold the links, so research and innovation pages list their workshops without extra data.
+function linked_records($kind, $record) {
+    $found = related_records($kind, $record);
+    $seen = [];
+    foreach ($found as $item) { $seen[$item['kind'] . '/' . $item['record']['id']] = true; }
+    $selfId = (string) ($record['id'] ?? '');
+    if ($selfId === '') { return $found; }
+    foreach (linkable_records('workshops') as $workshop) {
+        $workshopId = (string) ($workshop['id'] ?? '');
+        if ($workshopId === '' || isset($seen['workshops/' . $workshopId]) || ($kind === 'workshops' && $workshopId === $selfId)) { continue; }
+        foreach (related_records('workshops', $workshop) as $item) {
+            if ($item['kind'] === $kind && $item['record']['id'] === $selfId) {
+                $seen['workshops/' . $workshopId] = true;
+                $found[] = ['kind' => 'workshops', 'record' => $workshop];
+                break;
+            }
+        }
+    }
+    return $found;
+}
 function detail_url($kind, $id) {
     $routes = ['research' => 'research-detail.php', 'innovations' => 'innovation-detail.php', 'workshops' => 'workshop-detail.php'];
     return $routes[$kind] . '?id=' . rawurlencode($id);

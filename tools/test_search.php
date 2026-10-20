@@ -52,4 +52,22 @@ check('list fields join into keyword text', $fake === 'ครูทดสอบ 
 // Image blocks in a body: the caption is searchable, the file path and alt text are not.
 $blocks = body_text(['ย่อหน้า', ['image' => 'assets/images/content-placeholder.png', 'alt' => 'คำอธิบายภาพ', 'caption' => 'คำบรรยายภาพ']]);
 check('body image caption is indexed, path and alt are not', $blocks === ['ย่อหน้า', 'คำบรรยายภาพ']);
+// Links ("related"): helpers skip bad entries, and a linked record's title finds the record that links to it.
+check('is_dated: real date', is_dated(['date' => '2026-11-20']));
+check('is_dated: empty date is a post', !is_dated(['date' => '']) && !is_dated([]) && !is_dated(['date' => '2026-02-30']));
+check('kind_label maps the three datasets', kind_label('research') === 'งานวิจัย' && kind_label('innovations') === 'นวัตกรรม' && kind_label('workshops') === 'เวิร์กช็อป' && kind_label('events') === '');
+$someResearch = linkable_records('research')[0] ?? null;
+if ($someResearch) {
+    $probe = ['id' => 'probe', 'related' => [['kind' => 'research', 'id' => $someResearch['id']], ['kind' => 'research', 'id' => $someResearch['id']], ['kind' => 'research', 'id' => 'no-such-record'], ['kind' => 'events', 'id' => 'x'], ['kind' => 'workshops', 'id' => 'probe'], 'junk']];
+    $probeLinks = related_records('workshops', $probe);
+    check('related_records keeps valid links once and skips missing, unknown and self links', count($probeLinks) === 1 && $probeLinks[0]['record']['id'] === $someResearch['id']);
+}
+foreach (linkable_records('workshops') as $workshop) {
+    foreach (related_records('workshops', $workshop) as $link) {
+        $hits = search_run($link['record']['title'])['groups']['workshops'] ?? [];
+        check('linked title finds workshop ' . $workshop['id'], (bool) array_filter($hits, static fn ($r) => $r['url'] === detail_url('workshops', $workshop['id'])));
+        $back = linked_records($link['kind'], $link['record']);
+        check($link['kind'] . ' ' . $link['record']['id'] . ' lists workshop ' . $workshop['id'] . ' back', (bool) array_filter($back, static fn ($l) => $l['kind'] === 'workshops' && $l['record']['id'] === $workshop['id']));
+    }
+}
 exit($failed ? 1 : 0);

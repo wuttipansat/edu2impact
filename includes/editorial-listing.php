@@ -7,7 +7,9 @@ $legacyQuery = query_string('q');
 if ($legacyQuery !== '') { header('Location: search.php?q=' . rawurlencode(mb_substr($legacyQuery, 0, 100)), true, 302); exit; }
 $currentPage = $kind; $pageTitle = $listing['page_title'] . ' | ' . $site['name']; $listingStyles = true;
 // Research leads with featured records (the featured study); the other listings are newest first.
-$records = sort_records(load_data($kind), $kind === 'research');
+// $fileRecords keeps the order in the JSON file (workshop posts are listed in that order).
+$fileRecords = load_data($kind);
+$records = sort_records($fileRecords, $kind === 'research');
 $layout = in_array($listing['layout'] ?? '', ['research', 'innovations', 'workshops'], true) ? $listing['layout'] : 'research';
 $fallbackCategory = $listing['fallback_category']; $fallbackAuthor = $listing['fallback_author'];
 require __DIR__ . '/header.php';

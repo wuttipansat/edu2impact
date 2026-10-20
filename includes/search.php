@@ -45,13 +45,15 @@ function search_index() {
     foreach (['research', 'innovations', 'workshops'] as $kind) {
         foreach (load_data($kind) as $record) {
             if (!isset($record['id'], $record['title'])) { continue; }
+            // Titles of linked records (both directions) count as keywords, so "Hemo-link" finds the workshop that links to it.
+            $linkedTitles = array_map(static fn (array $link): string => (string) ($link['record']['title'] ?? ''), linked_records($kind, $record));
             $index[] = [
                 'type' => $kind,
                 'title' => (string) $record['title'],
                 'summary' => search_text($record['summary'] ?? ''),
-                // Optional lists (e.g. innovations with a web tool) count as keywords.
-                'keywords' => search_join([$record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? []]),
-                'text' => search_join([$record['title'], $record['summary'] ?? '', $record['category'] ?? '', $record['author'] ?? '', body_text($record['body'] ?? []), $record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? []]),
+                // Optional lists (e.g. innovations with a web tool) and linked records' titles count as keywords.
+                'keywords' => search_join([$record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? [], $linkedTitles]),
+                'text' => search_join([$record['title'], $record['summary'] ?? '', $record['category'] ?? '', $record['author'] ?? '', body_text($record['body'] ?? []), $record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? [], $linkedTitles]),
                 'body' => search_text(body_text($record['body'] ?? [])),
                 'url' => detail_url($kind, $record['id']),
                 'date' => (string) ($record['date'] ?? ''),

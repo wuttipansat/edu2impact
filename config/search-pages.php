@@ -14,7 +14,7 @@ return [
      'keywords' => 'นวัตกรรม innovation innovations เครื่องมือ สื่อการสอน'],
     ['title' => 'Workshop', 'url' => 'workshops.php', 'hero' => 'workshops',
      'summary' => 'ตารางเวิร์กช็อปสำหรับครูและเครือข่ายการศึกษา',
-     'keywords' => 'เวิร์กช็อป workshop workshops อบรม ตารางกิจกรรม agenda'],
+     'keywords' => 'เวิร์กช็อป workshop workshops อบรม โพสต์เวิร์กช็อป ขอจัดเวิร์กช็อป'],
     ['title' => 'Partners', 'url' => 'partners.php', 'hero' => 'partners',
      'summary' => 'เครือข่ายของ EDU2IMPACT ครอบคลุมผู้สร้างความรู้ ผู้ใช้ความรู้ และผู้สนับสนุนการขยายผล',
      'keywords' => 'พันธมิตร ผู้มีส่วนร่วม เครือข่าย partners partner network ความร่วมมือ'],

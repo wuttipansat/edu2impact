@@ -22,7 +22,7 @@ Menu items are defined in config/navigation.php. Each `key` must equal the page'
 | Home | index.php | Hero slider (5 slides), latest research, latest innovation, workshops, upcoming events |
 | Research | research.php | "Evidence library": featured study, two picks, text-first list |
 | Innovation | innovations.php | "Showcase gallery": card grid (data/innovations.json) |
-| Workshop | workshops.php | "Agenda": next-workshop banner, upcoming and past groups (data/workshops.json) |
+| Workshop | workshops.php | Workshop posts list (data/workshops.json); each post's detail page has a "request this workshop" contact box |
 | Detail pages | research-detail.php, innovation-detail.php, workshop-detail.php (`?id=…`) | Single record; unknown ID returns 404 |
 | Partners | partners.php | Six partner categories |
 | About | about.php | What EDU2IMPACT is |
@@ -38,6 +38,14 @@ Research, Innovation and Workshop share includes/editorial-listing.php, which lo
 | `research` | Research | includes/listing-layouts/research.php |
 | `innovations` | Innovation | includes/listing-layouts/innovations.php |
 | `workshops` | Workshop | includes/listing-layouts/workshops.php |
+
+### Workshop page: workshop posts and request invitation
+
+includes/listing-layouts/workshops.php lists every record in data/workshops.json, in file order (move a record up to show it first). Each row shows only a 68×68 document-icon badge and the title, linking to the detail page; there are no upcoming/past groups, no next-workshop banner, and no category, summary or link chips on the list. includes/editorial-listing.php passes the records both sorted (`$records`) and in file order (`$fileRecords`, used here).
+
+`date` stays a required key: set it to the day the workshop was held, or to an empty string when it has no single date. `is_dated()` in includes/functions.php is the one test for "has a real Y-m-d date". With an empty date the detail page shows no date and the home page card shows no date. Workshops have no `category` (the validator allows it to be left out for workshops only); the detail page eyebrow then reads "WORKSHOP / EDU2IMPACT" and the home card shows "Workshop".
+
+Each workshop is one that schools, communities and organisations can ask EDU2IMPACT to run, usually adapted from a research or innovation post and linked back to it with `related` (data/workshops.json has Hemo-Link and the Nonthaburi curriculum). On a workshop's detail page, includes/detail.php adds a single "ติดต่อทีมงาน" button linking to contact.php, after the facts and before the related cards (style `.workshop-contact` in assets/css/main.css); nothing is needed in the data.
 
 Listing pages have no search, category or sort controls and ignore `category` and `sort`. A non-empty `?q=` on research.php, innovations.php or workshops.php redirects (302) to `search.php?q=…`, so old links keep working. Layout styles are in assets/css/listing.css, loaded only on these pages.
 
@@ -58,13 +66,13 @@ What is indexed (includes/search.php, `search_index()`):
 | config/search-pages.php | One per page: title, summary, keywords, plus that page's hero text from config/heroes.php | The page |
 | config/partner-groups.php | One per partner group (also read by partners.php) | partners.php#partner-N |
 
-Scoring: matching is a case-insensitive substring search (works for Thai, which has no spaces between words). The query is split on spaces and every term must match (AND). Per term: title 10, category or keywords 5, summary 3, any text 1; the whole query found in the title adds 10. Ties go to the newest date, then the title.
+Scoring: matching is a case-insensitive substring search (works for Thai, which has no spaces between words). The query is split on spaces and every term must match (AND). Per term: title 10, category or keywords 5, summary 3, any text 1; the whole query found in the title adds 10. Ties go to the newest date, then the title. Titles of a record's linked records (see `related` below, both directions) are added to its keywords, so searching for an innovation's name also finds the workshops linked to it.
 
 To add a page to the index, add an entry to config/search-pages.php (`title`, `url`, `summary`, `keywords`, and `hero` if the page has one in config/heroes.php). Run `php tools/test_search.php` after changing includes/search.php. Styles for the icon, dialog and results are in assets/css/search.css, loaded on every page.
 
 ## Data and permissions
 
-No figures are inferred from demo content. When data/site.json `demo_mode` is true, includes/header.php shows a sample-content notice under the header on every page; set it to false once real content is published.
+No figures are inferred from demo content. When data/site.json `demo_mode` is true, includes/header.php shows a sample-content notice under the header on every page. It is false now that the placeholder records (`research-example`, `workshop-example`) have been removed; set it back to true only while the site shows sample content.
 
 Content files in data/:
 
@@ -86,6 +94,32 @@ Optional record fields (any listing dataset; `tool_url`/`tool_label` and the lis
 | `references` | array of text | "อ้างอิง" list |
 | `download_url` | local `assets/files/<name>.pdf` (lowercase letters, digits and hyphens; the file must exist) | An "เอกสารฉบับเต็ม" section at the end of the post with a download button showing the file size. External URLs and other file types are ignored |
 | `download_label` | text (needs `download_url`) | The button text; defaults to "ดาวน์โหลด PDF" |
+| `related` | array of `{"kind": "research" \| "innovations" \| "workshops", "id": "…"}` | Cards before "อ้างอิง", one per linked record (type label, title, summary), linking to its detail page; the cards have no visible heading. See below |
+
+### Links between records (`related`)
+
+```json
+"related": [
+  { "kind": "research", "id": "nonthaburi-learning-city-wellbeing-curriculum" },
+  { "kind": "innovations", "id": "hemo-link" }
+]
+```
+
+Any listing dataset may have `related`; in practice the links live on workshops. Links are shown in both directions, so a link only needs to be entered once, on the workshop:
+
+| Helper (includes/functions.php) | Returns |
+| --- | --- |
+| `kind_label($kind)` | งานวิจัย, นวัตกรรม or เวิร์กช็อป ('' for other datasets) |
+| `related_records($kind, $record)` | What the record links to, in list order; unknown kinds, missing targets, self links and duplicates are skipped |
+| `linked_records($kind, $record)` | `related_records()` plus every workshop whose `related` points at this record |
+
+The detail page and search use `linked_records()`, so a research or innovation page lists the workshops that link to it without any change to research.json or innovations.json. The Workshop list does not show links. Card styles (`.record-related`) are in assets/css/main.css.
+
+`tools/validate_content.py` checks that each link is an object with exactly `kind` and `id`, that `kind` is one of the three datasets, that the record does not link to itself or repeat a link, and, after all files are loaded, that the target exists. A broken link is skipped on the page but fails validation.
+
+### Content templates
+
+templates/ holds copy-and-edit examples for the content team, with a Thai guide (templates/README.md). templates/workshops.template.json has a dated workshop and a workshop adapted from research and innovation posts (`"date": ""`), both without `category`, with an image block, `audience` and `related` links to the Nonthaburi curriculum and Hemo-Link. The site does not read templates/.
 
 ### Images between paragraphs
 
@@ -111,7 +145,7 @@ apps/ holds self-contained web tools linked from records via `tool_url`. Upload 
 | --- | --- | --- |
 | apps/pck-canvas/ | PCK Canvas, a single-file HTML app for designing lessons (six zones, adaptive scaffolding). Work is saved in the teacher's browser (localStorage) and can be exported/imported as JSON. It loads Google Fonts; everything else is inline. Its colours follow the site's purple palette; the six zone colours are part of the tool's design. | innovations.json `pck-canvas` |
 
-Other checks in tools/: `python3 tools/check_contrast.py` (WCAG AA contrast of the palette pairs, including the search icon, dialog, results and agenda badges), `php tools/test_search.php` (search index, scoring, highlighting and excerpts) and `python3 tools/check_colours.py` (fails if any green or teal colour appears in assets/css/*.css or assets/images/*.svg).
+Other checks in tools/: `python3 tools/check_contrast.py` (WCAG AA contrast of the palette pairs, including the search icon, dialog, results and agenda badges), `php tools/test_search.php` (search index, scoring, highlighting, excerpts, and the date and link helpers) and `python3 tools/check_colours.py` (fails if any green or teal colour appears in assets/css/*.css or assets/images/*.svg).
 
 Impact submission and verified dashboard data are not implemented in this public build. Public content remains backed by the existing JSON files; no account credentials or authentication database files are required.
 
@@ -119,7 +153,7 @@ Future integration should join Project ID, Researcher ID and Innovation ID; main
 
 ## Upload and verification
 
-Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ (including assets/files/, the PDFs linked by `download_url`) and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content; the supplied data files are unchanged demo data from the source repository. Do not upload tools/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
+Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ (including assets/files/, the PDFs linked by `download_url`) and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content. The supplied data files hold real records only (no placeholder records) and have `demo_mode` set to false. Do not upload tools/, templates/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
 
 Run on a PHP host:
 

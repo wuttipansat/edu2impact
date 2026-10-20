@@ -79,11 +79,15 @@ pairs = [
     ('Search dialog placeholder', 'minimal-muted', '#ffffff', TEXT),
     ('Search dialog close button', 'minimal-muted', '#ffffff', UI),
     ('Search dialog hint', 'minimal-muted', '#ffffff', TEXT),
-    ('Past workshop date badge', 'minimal-muted', '#ffffff', TEXT),
-    ('Past workshop title', 'minimal-muted', 'minimal-surface', TEXT),
     ('Category pill on agenda row', 'purple-800', 'purple-100', TEXT),
-    ('Next workshop date label', 'purple-200', 'purple-800', TEXT),
     ('Showcase badge on image', 'purple-800', '#ffffff', TEXT),
+    ('Workshop icon badge', 'purple-800', 'purple-100', TEXT),
+    ('Workshop row arrow', 'purple-800', '#ffffff', TEXT),
+    ('Related card kind pill', 'purple-800', 'purple-100', TEXT),
+    ('Related card title', 'minimal-ink', '#ffffff', TEXT),
+    ('Related card title hover', 'purple-800', 'purple-50', TEXT),
+    ('Related card summary', 'minimal-muted', '#ffffff', TEXT),
+    ('Related card summary on hover', 'minimal-muted', 'purple-50', TEXT),
 ]
 failed = False
 for label, fg, bg, need in pairs:
