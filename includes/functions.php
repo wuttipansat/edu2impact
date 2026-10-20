@@ -30,6 +30,22 @@ function image_path($record) {
         && is_file(__DIR__ . '/../' . $path)) { return $path; }
     return '';
 }
+// A body item is a paragraph (string) or an image block {"image": "assets/images/…", "alt": "…", "caption": "…"}.
+// Returns the image path when the block is a valid local image, otherwise ''.
+function body_image($block) {
+    if (!is_array($block) || !is_string($block['alt'] ?? null) || trim($block['alt']) === '') { return ''; }
+    return image_path($block);
+}
+// Paragraphs and image captions of a body as text (for search); image paths and alt text are left out.
+function body_text($body) {
+    if (!is_array($body)) { return is_string($body) ? [$body] : []; }
+    $text = [];
+    foreach ($body as $block) {
+        if (is_string($block)) { $text[] = $block; }
+        elseif (is_array($block) && is_string($block['caption'] ?? null)) { $text[] = $block['caption']; }
+    }
+    return $text;
+}
 // Optional link to a web tool: https:// URLs or a local apps/<name>/ folder that exists.
 function tool_url($record) {
     $url = $record['tool_url'] ?? '';

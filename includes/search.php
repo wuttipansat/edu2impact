@@ -51,8 +51,8 @@ function search_index() {
                 'summary' => search_text($record['summary'] ?? ''),
                 // Optional lists (e.g. innovations with a web tool) count as keywords.
                 'keywords' => search_join([$record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? []]),
-                'text' => search_join([$record['title'], $record['summary'] ?? '', $record['category'] ?? '', $record['author'] ?? '', $record['body'] ?? '', $record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? []]),
-                'body' => search_text($record['body'] ?? ''),
+                'text' => search_join([$record['title'], $record['summary'] ?? '', $record['category'] ?? '', $record['author'] ?? '', body_text($record['body'] ?? []), $record['audience'] ?? [], $record['subjects'] ?? [], $record['features'] ?? []]),
+                'body' => search_text(body_text($record['body'] ?? [])),
                 'url' => detail_url($kind, $record['id']),
                 'date' => (string) ($record['date'] ?? ''),
                 'category' => (string) ($record['category'] ?? ''),

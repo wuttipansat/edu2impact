@@ -49,4 +49,7 @@ check('removed audience text is not indexed', !array_filter($byAudience, static 
 // Optional list fields still count as keywords when a record has them.
 $fake = search_join([['ครูทดสอบ'], ['ฟีเจอร์ทดสอบ']]);
 check('list fields join into keyword text', $fake === 'ครูทดสอบ ฟีเจอร์ทดสอบ');
+// Image blocks in a body: the caption is searchable, the file path and alt text are not.
+$blocks = body_text(['ย่อหน้า', ['image' => 'assets/images/content-placeholder.png', 'alt' => 'คำอธิบายภาพ', 'caption' => 'คำบรรยายภาพ']]);
+check('body image caption is indexed, path and alt are not', $blocks === ['ย่อหน้า', 'คำบรรยายภาพ']);
 exit($failed ? 1 : 0);

@@ -87,6 +87,22 @@ Optional record fields (any listing dataset; `tool_url`/`tool_label` and the lis
 | `download_url` | local `assets/files/<name>.pdf` (lowercase letters, digits and hyphens; the file must exist) | An "เอกสารฉบับเต็ม" section at the end of the post with a download button showing the file size. External URLs and other file types are ignored |
 | `download_label` | text (needs `download_url`) | The button text; defaults to "ดาวน์โหลด PDF" |
 
+### Images between paragraphs
+
+`body` items are normally paragraphs (text). To put an image between two paragraphs, use an image block in its place in the array:
+
+```json
+{ "image": "assets/images/<name>.webp", "alt": "What the image shows", "caption": "Optional caption under the image" }
+```
+
+| Key | Required | Notes |
+| --- | --- | --- |
+| `image` | yes | A local file in assets/images/ (png, jpg, jpeg or webp) that exists; same rule as the record's `image` |
+| `alt` | yes | Text for screen readers; describe what the image shows |
+| `caption` | no | Shown under the image and indexed by site search |
+
+The detail page renders the block as a `<figure class="prose-figure">` (styles in assets/css/main.css). A block with a missing file or no alt text is skipped on the page and fails `tools/validate_content.py`. Image paths and alt text are not indexed by search; captions are. `assets/images/content-placeholder.png` can stand in until the real image is ready.
+
 ## Web tools in apps/
 
 apps/ holds self-contained web tools linked from records via `tool_url`. Upload apps/ with the PHP files.

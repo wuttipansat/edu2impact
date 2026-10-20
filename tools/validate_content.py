@@ -38,7 +38,19 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
             assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', record['id']), 'invalid id'
             assert record['id'] not in seen, 'duplicate id ' + record['id']
             seen.add(record['id'])
-            assert isinstance(record.get('body'), list) and all(isinstance(p, str) for p in record['body']), 'body must be an array of text'
+            assert isinstance(record.get('body'), list), 'body must be an array'
+            for position, block in enumerate(record['body']):
+                if isinstance(block, str):
+                    continue
+                where = f'{record["id"]}: body[{position}]'
+                assert isinstance(block, dict), where + ' must be text or an image block'
+                assert set(block) <= {'image', 'alt', 'caption'}, where + ' allows only image, alt and caption'
+                image = block.get('image')
+                assert isinstance(image, str) and re.fullmatch(r'assets/images/[a-zA-Z0-9_/-]+\.(?:png|jpg|jpeg|webp)', image), where + ': image must be assets/images/<name>.png|jpg|jpeg|webp'
+                assert (base / image).is_file(), where + ': image file not found: ' + image
+                assert isinstance(block.get('alt'), str) and block['alt'].strip(), where + ': alt text is required'
+                if 'caption' in block:
+                    assert isinstance(block['caption'], str), where + ': caption must be text'
             assert isinstance(record.get('featured'), bool), 'featured must be boolean'
             for key in ('date', 'author', 'image'):
                 assert isinstance(record.get(key), str), key + ' must be text'
