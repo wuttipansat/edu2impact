@@ -14,3 +14,21 @@
 .post-byline time{color:var(--minimal-ink);font-weight:600}
 @media(max-width:760px){.post-byline{gap:12px 20px;margin:18px 0 22px;padding-block:14px}.post-byline__avatar{width:36px;height:36px}}
 @media(prefers-reduced-motion:reduce){.back-link svg{transition:none}.back-link:hover svg{transform:none}}
+
+/* Post body: full-width justified column. Lead, cover image, paragraphs and in-body figures fill the article container so their left and right edges line up with the title and byline. */
+.article-content{--post-measure:100%}
+.article-content .lead,.article-content .article-image,.article-content .prose{width:100%;max-width:var(--post-measure)}
+.article-content .lead,.article-content .prose p{text-align:justify;text-align-last:left;text-justify:inter-character}
+.article-content .prose{overflow-wrap:break-word}
+.article-content .article-image{display:block;margin-block:28px}
+.article-content .prose-figure{width:100%;margin:32px 0}
+.article-content .prose-figure img{width:100%}
+.article-content .prose-figure figcaption{text-align:left}
+@media(max-width:760px){.article-content .lead,.article-content .prose p{text-align:left}}
+
+/* Byline: author, date and reading time on one line, each with a matching outline icon. */
+.post-byline{flex-wrap:nowrap;column-gap:24px}
+.post-byline__item{white-space:nowrap}
+.post-byline__author{gap:9px;min-width:0}
+.post-byline__author strong{overflow:hidden;text-overflow:ellipsis;color:var(--minimal-ink);font-weight:700;font-size:var(--fs-sm)}
+@media(max-width:560px){.post-byline{flex-wrap:wrap;row-gap:10px}.post-byline__author{flex-basis:100%}}

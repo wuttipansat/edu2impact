@@ -22,7 +22,7 @@ $currentPage = $currentPage ?? '';
 <link rel="stylesheet" href="assets/css/modern-theme.css">
 <link rel="stylesheet" href="assets/css/minimal-palette.css">
 <link rel="stylesheet" href="assets/css/search.css">
-<?php if (!empty($postStyles)): ?><link rel="stylesheet" href="assets/css/post-byline.css"><?php endif; ?>
+<?php if (!empty($postStyles)): ?><link rel="stylesheet" href="assets/css/post-byline.css?v=<?= (int) @filemtime(__DIR__ . '/../assets/css/post-byline.css') ?>"><?php endif; ?>
 <?php if (!empty($listingStyles)): ?><link rel="stylesheet" href="assets/css/listing.css"><?php endif; ?>
 <script src="assets/js/main.js" defer></script>
 </head>
