@@ -76,7 +76,7 @@ Content files in data/:
 
 Run `python3 tools/validate_content.py` after editing any of these files.
 
-Optional record fields (any listing dataset; currently used by the `pck-canvas` innovation). Omit them and the detail page looks as before:
+Optional record fields (any listing dataset; `tool_url`/`tool_label` and the list fields are used by the `pck-canvas` innovation, `download_url` by a research post). Omit them and the detail page looks as before:
 
 | Field | Type | Shown on the detail page as |
 | --- | --- | --- |
@@ -84,6 +84,8 @@ Optional record fields (any listing dataset; currently used by the `pck-canvas` 
 | `tool_label` | text (needs `tool_url`) | The button text; defaults to "เปิดใช้เครื่องมือ" |
 | `audience`, `subjects`, `features` | arrays of text | "เหมาะกับ", "ใช้ได้กับกลุ่มสาระ", "ความสามารถหลัก" lists; also indexed by search as keywords |
 | `references` | array of text | "อ้างอิง" list |
+| `download_url` | local `assets/files/<name>.pdf` (lowercase letters, digits and hyphens; the file must exist) | An "เอกสารฉบับเต็ม" section at the end of the post with a download button showing the file size. External URLs and other file types are ignored |
+| `download_label` | text (needs `download_url`) | The button text; defaults to "ดาวน์โหลด PDF" |
 
 ## Web tools in apps/
 
@@ -91,8 +93,7 @@ apps/ holds self-contained web tools linked from records via `tool_url`. Upload 
 
 | Folder | Tool | Record |
 | --- | --- | --- |
-| apps/pck-canvas/ | PCK Canvas (current), a single-file HTML app for designing lessons: six zones, a 6-question self-survey that sets a starting level (ระบุ / เชื่อมโยง / ตัดสินใจ) per zone, adaptive scaffolding, mentor mode, research library, A4 print/PDF and JSON export/import. Work is saved in the teacher's browser (localStorage key `pckcanvas.v2`); on first load canvases saved by the earlier version (`pckcanvas.v1`) are copied over, never modified. It loads Google Fonts; everything else is inline. Colours follow the site's purple palette; the six zone colours are part of the tool's design and avoid green/teal. | innovations.json `pck-canvas` |
-| apps/pck-canvas-v1/ | The earlier PCK Canvas, kept so existing users can still open their saved work (key `pckcanvas.v1`). Not linked from any record; reachable from "Canvas ของฉัน" in the current tool. Do not change its storage key. | none |
+| apps/pck-canvas/ | PCK Canvas, a single-file HTML app for designing lessons (six zones, adaptive scaffolding). Work is saved in the teacher's browser (localStorage) and can be exported/imported as JSON. It loads Google Fonts; everything else is inline. Its colours follow the site's purple palette; the six zone colours are part of the tool's design. | innovations.json `pck-canvas` |
 
 Other checks in tools/: `python3 tools/check_contrast.py` (WCAG AA contrast of the palette pairs, including the search icon, dialog, results and agenda badges), `php tools/test_search.php` (search index, scoring, highlighting and excerpts) and `python3 tools/check_colours.py` (fails if any green or teal colour appears in assets/css/*.css or assets/images/*.svg).
 
@@ -102,7 +103,7 @@ Future integration should join Project ID, Researcher ID and Innovation ID; main
 
 ## Upload and verification
 
-Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content; the supplied data files are unchanged demo data from the source repository. Do not upload tools/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
+Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ (including assets/files/, the PDFs linked by `download_url`) and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content; the supplied data files are unchanged demo data from the source repository. Do not upload tools/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
 
 Run on a PHP host:
 

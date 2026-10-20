@@ -38,6 +38,19 @@ function tool_url($record) {
     if (preg_match('~\Aapps/[a-z0-9-]+/\z~', $url) && is_file(__DIR__ . '/../' . $url . 'index.html')) { return $url; }
     return '';
 }
+// Optional PDF download: a local assets/files/<name>.pdf that exists. No external URLs, no traversal.
+function download_url($record) {
+    $url = $record['download_url'] ?? '';
+    if (!is_string($url) || !preg_match('~\Aassets/files/[a-z0-9-]+\.pdf\z~', $url)) { return ''; }
+    return is_file(__DIR__ . '/../' . $url) ? $url : '';
+}
+// Human-readable size of a local file, e.g. "590 KB" or "1.2 MB".
+function file_size_label($path) {
+    $bytes = is_file(__DIR__ . '/../' . $path) ? filesize(__DIR__ . '/../' . $path) : 0;
+    if ($bytes <= 0) { return ''; }
+    if ($bytes >= 1048576) { return rtrim(rtrim(number_format($bytes / 1048576, 1, '.', ''), '0'), '.') . ' MB'; }
+    return max(1, (int) round($bytes / 1024)) . ' KB';
+}
 // Optional list of non-empty strings (audience, subjects, features, references).
 function text_list($record, $key) {
     $value = $record[$key] ?? [];

@@ -57,6 +57,13 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
             if 'tool_label' in record:
                 assert isinstance(record['tool_label'], str) and record['tool_label'].strip(), f'{record["id"]}: tool_label must be text'
                 assert 'tool_url' in record, f'{record["id"]}: tool_label needs tool_url'
+            if 'download_url' in record:
+                url = record['download_url']
+                assert isinstance(url, str) and re.fullmatch(r'assets/files/[a-z0-9-]+\.pdf', url), f'{record["id"]}: download_url must be assets/files/<name>.pdf'
+                assert (base / url).is_file(), f'{record["id"]}: missing ' + url
+            if 'download_label' in record:
+                assert isinstance(record['download_label'], str) and record['download_label'].strip(), f'{record["id"]}: download_label must be text'
+                assert 'download_url' in record, f'{record["id"]}: download_label needs download_url'
             for key in ('audience', 'subjects', 'features', 'references'):
                 if key in record:
                     value = record[key]
