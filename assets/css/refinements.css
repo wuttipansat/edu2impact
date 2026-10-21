@@ -109,3 +109,12 @@ a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);ou
 @media(max-width:860px){.contact-cards{grid-template-columns:1fr}.contact-card{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:16px;padding:20px}.contact-card__icon{margin:0}.contact-card__label{flex:1}.contact-card__value{flex-basis:100%}}
 @media(max-width:640px){.contact-section{padding-block:32px 48px}}
 @media(prefers-reduced-motion:reduce){.contact-card{transition:none}}
+
+/* ---------- Home hero: slow automatic zoom on the active slide ---------- */
+/* The active image eases from 100% to 108% over the slide's time on screen. The outgoing slide
+   keeps its zoom while it fades, and resets only once hidden, so there is never a visible jump. */
+.hero-slide{overflow:hidden}
+.hero-slide .hero-slide-image{transform:scale(1);transform-origin:center;transition:transform 0s linear .7s;will-change:transform}
+.hero-slide.is-active .hero-slide-image{transform:scale(1.08);transition:transform 8s ease-out}
+@starting-style{.hero-slide.is-active .hero-slide-image{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.hero-slide .hero-slide-image,.hero-slide.is-active .hero-slide-image{transform:none!important;transition:none!important}}

@@ -8,6 +8,7 @@ return [
  'innovations' => ['eyebrow' => 'EDU2IMPACT / INNOVATION', 'title' => 'Ideas ready to use.', 'highlight' => 'to use.', 'intro' => 'นวัตกรรมการศึกษาที่พร้อมทดลองใช้ในห้องเรียน'],
  'workshops' => ['eyebrow' => 'EDU2IMPACT / WORKSHOP', 'title' => 'Learn it hands-on.', 'highlight' => 'hands-on.', 'intro' => 'เวิร์กช็อปสำหรับครูและเครือข่ายการศึกษา'],
  'partners' => ['eyebrow' => 'EDU2IMPACT / PARTNERS', 'title' => 'Partners that move research forward.', 'highlight' => 'forward.', 'intro' => 'เครือข่ายที่ช่วยให้งานวิจัยถูกนำไปใช้และขยายผล'],
+ 'contact' => ['eyebrow' => 'EDU2IMPACT / CONTACT', 'title' => "Let's create impact together.", 'highlight' => 'together.', 'intro' => 'สนใจนำงานวิจัย นวัตกรรม หรือเวิร์กช็อปไปประยุกต์ใช้ในโรงเรียนหรือหน่วยงานของคุณ ติดต่อเราเพื่อหารือแนวทางความร่วมมือ'],
  'about' => ['eyebrow' => 'EDU2IMPACT / ABOUT', 'title' => 'What is EDU2IMPACT?', 'highlight' => 'EDU2IMPACT?', 'intro' => 'แพลตฟอร์มที่เชื่อมงานวิจัยกับการนำไปใช้จริง'],
  'search' => ['eyebrow' => 'EDU2IMPACT / SEARCH', 'title' => 'Find anything.', 'highlight' => 'anything.', 'intro' => 'ค้นหางานวิจัย นวัตกรรม เวิร์กช็อป และทุกหน้าในเว็บไซต์'],
 ];

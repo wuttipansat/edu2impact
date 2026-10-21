@@ -24,7 +24,7 @@ $heroSlides = array_map(static function (array $slide): array {
     ['key' => 'research', 'label' => 'RESEARCH', 'image' => 'hero-innovation.webp', 'href' => 'research.php', 'cta' => 'View research'],
     ['key' => 'innovations', 'label' => 'INNOVATION', 'image' => 'hero-impact.webp', 'href' => 'innovations.php', 'cta' => 'View innovations'],
     ['key' => 'workshops', 'label' => 'WORKSHOP', 'image' => 'hero-resources.webp', 'href' => 'workshops.php', 'cta' => 'View workshops'],
-    ['key' => 'partners', 'label' => 'PARTNERS', 'image' => 'hero-partners.webp', 'href' => 'partners.php', 'cta' => 'Meet partners'],
+    ['key' => 'contact', 'label' => 'CONTACT', 'image' => 'hero-partners.webp', 'href' => 'contact.php', 'cta' => 'Contact us'],
 ]);
 require __DIR__ . '/includes/header.php';
 ?>
