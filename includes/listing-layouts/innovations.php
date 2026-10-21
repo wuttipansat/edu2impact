@@ -8,7 +8,7 @@
     <div class="show-card__body">
       <h3><a class="show-card__link" href="<?= e(detail_url($kind, $record['id'])) ?>"><?= e($record['title']) ?></a></h3>
       <p><?= e($record['summary'] ?? '') ?></p>
-      <span class="show-card__cta" aria-hidden="true"><?= e($listing['cta']) ?> →</span>
+      <span class="show-card__cta" aria-hidden="true"><?= e($listing['cta']) ?> <?= icon_arrow() ?></span>
     </div>
   </article>
 <?php endforeach; ?>

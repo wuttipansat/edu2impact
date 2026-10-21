@@ -76,7 +76,7 @@
 .search-dialog::backdrop{background:rgba(43,15,53,.55)}
 .search-dialog[open]{animation:search-dialog-in .15s ease-out}
 @keyframes search-dialog-in{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
-.search-dialog__panel{padding:24px}
+.search-dialog__panel{padding:20px}
 .search-dialog__top{display:flex;align-items:flex-start;gap:10px}
 .search-dialog__form{display:flex;flex:1;gap:10px;min-width:0;margin:0}
 .search-dialog__field input{font-size:var(--fs-lg)}
@@ -85,11 +85,6 @@
 .search-dialog__close{display:grid;flex:none;place-items:center;width:44px;height:44px;margin-top:6px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--minimal-muted);font-size:28px;line-height:1;cursor:pointer}
 .search-dialog__close:hover{background:var(--purple-50);color:var(--purple-900)}
 .search-dialog__close:focus-visible{outline:3px solid var(--purple-600);outline-offset:2px}
-.search-dialog__hint{margin:12px 0 0;color:var(--minimal-muted);font-size:var(--fs-sm)}
-.search-dialog__links{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--minimal-line)}
-.search-dialog__links a{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border:1px solid var(--purple-200);border-radius:999px;color:var(--minimal-ink);font-size:var(--fs-sm);font-weight:600;text-decoration:none}
-.search-dialog__links a:hover{background:var(--purple-50);color:var(--purple-900)}
-.search-dialog__links a:focus-visible{outline:3px solid var(--purple-600);outline-offset:2px}
 html.search-open{overflow:hidden}
 @media(max-width:760px){
   .search-dialog{margin-top:16px}

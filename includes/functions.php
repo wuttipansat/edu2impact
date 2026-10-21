@@ -196,3 +196,17 @@ function author_initial($name) {
     $name = preg_replace('/^[เแโใไ]+/u', '', $name);
     return $name === '' ? '' : mb_strtoupper(mb_substr($name, 0, 1));
 }
+
+// Bold stroked arrow icon used wherever the site previously printed an arrow glyph.
+// $dir: right | up-right | chevron-right | chevron-left
+function icon_arrow(string $dir = 'right'): string
+{
+    $paths = [
+        'right' => '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+        'up-right' => '<path d="M7 17 17 7"/><path d="M8 7h9v9"/>',
+        'chevron-right' => '<path d="m9 6 6 6-6 6"/>',
+        'chevron-left' => '<path d="m15 6-6 6 6 6"/>',
+    ];
+    $d = $paths[$dir] ?? $paths['right'];
+    return '<svg class="icon-arrow icon-arrow--' . $dir . '" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $d . '</svg>';
+}

@@ -9,7 +9,7 @@
 .home-hero .actions{margin-top:32px}
 .home-hero .actions .button{margin:0}
 .hero-primary{display:inline-flex;align-items:center;gap:14px;min-height:56px;padding:15px 22px 15px 26px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.42);color:var(--minimal-ink);font-size:var(--fs-sm);font-weight:800;letter-spacing:.15px;transition:transform .25s ease,box-shadow .25s ease,filter .25s ease}
-.hero-primary::after{content:'↗';display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:rgba(43,15,53,.14);font-size:var(--fs-lg);line-height:1;transition:transform .25s ease,background .25s ease}
+.hero-primary::after{content:'';display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:rgba(43,15,53,.14);font-size:var(--fs-lg);line-height:1;transition:transform .25s ease,background .25s ease}
 .hero-primary:hover{background:var(--purple-200);box-shadow:0 16px 34px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.55);color:var(--minimal-ink);filter:saturate(1.05);transform:translateY(-3px)}
 .hero-primary:hover::after{background:rgba(43,15,53,.22);transform:translate(2px,-2px)}
 .hero-primary:focus-visible{outline:3px solid rgba(255,255,255,.92);outline-offset:4px}

@@ -108,8 +108,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,su
 
 /* ===== Warm accent: small, non-interactive, dark purple surfaces only ===== */
 .brand>span:first-of-type{color:var(--accent-warm)!important}
-.footer strong{color:var(--accent-warm)!important}
-.footer-contact span{color:var(--accent-warm)!important}
+.footer strong{color:var(--purple-200)!important}
+.footer-contact span{color:var(--purple-200)!important}
 
 /* Demo notice is a warning, so it keeps a warm (non-purple) treatment */
 .demo-bar{background:#fff3e8!important;color:#5c3d12!important;border-bottom-color:#f3dcc4!important}

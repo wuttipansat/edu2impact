@@ -13,7 +13,7 @@ $posts = $fileRecords;
       <div class="agenda-info">
         <h3><a class="lib-stretch" href="<?= e(detail_url($kind, $record['id'])) ?>"><?= e($record['title']) ?></a></h3>
       </div>
-      <span class="agenda-cta" aria-hidden="true">→</span>
+      <span class="agenda-cta" aria-hidden="true"><?= icon_arrow() ?></span>
     </article>
     <?php endforeach; ?>
   </section>

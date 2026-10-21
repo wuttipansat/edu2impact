@@ -29,13 +29,13 @@ require __DIR__ . '/includes/header.php';
       <p class="search-message__label" id="search-suggest-label">ลองค้นหา</p>
       <ul class="search-suggest" aria-labelledby="search-suggest-label"><?php foreach ($suggestions as $word): ?><li><a href="search.php?q=<?= e(rawurlencode($word)) ?>"><?= e($word) ?></a></li><?php endforeach; ?></ul>
       <?php endif; ?>
-      <nav class="search-quick" aria-label="ลิงก์ด่วน"><?php foreach ($quickLinks as $href => $label): ?><a href="<?= e($href) ?>"><?= e($label) ?> →</a><?php endforeach; ?></nav>
+      <nav class="search-quick" aria-label="ลิงก์ด่วน"><?php foreach ($quickLinks as $href => $label): ?><a href="<?= e($href) ?>"><?= e($label) ?> <?= icon_arrow() ?></a><?php endforeach; ?></nav>
     </div>
 <?php elseif ($result['total'] === 0): ?>
     <div class="search-message" role="status">
       <h2>ไม่พบผลลัพธ์สำหรับ “<?= e($q) ?>”</h2>
       <p>ลองใช้คำที่สั้นลง ตรวจการสะกด หรือค้นหาเป็นภาษาอังกฤษ/ไทยอีกแบบ</p>
-      <nav class="search-quick" aria-label="ลิงก์ด่วน"><?php foreach ($quickLinks as $href => $label): ?><a href="<?= e($href) ?>"><?= e($label) ?> →</a><?php endforeach; ?></nav>
+      <nav class="search-quick" aria-label="ลิงก์ด่วน"><?php foreach ($quickLinks as $href => $label): ?><a href="<?= e($href) ?>"><?= e($label) ?> <?= icon_arrow() ?></a><?php endforeach; ?></nav>
     </div>
 <?php else: ?>
     <p class="search-status" role="status">พบ <strong><?= (int) $result['total'] ?></strong> รายการสำหรับ “<?= e($q) ?>”</p>
@@ -57,7 +57,7 @@ require __DIR__ . '/includes/header.php';
         </li>
         <?php endforeach; ?>
       </ol>
-      <?php if (count($entries) > SEARCH_GROUP_LIMIT && $group['page'] !== ''): ?><a class="search-group__more" href="<?= e($group['page']) ?>">ดูทั้งหมดในหน้า <?= e($group['page_name']) ?> →</a><?php endif; ?>
+      <?php if (count($entries) > SEARCH_GROUP_LIMIT && $group['page'] !== ''): ?><a class="search-group__more" href="<?= e($group['page']) ?>">ดูทั้งหมดในหน้า <?= e($group['page_name']) ?> <?= icon_arrow() ?></a><?php endif; ?>
     </section>
     <?php endforeach; ?>
 <?php endif; ?>
