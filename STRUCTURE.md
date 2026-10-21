@@ -79,7 +79,7 @@ Content files in data/:
 | File | Content |
 | --- | --- |
 | site.json | Site name, university, contact details, demo_mode |
-| research.json, innovations.json, workshops.json | Listing and detail records (`id`, `title`, `category`, `summary`, `image`, `date`, `author`, `featured`, `body`) |
+| research.json, innovations.json, workshops.json | Listing and detail records (`id`, `title`, `category`, `summary`, `image`, `date`, `author`, `featured`, `public`, `body`) |
 | events.json | Home-page events (`id`, `date` YYYY-MM-DD, `type`, `title`, `meta`, `featured`). Only events dated today or later (Asia/Bangkok) appear, soonest first, max three |
 
 Run `python3 tools/validate_content.py` after editing any of these files.
@@ -95,6 +95,10 @@ Optional record fields (any listing dataset; `tool_url`/`tool_label` and the lis
 | `download_url` | local `assets/files/<name>.pdf` (lowercase letters, digits and hyphens; the file must exist) | An "เอกสารฉบับเต็ม" section at the end of the post with a download button showing the file size. External URLs and other file types are ignored |
 | `download_label` | text (needs `download_url`) | The button text; defaults to "ดาวน์โหลด PDF" |
 | `related` | array of `{"kind": "research" \| "innovations" \| "workshops", "id": "…"}` | Cards before "อ้างอิง", one per linked record (type label, title, summary), linking to its detail page; the cards have no visible heading. See below |
+
+### Hiding a record (`public`)
+
+Every record in research.json, innovations.json and workshops.json has `"public": true` or `false` (events may have it too). `load_data()` in includes/functions.php drops records with `"public": false` before any page sees them, so a hidden record disappears from listings, the home page, search and related cards, and its detail URL returns 404. A record without the key is treated as public. `tools/validate_content.py` requires the key on the three datasets, lists hidden records, and notes any related links that point at one.
 
 ### Links between records (`related`)
 

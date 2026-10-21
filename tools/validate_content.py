@@ -11,6 +11,7 @@ errors = []
 LINK_KINDS = ('research', 'innovations', 'workshops')
 records_by_kind = {}  # dataset -> ids, filled as files load; links are checked once every file is loaded
 links = []  # (dataset, record id, position, kind, id)
+hidden = set()  # (dataset, id) of records with "public": false
 for name in ('site', 'research', 'innovations', 'workshops', 'events'):
     try:
         data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
@@ -33,6 +34,8 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
                 assert re.fullmatch(r'\d{4}-\d{2}-\d{2}', event['date']), f'event {index}: date must be YYYY-MM-DD'
                 datetime.date.fromisoformat(event['date'])
                 assert isinstance(event.get('featured'), bool), 'featured must be boolean'
+                if 'public' in event:
+                    assert isinstance(event['public'], bool), f'event {index}: public must be true or false'
             continue
         seen = set()
         for index, record in enumerate(data):
@@ -60,6 +63,9 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
                 if 'caption' in block:
                     assert isinstance(block['caption'], str), where + ': caption must be text'
             assert isinstance(record.get('featured'), bool), 'featured must be boolean'
+            assert isinstance(record.get('public'), bool), f'{record["id"]}: public must be true or false'
+            if not record['public']:
+                hidden.add((name, record['id']))
             for key in ('date', 'author', 'image'):
                 assert isinstance(record.get(key), str), key + ' must be text'
             if record['date']:
@@ -116,6 +122,12 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 print('All content files passed validation.')
+
+hidden_links = sorted({(kind, target) for _, _, _, kind, target in links if (kind, target) in hidden})
+if hidden:
+    print(f'Hidden from the website ("public": false): ' + ', '.join(f'{k}/{i}' for k, i in sorted(hidden)))
+for kind, target in hidden_links:
+    print(f'Note: {kind}/{target} is hidden, so related cards that link to it are not shown.')
 
 # Reminder only (never fails): Thai paragraphs that tools/segment_thai.py has not segmented yet
 # still show on the page, but the browser may break their lines mid-word.

@@ -12,6 +12,11 @@ function load_data($name) {
     if (!is_array($data) || json_last_error() !== JSON_ERROR_NONE) {
         throw new RuntimeException('Invalid JSON data');
     }
+    // "public": false hides a record everywhere: listings, detail pages (404), home, search and related cards.
+    // A record without the key counts as public, so older content keeps showing.
+    if ($name !== 'site') {
+        $data = array_values(array_filter($data, static fn ($record): bool => !is_array($record) || ($record['public'] ?? true) !== false));
+    }
     return $data;
 }
 function query_string($key) {
