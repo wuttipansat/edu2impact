@@ -32,3 +32,6 @@
 .post-byline__author{gap:9px;min-width:0}
 .post-byline__author strong{overflow:hidden;text-overflow:ellipsis;color:var(--minimal-ink);font-weight:700;font-size:var(--fs-sm)}
 @media(max-width:560px){.post-byline{flex-wrap:wrap;row-gap:10px}.post-byline__author{flex-basis:100%}}
+
+/* Thai words from thai_text() (includes/functions.php): lines break between words, never inside one. */
+.tw{white-space:nowrap}

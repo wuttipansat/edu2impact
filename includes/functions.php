@@ -210,3 +210,47 @@ function icon_arrow(string $dir = 'right'): string
     $d = $paths[$dir] ?? $paths['right'];
     return '<svg class="icon-arrow icon-arrow--' . $dir . '" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $d . '</svg>';
 }
+
+// Thai line breaking. Browsers split unfamiliar Thai words (loanwords, names) mid-word, so
+// tools/segment_thai.py stores word boundaries per paragraph in data/thai-breaks.json, keyed
+// by a hash of the text. Here each Thai word becomes a no-wrap span with <wbr> between words,
+// so lines can only break between words. Text without an entry (not yet segmented, or edited
+// since) is escaped as plain text, exactly as before.
+function thai_breaks(): array
+{
+    static $map = null;
+    if ($map === null) {
+        $map = [];
+        $text = @file_get_contents(__DIR__ . '/../data/thai-breaks.json');
+        $data = $text === false ? null : json_decode($text, true);
+        if (is_array($data) && is_array($data['paragraphs'] ?? null)) { $map = $data['paragraphs']; }
+    }
+    return $map;
+}
+function thai_text(string $text): string
+{
+    $offsets = thai_breaks()[sha1($text)] ?? null;
+    if (!is_array($offsets)) { return e($text); }
+    $tokens = [];
+    $start = 0;
+    foreach ($offsets as $end) {
+        if (!is_int($end) || $end <= $start) { return e($text); }
+        $tokens[] = mb_substr($text, $start, $end - $start, 'UTF-8');
+        $start = $end;
+    }
+    $tokens[] = mb_substr($text, $start, null, 'UTF-8');
+    $isThai = static fn (string $char): bool => preg_match('/^[\x{0E00}-\x{0E7F}]$/u', $char) === 1;
+    $html = '';
+    foreach ($tokens as $i => $token) {
+        if ($token === '') { continue; }
+        // Words longer than a line could hold are left wrappable so they never overflow.
+        $wrap = !ctype_space($token) && preg_match('/[\x{0E00}-\x{0E7F}]/u', $token) && mb_strlen($token, 'UTF-8') <= 40;
+        $html .= $wrap ? '<span class="tw">' . e($token) . '</span>' : e($token);
+        $next = $tokens[$i + 1] ?? '';
+        // Allow a break only between two Thai words, never before punctuation such as ) or ".
+        if ($next !== '' && $isThai(mb_substr($token, -1, 1, 'UTF-8')) && $isThai(mb_substr($next, 0, 1, 'UTF-8'))) {
+            $html .= '<wbr>';
+        }
+    }
+    return $html;
+}

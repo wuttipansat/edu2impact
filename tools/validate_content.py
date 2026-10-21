@@ -1,5 +1,6 @@
 """Validate the public JSON content before uploading. Python 3; no packages."""
 import datetime
+import hashlib
 import json
 import re
 import sys
@@ -115,3 +116,19 @@ if errors:
     print('\n'.join(errors))
     sys.exit(1)
 print('All content files passed validation.')
+
+# Reminder only (never fails): Thai paragraphs that tools/segment_thai.py has not segmented yet
+# still show on the page, but the browser may break their lines mid-word.
+try:
+    breaks = json.loads((base / 'data' / 'thai-breaks.json').read_text(encoding='utf-8')).get('paragraphs', {})
+except (ValueError, OSError):
+    breaks = {}
+missing = 0
+for name in LINK_KINDS:
+    for record in json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8')):
+        texts = [record.get('summary')] + [b for b in record.get('body', []) if isinstance(b, str)]
+        for text in texts:
+            if isinstance(text, str) and re.search('[\u0E00-\u0E7F]', text) and hashlib.sha1(text.encode('utf-8')).hexdigest() not in breaks:
+                missing += 1
+if missing:
+    print(f'Note: {missing} Thai paragraph(s) are not segmented yet. Run: python3 tools/segment_thai.py')

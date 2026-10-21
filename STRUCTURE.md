@@ -137,6 +137,10 @@ templates/ holds copy-and-edit examples for the content team, with a Thai guide 
 
 The detail page renders the block as a `<figure class="prose-figure">` (styles in assets/css/main.css). A block with a missing file or no alt text is skipped on the page and fails `tools/validate_content.py`. Image paths and alt text are not indexed by search; captions are. `assets/images/content-placeholder.png` can stand in until the real image is ready.
 
+### Thai line breaking
+
+Browsers break Thai lines with a built-in dictionary that splits unfamiliar words (loanwords, names) mid-word. `tools/segment_thai.py` (needs `pip install pythainlp`) segments every summary and body paragraph of research, innovations and workshops, and writes word boundaries to `data/thai-breaks.json`, keyed by a SHA-1 of the paragraph text. On detail pages, `thai_text()` in includes/functions.php wraps each Thai word in `<span class="tw">` (`white-space:nowrap`, assets/css/post-byline.css) with `<wbr>` between Thai words, so lines break only between words while paragraphs stay justified on wide screens. A paragraph with no entry, because it was added or edited after the last run, is escaped as plain text exactly as before, so stale breaks never appear; `tools/validate_content.py` prints a reminder with the count. The JSON content itself is never modified, so search and copy-paste are unaffected.
+
 ## Web tools in apps/
 
 apps/ holds self-contained web tools linked from records via `tool_url`. Upload apps/ with the PHP files.
