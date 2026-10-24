@@ -207,7 +207,7 @@ html{scroll-padding-top:104px}
 /* ===================================================================== 5. Home sections */
 .home-page{background:var(--surface)}
 .home-section{position:relative;padding:104px 0}
-.home-section.home-section--cards,.home-section.home-section--pairs,.home-section.home-section--tools{padding:104px 0}
+.home-section.home-section--cards,.home-section.home-section--pairs{padding:104px 0}
 .home-section--light{background:var(--surface)}
 .home-section--dark{background:var(--surface-dark);color:#fff}
 .home-section--white{background:#fff}
@@ -263,7 +263,7 @@ html{scroll-padding-top:104px}
 .home-section.home-section--dark a:focus-visible{outline-color:var(--purple-200)}
 
 @media(max-width:760px){
-  .home-section,.home-section.home-section--cards,.home-section.home-section--pairs,.home-section.home-section--tools{padding:64px 0}
+  .home-section,.home-section.home-section--cards,.home-section.home-section--pairs{padding:64px 0}
   .home-section-heading{align-items:flex-start;flex-direction:column;gap:14px;margin-bottom:28px}
   .home-section-heading h2{font-size:clamp(28px,8vw,34px)}
 }
@@ -340,6 +340,9 @@ html{scroll-padding-top:104px}
 .lib-row::after{background:var(--purple-800);-webkit-mask:url("../images/icon-arrow-up-right.svg") center/16px no-repeat;mask:url("../images/icon-arrow-up-right.svg") center/16px no-repeat}
 .lib-row:hover{background:transparent}
 .lib-row:hover::before,.lib-row:hover::after,.lib-row:focus-within::before,.lib-row:focus-within::after{opacity:1}
+/* On hover or focus the circle fills with --purple-800 and the arrow turns white (about 11:1), so the two never share a colour. */
+.lib-row:hover::before,.lib-row:focus-within::before{background:var(--purple-800)}
+.lib-row:hover::after,.lib-row:focus-within::after{background:#fff}
 .lib-row h3{margin:6px 0 8px;font-family:var(--font-thai);font-size:clamp(20px,1.9vw,24px);font-weight:600;line-height:1.45}
 .lib-row h3 a{color:var(--ink);text-decoration:none}
 .lib-row:hover h3 a{color:var(--purple-700)}
@@ -438,11 +441,6 @@ html{scroll-padding-top:104px}
 .contact-card__label{color:var(--ink-muted);font-size:var(--fs-sm);font-weight:500}
 .contact-card__value{color:var(--ink);font-size:var(--fs-lg);font-weight:600;line-height:1.5;overflow-wrap:anywhere}
 .contact-card__value--pending{color:var(--ink-muted);font-weight:500}
-a.contact-card__link{text-decoration:none}
-a.contact-card__link::after{content:"";position:absolute;inset:0}
-a.contact-card__link:hover{color:var(--purple-700)}
-a.contact-card__link:focus-visible{outline:0}
-a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);outline-offset:2px}
 @media(max-width:860px){
   .contact-cards{grid-template-columns:1fr}
   .contact-card,.contact-card+.contact-card{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:16px;padding:24px 0;border-left:0;border-bottom:1px solid var(--line)}
@@ -452,20 +450,10 @@ a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);ou
 }
 
 /* ===================================================================== 11b. Tools and media */
-.tool-list{border-top:1px solid var(--line)}
-.tool-row{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:32px;align-items:center;padding:32px 0;border-bottom:1px solid var(--line)}
-.tool-row__media{display:block;aspect-ratio:16/10;overflow:hidden;border-radius:var(--radius-sm);background:var(--purple-100)}
-.tool-row__media img{width:100%;height:100%;object-fit:cover}
-.tool-row h3{margin:6px 0 10px;font-family:var(--font-thai);font-size:clamp(22px,2.2vw,30px);font-weight:600;line-height:1.4}
-.tool-row__summary{max-width:64ch;margin:0 0 18px;color:var(--ink-muted);line-height:1.75}
-.tool-row__actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;margin:0}
-.tool-row__actions .text-link{display:inline-flex;align-items:center;min-height:44px;color:var(--purple-800);font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600}
-.tool-row__note{color:var(--ink-muted);font-size:var(--fs-sm)}
 .empty-guide{max-width:640px;padding:clamp(24px,4vw,48px) 0}
 .empty-guide h2{margin:0 0 12px;font-family:var(--font-thai);font-size:clamp(26px,3vw,38px);font-weight:500;line-height:1.35}
 .empty-guide p{margin:0 0 8px;color:var(--ink-muted)}
 .empty-guide .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
-@media(max-width:760px){.tool-row{grid-template-columns:1fr;gap:18px;padding:26px 0}}
 
 /* ===================================================================== 12. Search */
 .search-page{padding-top:clamp(48px,6vw,80px)}
@@ -503,7 +491,6 @@ a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);ou
 /* Round 6 / 3. One row on desktop: brand and contact on the left, the four site columns on the right, then one slim bar. No divider between them. */
 .footer-main{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(0,2.1fr);column-gap:clamp(40px,5vw,96px);align-items:start;padding-bottom:clamp(32px,3vw,44px)}
 .footer-top-row{display:grid;gap:18px;padding:0}
-.footer-tagline{max-width:44ch;margin:12px 0 0;font-size:var(--fs-base);line-height:1.7}
 .footer-brand,.footer .brand.footer-brand{display:inline-block;color:#fff;font-family:var(--font-ui);font-size:clamp(32px,2.6vw,40px);font-weight:500;line-height:1.1;letter-spacing:0;text-decoration:none}
 .footer-brand span{color:var(--purple-300)}
 .footer-brand:hover{color:#fff;text-decoration:none}
@@ -511,7 +498,6 @@ a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);ou
 .footer a{text-decoration:none}
 .footer a:hover{color:#fff}
 .footer-contact-list{display:grid;gap:6px;max-width:46ch;margin:0;padding:0;list-style:none;color:var(--on-dark-muted);font-size:var(--fs-sm);line-height:1.7;overflow-wrap:anywhere}
-.footer-contact-list a{display:inline-block;padding-block:2px}
 .footer-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px clamp(24px,3.5vw,56px);padding:0}
 .footer-col__title{margin:0;color:var(--purple-200);font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5;letter-spacing:0}
 .footer-links{display:grid;gap:2px;margin:14px 0 0;padding:0;list-style:none}
@@ -531,11 +517,8 @@ a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);ou
   .lib-feature:hover .lib-feature__media img,.lib-pick:hover .lib-pick__media img,.show-card:hover .show-card__media img{transform:none}
 }
 
-/* 11c. Home: research-to-workshop pairs, tools */
+/* 11c. Home: research-to-workshop pairs */
 .home-section--dark a:focus-visible{outline-color:var(--purple-200)}
-.tool-list--home .tool-row{grid-template-columns:minmax(0,1fr)}
-.tool-list--home .lib-meta{display:flex;flex-wrap:wrap;gap:4px 14px}
-.tool-list--home .tool-row__summary{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* 11d. Contact: what people can contact the team about, ordered by how often each is needed */
 .contact-topics{margin:0 0 64px}
@@ -744,9 +727,9 @@ main:focus{outline:0}
    text that wraps onto several lines. Dark sections set --draw-line to a light purple. */
 :root{--draw-line:currentColor;--draw-offset:2px;--draw-time:.3s}
 .latest-main__title a,.latest-item__title a,.xcard__link,.show-card__link,.lib-pick h3 a,.lib-row h3 a,.agenda-info h3 a,
-.search-result h3 a,a.contact-card__link,
-.about-step a,.back-link,.tool-row__actions .text-link,.show-card__cta,.search-group__more,.search-quick a,.text-link,
-.footer-links a,.footer-contact-list a,.lib-feature__body h3 a,.about-counts span{
+.search-result h3 a,
+.about-step a,.back-link,.show-card__cta,.search-group__more,.search-quick a,.text-link,
+.footer-links a,.lib-feature__body h3 a,.about-counts span{
   background-image:linear-gradient(var(--draw-line),var(--draw-line));
   background-repeat:no-repeat;
   background-origin:content-box;
@@ -757,18 +740,17 @@ main:focus{outline:0}
   transition:background-size var(--draw-time) cubic-bezier(.22,.61,.36,1),color .2s ease;
 }
 /* Links that are a row with an icon, or that need a 44px target, get their height from padding so the line sits under the text. */
-.about-step a,.back-link,.tool-row__actions .text-link,.show-card__cta,.search-group__more,.search-quick a,.text-link{min-height:0;padding-block:8px;--draw-offset:5px}
-.about-step a,.back-link,.tool-row__actions .text-link,.show-card__cta{display:inline-flex}
-a.contact-card__link{width:fit-content}
+.about-step a,.back-link,.show-card__cta,.search-group__more,.search-quick a,.text-link{min-height:0;padding-block:8px;--draw-offset:5px}
+.about-step a,.back-link,.show-card__cta{display:inline-flex}
 .footer,.lib-feature,.home-section--dark{--draw-line:var(--purple-200)}
 .latest-main__title a:hover,.latest-item__title a:hover,.xcard__link:hover,.show-card__link:hover,.lib-pick h3 a:hover,.lib-row h3 a:hover,.agenda-info h3 a:hover,
-.search-result h3 a:hover,a.contact-card__link:hover,
-.about-step a:hover,.back-link:hover,.tool-row__actions .text-link:hover,.show-card__cta:hover,.search-group__more:hover,.search-quick a:hover,.text-link:hover,
-.footer-links a:hover,.footer-contact-list a:hover,.lib-feature__body h3 a:hover,.about-counts a:hover span,
+.search-result h3 a:hover,
+.about-step a:hover,.back-link:hover,.show-card__cta:hover,.search-group__more:hover,.search-quick a:hover,.text-link:hover,
+.footer-links a:hover,.lib-feature__body h3 a:hover,.about-counts a:hover span,
 .latest-main__title a:focus-visible,.latest-item__title a:focus-visible,.xcard__link:focus-visible,.show-card__link:focus-visible,.lib-pick h3 a:focus-visible,.lib-row h3 a:focus-visible,.agenda-info h3 a:focus-visible,
-.search-result h3 a:focus-visible,a.contact-card__link:focus-visible,
-.about-step a:focus-visible,.back-link:focus-visible,.tool-row__actions .text-link:focus-visible,.show-card__cta:focus-visible,.search-group__more:focus-visible,.search-quick a:focus-visible,.text-link:focus-visible,
-.footer-links a:focus-visible,.footer-contact-list a:focus-visible,.lib-feature__body h3 a:focus-visible,.about-counts a:focus-visible span,
+.search-result h3 a:focus-visible,
+.about-step a:focus-visible,.back-link:focus-visible,.show-card__cta:focus-visible,.search-group__more:focus-visible,.search-quick a:focus-visible,.text-link:focus-visible,
+.footer-links a:focus-visible,.lib-feature__body h3 a:focus-visible,.about-counts a:focus-visible span,
 .xcard:hover .xcard__link,.show-card:hover .show-card__link,.footer-links a[aria-current=page]{background-size:100% 2px;text-decoration:none}
 /* Links inside article text keep a quiet line at all times, and the line thickens and darkens on hover. */
 .prose a{
@@ -782,8 +764,8 @@ a.contact-card__link{width:fit-content}
 .prose a:hover,.prose a:focus-visible{color:var(--purple-900);background-size:100% 1px,100% 3px;text-decoration:none}
 @media(prefers-reduced-motion:reduce){
   .latest-main__title a,.latest-item__title a,.xcard__link,.show-card__link,.lib-pick h3 a,.lib-row h3 a,.agenda-info h3 a,
-  .search-result h3 a,a.contact-card__link,.about-step a,.back-link,.tool-row__actions .text-link,.show-card__cta,.search-group__more,.search-quick a,.text-link,
-  .footer-links a,.footer-contact-list a,.lib-feature__body h3 a,.about-counts span,.prose a{transition:none}
+  .search-result h3 a,.about-step a,.back-link,.show-card__cta,.search-group__more,.search-quick a,.text-link,
+  .footer-links a,.lib-feature__body h3 a,.about-counts span,.prose a{transition:none}
 }
 
 .page-hero p:last-child{text-wrap:balance}
@@ -810,3 +792,55 @@ a.contact-card__link{width:fit-content}
 .shop-card__price{margin:0;color:var(--purple-900);font-family:var(--font-ui);font-size:var(--fs-lg,1.25rem);font-weight:700}
 @media(max-width:1024px){.shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.shop-grid{grid-template-columns:minmax(0,1fr);gap:40px}}
+
+/* ===================================================================== Round 9: centred sliders (home: ประชาสัมพันธ์, Scoop)
+   One slide sits in the middle of the row; the neighbours show at both edges and are dimmed.
+   The track's side padding is the peek, so the first and last slide can reach the centre. */
+.stage{--peek:8%;--stage-gap:clamp(12px,1.6vw,24px);position:relative}
+.stage--video{--peek:19%}
+.stage__viewport{position:relative}
+.stage__track{display:flex;gap:var(--stage-gap);padding:0 var(--peek);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--purple-300) transparent}
+.stage[data-stage-ready] .stage__track{scrollbar-width:none}
+.stage[data-stage-ready] .stage__track::-webkit-scrollbar{display:none}
+.stage__item{flex:none;width:100%;scroll-snap-align:center;scroll-snap-stop:always}
+.stage[data-stage-ready] .stage__item{opacity:.4;transition:opacity .35s ease}
+.stage[data-stage-ready] .stage__item.is-active{opacity:1}
+.stage__caption{margin:14px 0 0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-sm);line-height:1.6}
+.stage[data-stage-ready] .stage__item:not(.is-active) .stage__caption{visibility:hidden}
+.stage__count{margin:18px 0 0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
+.stage__ctrls{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--peek) + 16px);aspect-ratio:var(--stage-ratio);pointer-events:none}
+.stage__ctrls[hidden]{display:none}
+.stage__ctrl:disabled{opacity:.35;cursor:default;transform:none}
+.stage__ctrl:disabled:hover{background:var(--purple-900);color:#fff;transform:none}
+.stage--promo{--stage-ratio:calc(100 / 42)}
+.stage--video{--stage-ratio:calc(100 / 34.875)}
+@media(max-width:640px){
+  .stage{--peek:6%}
+  .stage--video{--peek:7%}
+  .stage__viewport{position:static}
+  .stage__ctrls{inset:auto 0 0;display:flex;aspect-ratio:auto;justify-content:flex-end;gap:10px;padding:0}
+  .stage__count{margin:0;min-height:44px;line-height:44px;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){.stage[data-stage-ready] .stage__item{transition:none}}
+
+/* Promotion banner: the picture carries the message, so the frame is only a crop at one fixed ratio (2:1). */
+.banner{display:block;aspect-ratio:2/1;overflow:hidden;border-radius:6px;background:var(--purple-100)}
+.banner img{display:block;width:100%;height:100%;object-fit:cover}
+a.banner:focus-visible{outline:3px solid var(--purple-600);outline-offset:4px}
+
+/* Scoop: 16:9 cover with a play button; the player loads only after the visitor presses it. */
+.clip__frame{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:var(--surface-dark)}
+.stage[data-stage-ready] .stage__item:not(.is-active) .clip__frame{transform:scale(.92)}
+.stage[data-stage-ready] .clip__frame{transition:transform .35s ease}
+.clip__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.clip__play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none}
+.clip__play img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.clip__icon{position:relative;display:grid;place-items:center;width:72px;height:72px;border:2px solid #fff;border-radius:50%;background:var(--purple-900);color:#fff;transition:background-color .2s ease,color .2s ease,transform .2s ease}
+.clip__icon svg{margin-left:3px}
+.clip__play:hover .clip__icon{background:var(--purple-200);color:var(--purple-900);transform:scale(1.07)}
+.clip__play:focus-visible{outline:3px solid var(--purple-200);outline-offset:-3px}
+.clip__play:focus-visible .clip__icon{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 3px var(--purple-900)}
+.clip__title{margin:0 0 4px;color:var(--ink);font-family:var(--font-thai);font-size:clamp(18px,1.6vw,22px);font-weight:600;line-height:1.5}
+.clip__date{margin:0}
+@media(max-width:640px){.clip__icon{width:56px;height:56px}}
+@media(prefers-reduced-motion:reduce){.stage[data-stage-ready] .clip__frame,.clip__icon{transition:none}.clip__play:hover .clip__icon{transform:none}}

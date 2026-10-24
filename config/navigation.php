@@ -14,7 +14,6 @@ return [
  ['label' => 'คลังความรู้', 'key' => 'group-knowledge', 'children' => [
   ['label' => 'งานวิจัยและบทความ', 'file' => 'research.php', 'key' => 'research'],
   ['label' => 'สื่อและคู่มือ', 'file' => 'media.php', 'key' => 'media'],
-  ['label' => 'เครื่องมือออนไลน์', 'file' => 'tools.php', 'key' => 'tools'],
  ]],
  // One child per category from config/innovation-categories.php (built below). `also` keeps the group active
  // on the page that lists every innovation.

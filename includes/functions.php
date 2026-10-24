@@ -37,11 +37,6 @@ function shop_order_url($record) {
     $url = trim((string) ($record['order_url'] ?? ''));
     return preg_match('~^https?://~i', $url) ? $url : '';
 }
-// tel: address of a phone text such as "02-942-8268 ต่อ 731000": digits before "ต่อ" only, so the extension is not dialled.
-function phone_href($phone) {
-    $main = preg_split('/\s*(?:ต่อ|ext\.?|#)\s*/iu', (string) $phone)[0];
-    return preg_replace('/[^\d+]/', '', $main);
-}
 function query_string($key) {
     return isset($_GET[$key]) && is_string($_GET[$key]) ? trim($_GET[$key]) : '';
 }
@@ -97,18 +92,6 @@ function tool_url($record) {
     if (preg_match('~\Ahttps://[^\s<>"]+\z~', $url)) { return $url; }
     if (preg_match('~\Aapps/[a-z0-9-]+/\z~', $url) && is_file(__DIR__ . '/../' . $url . 'index.html')) { return $url; }
     return '';
-}
-// Records with a tool people can open (tool_url), from innovations and research, newest first.
-// Used by tools.php and the home page. Returns [['kind' => ..., 'record' => ...], ...].
-function tool_records(): array {
-    $found = [];
-    foreach (['innovations', 'research'] as $kind) {
-        foreach (load_data($kind) as $record) {
-            if (is_array($record) && tool_url($record) !== '') { $found[] = ['kind' => $kind, 'record' => $record]; }
-        }
-    }
-    usort($found, static fn (array $a, array $b): int => strtotime((string) ($b['record']['date'] ?? '')) <=> strtotime((string) ($a['record']['date'] ?? '')));
-    return $found;
 }
 // Optional PDF download: a local assets/files/<name>.pdf that exists. No external URLs, no traversal.
 function download_url($record) {

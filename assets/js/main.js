@@ -204,3 +204,119 @@
     box.hidden = false;
   });
 })();
+
+(() => {
+  // Home sliders ([data-stage]): ประชาสัมพันธ์ banners and Scoop videos. One slide is centred, the neighbours peek in
+  // at both edges. The row scrolls and snaps natively (swipe, wheel, keys); the buttons step one slide. Nothing moves
+  // by itself. Without JavaScript the row keeps its scrollbar and the video covers stay links to YouTube.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.querySelectorAll('[data-stage]').forEach(stage => {
+    const track = stage.querySelector('[data-stage-track]');
+    const items = track ? Array.from(track.children) : [];
+    const previous = stage.querySelector('[data-stage-prev]');
+    const next = stage.querySelector('[data-stage-next]');
+    const controls = stage.querySelector('.stage__ctrls');
+    const count = stage.querySelector('[data-stage-count]');
+    if (!track || !items.length || !previous || !next) return;
+    const playable = stage.hasAttribute('data-stage-play');
+    const noun = playable ? 'วิดีโอ' : 'สไลด์';
+    stage.setAttribute('data-stage-ready', '');
+    if (controls) controls.hidden = items.length < 2;
+    let active = -1;
+    let frame = 0;
+    let playing = null;
+
+    function centreOf(item) {
+      const box = track.getBoundingClientRect();
+      const rect = item.getBoundingClientRect();
+      return track.scrollLeft + rect.left - box.left - (box.width - rect.width) / 2;
+    }
+    function go(index) {
+      const target = items[Math.max(0, Math.min(items.length - 1, index))];
+      track.scrollTo({ left: centreOf(target), behavior: reduced.matches ? 'auto' : 'smooth' });
+    }
+    function stop() {
+      if (!playing) return;
+      playing.frame.replaceChildren(playing.link);
+      playing = null;
+    }
+    function setActive(index) {
+      if (index === active) return;
+      active = index;
+      items.forEach((item, i) => {
+        item.classList.toggle('is-active', i === index);
+        if (i === index) item.setAttribute('aria-current', 'true'); else item.removeAttribute('aria-current');
+      });
+      previous.disabled = index <= 0;
+      next.disabled = index >= items.length - 1;
+      if (count) {
+        count.firstElementChild.textContent = (index + 1) + ' / ' + items.length;
+        count.lastElementChild.textContent = noun + ' ' + (index + 1) + ' จาก ' + items.length + ': ' + (items[index].dataset.title || '');
+      }
+      if (playing && !items[index].contains(playing.frame)) stop();
+    }
+    function update() {
+      frame = 0;
+      const middle = track.scrollLeft;
+      let best = 0;
+      let distance = Infinity;
+      items.forEach((item, i) => {
+        const d = Math.abs(centreOf(item) - middle);
+        if (d < distance) { distance = d; best = i; }
+      });
+      setActive(best);
+    }
+    function queue() { if (!frame) frame = window.requestAnimationFrame(update); }
+
+    previous.addEventListener('click', () => go(active - 1));
+    next.addEventListener('click', () => go(active + 1));
+    track.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    stage.addEventListener('keydown', event => {
+      if (event.target.closest('iframe') || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+      event.preventDefault();
+      go(active + (event.key === 'ArrowRight' ? 1 : -1));
+    });
+    items.forEach((item, i) => {
+      // A slide at the edge only moves to the centre first; the second press opens its link or plays it.
+      // Whether it was centred is read when the pointer goes down, because the row starts scrolling at once.
+      let pressed = null;
+      item.addEventListener('pointerdown', () => { pressed = i === active; }, true);
+      item.addEventListener('click', event => {
+        const centred = pressed === null ? i === active : pressed;
+        pressed = null;
+        if (centred) return;
+        event.preventDefault();
+        event.stopPropagation();
+        go(i);
+      }, true);
+      item.addEventListener('focusin', () => { if (i !== active && pressed === null) go(i); });
+    });
+
+    if (playable) {
+      stage.querySelectorAll('.clip__play[data-video-id]').forEach(link => {
+        const cover = link.querySelector('img');
+        if (cover) cover.addEventListener('error', () => cover.remove());
+        link.setAttribute('role', 'button');
+        link.removeAttribute('target');
+        link.addEventListener('keydown', event => { if (event.key === ' ') { event.preventDefault(); link.click(); } });
+        link.addEventListener('click', event => {
+          event.preventDefault();
+          const box = link.parentElement;
+          stop();
+          const player = document.createElement('iframe');
+          player.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(link.dataset.videoId) + '?autoplay=1&rel=0';
+          player.title = link.dataset.videoTitle || 'วิดีโอ';
+          player.allow = 'autoplay; encrypted-media; picture-in-picture';
+          player.referrerPolicy = 'strict-origin-when-cross-origin';
+          player.allowFullscreen = true;
+          box.replaceChildren(player);
+          playing = { frame: box, link };
+          player.focus();
+        });
+      });
+    }
+    go(0);
+    update();
+  });
+})();

@@ -9,8 +9,8 @@ $footerAddress = trim((string) ($site['address'] ?? ''));
 ?><footer class="footer">
 <div class="container footer-main">
 <div class="footer-top-row">
-<div class="footer-intro"><a class="brand footer-brand" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก">edu<span>2</span>impact</a><?php if (!empty($site['tagline'])): ?><p class="footer-tagline"><?= e($site['tagline']) ?></p><?php endif; ?></div>
-<?php if ($footerEmail !== '' || $footerPhone !== '' || $footerAddress !== ''): ?><ul class="footer-contact-list"><?php if ($footerAddress !== ''): ?><li><?= e($footerAddress) ?></li><?php endif; ?><?php if ($footerPhone !== ''): ?><li><a href="tel:<?= e(phone_href($footerPhone)) ?>"><?= e($footerPhone) ?></a></li><?php endif; ?><?php if ($footerEmail !== ''): ?><li><a href="mailto:<?= e($footerEmail) ?>"><?= e($footerEmail) ?></a></li><?php endif; ?></ul><?php endif; ?>
+<div class="footer-intro"><a class="brand footer-brand" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก">edu<span>2</span>impact</a></div>
+<?php if ($footerEmail !== '' || $footerPhone !== '' || $footerAddress !== ''): ?><ul class="footer-contact-list"><?php if ($footerAddress !== ''): ?><li><?= e($footerAddress) ?></li><?php endif; ?><?php if ($footerPhone !== ''): ?><li><?= e($footerPhone) ?></li><?php endif; ?><?php if ($footerEmail !== ''): ?><li><?= e($footerEmail) ?></li><?php endif; ?></ul><?php endif; ?>
 </div>
 <nav class="footer-nav" aria-label="แผนผังเว็บไซต์"><?php foreach ($footerGroups as $group): ?><div class="footer-col"><h2 class="footer-col__title"><?= e($group['label']) ?></h2><ul class="footer-links"><?php foreach ($group['children'] as $child): ?><li><a href="<?= e($child['file']) ?>"<?= ($navKey ?? $currentPage ?? '') === $child['key'] ? ' aria-current="page"' : '' ?>><?= e($child['label']) ?></a></li><?php endforeach; ?></ul></div><?php endforeach; ?></nav>
 </div>

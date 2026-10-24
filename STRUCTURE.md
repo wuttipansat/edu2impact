@@ -7,7 +7,7 @@ The current build is a public content site. Authenticated account workflows are 
 | Menu item | Destination | Key |
 | --- | --- | --- |
 | หน้าแรก | index.php | home |
-| คลังความรู้ → งานวิจัยและบทความ, สื่อและคู่มือ, เครื่องมือออนไลน์ | research.php, media.php, tools.php | research, media, tools |
+| คลังความรู้ → งานวิจัยและบทความ, สื่อและคู่มือ | research.php, media.php | research, media |
 | นวัตกรรม → สะเต็มศึกษา, เทคโนโลยีดิจิทัล, พัฒนาครู, ปฐมวัยบูรณาการ, สุขภาวะและพลศึกษา, ศึกษาอาชีวะ | innovations.php?category=… | innovations-stem, innovations-digital, innovations-teacher, innovations-early-childhood, innovations-health-pe, innovations-vocational |
 | บริการของเรา → อบรมและเวิร์กช็อป, ร้านค้า | workshops.php, shop.php | workshops, shop |
 | เกี่ยวกับเรา → เกี่ยวกับเรา, ติดต่อเรา | about.php, contact.php | about, contact |
@@ -16,9 +16,9 @@ Menu items are defined in config/navigation.php: five top-level items, four of t
 
 partners.php was removed: it now answers 301 and sends old links to about.php. config/partner-groups.php was deleted with it.
 
-Pages added in 2026: `tools.php` lists every research or innovation record that has a `tool_url` (`tool_records()` in includes/functions.php). `media.php` / `media-detail.php` read `data/media.json`, and `news.php` / `news-detail.php` read `data/news.json`; both start empty (same fields as the other datasets: id, title, date, summary, body, image, category, public). The footer sitemap is built from the same navigation config; contact details come from data/site.json and are hidden when empty.
+Pages added in 2026: The online tools list was removed in round 8: tools.php and resources.php answer 301 (to innovations.php and media.php). A post's own tool button (`tool_url`, shown on its detail page by `tool_url()` in includes/functions.php) stays. `media.php` / `media-detail.php` read `data/media.json`, and `news.php` / `news-detail.php` read `data/news.json`; both start empty (same fields as the other datasets: id, title, date, summary, body, image, category, public). The footer sitemap is built from the same navigation config; contact details come from data/site.json and are hidden when empty.
 
-Home page (index.php) sections, in order: hero slider, "ผลงานใหม่ล่าสุด" (one main post plus up to six more from every public post type, newest first; posts without a real date follow the dated ones; nothing is invented to fill it), latest news (only when there is news), "งานที่ต่อยอดเป็นเวิร์กช็อปแล้ว" (each workshop's `related` source as a photo card, a connector, and the workshop as a solid card, plus a button to contact.php), latest innovations, online tools, workshops. The hero slider has no index rail: previous, next and pause buttons sit bottom right (bottom left on phones), a hidden status line tells screen readers "สไลด์ N จาก M", and auto-advance stays off when the visitor prefers reduced motion. Any section with no data is left out, and the light sections alternate white and tinted around the dark one. News, research, innovations and workshops use the same expanding card (`.xcard` in theme.css): equal size at rest; hover or keyboard focus widens one card and slides up its summary; touch screens and narrow windows show the summary all the time.
+Home page (index.php) sections, in order: hero slider, "ผลงานใหม่ล่าสุด" (one main post plus up to six more from every public post type, newest first; posts without a real date follow the dated ones; nothing is invented to fill it), latest news (only when there is news), "งานที่ต่อยอดเป็นเวิร์กช็อปแล้ว" (each workshop's `related` source as a photo card, a connector, and the workshop as a solid card, plus a button to contact.php), latest innovations, workshops. The hero slider has no index rail: previous, next and pause buttons sit bottom right (bottom left on phones), a hidden status line tells screen readers "สไลด์ N จาก M", and auto-advance stays off when the visitor prefers reduced motion. Any section with no data is left out, and the light sections alternate white and tinted around the dark one. News, research, innovations and workshops use the same expanding card (`.xcard` in theme.css): equal size at rest; hover or keyboard focus widens one card and slides up its summary; touch screens and narrow windows show the summary all the time.
 
 ## Styles
 
@@ -30,13 +30,12 @@ The closing contact call above the footer (includes/footer.php) takes its title 
 
 | Page | File | Content |
 | --- | --- | --- |
-| Home | index.php | Hero slider (5 slides), latest posts, news, research-to-workshop pairs, innovations, tools, workshops |
+| Home | index.php | Hero slider (5 slides), latest posts, research-to-workshop pairs, innovations, workshops |
 | Research | research.php | "Evidence library": featured study, two picks, text-first list |
 | Innovation | innovations.php | "Showcase gallery": card grid (data/innovations.json) |
 | Workshop | workshops.php | Workshop posts list (data/workshops.json); each post's detail page has a "request this workshop" contact box |
 | Detail pages | research-detail.php, innovation-detail.php, workshop-detail.php (`?id=…`) | Single record; unknown ID returns 404 |
 | News | news.php | News list (data/news.json) |
-| Online tools | tools.php | Records with a `tool_url` |
 | Media and guides | media.php | Media list (data/media.json) |
 | About | about.php | What EDU2IMPACT is, content counts taken from the data files, and a three-step guide |
 | Contact | contact.php | Phone, email and address from data/site.json only (the ones filled in); a short note shows while all three are empty |
@@ -208,7 +207,7 @@ Set up on the server: make `storage/` writable by PHP and closed to the web (`st
 
 **Open Graph / Twitter Card.** includes/header.php writes `og:site_name`, `og:locale`, `og:type` (article on detail pages), `og:title`, `og:description` (summary, or the page's hero intro) and `twitter:card` on every page. Detail pages use the record image for `og:image`; other pages use `assets/images/hero-innovation.webp`. A 1200×630 image works best for sharing.
 
-**Footer and back to top.** The footer is one row on desktop (about half of a 1440×900 screen): the logo, the tagline from data/site.json and the contact details (address, phone, email) on the left, the four sitemap columns on the right. Below them `.footer-bar` sits outside the `.container`, so its top line runs across the whole screen; the copyright and total visits sit in a `.container` inside it, in line with the content above. Below 1100px the logo sits above the columns; below 760px the columns become two and the links grow to 44px. The "กลับขึ้นด้านบน" control is a round floating `.to-top` button with an arrow icon, bottom right on every page (includes/footer.php). It shows after about one screen of scrolling, is a plain `#top` link without JavaScript, and moves focus to the start of the page content after scrolling (instantly when the visitor prefers reduced motion).
+**Footer and back to top.** The footer is one row on desktop (about half of a 1440×900 screen): the logo and the contact details (address, phone, email) on the left, the four sitemap columns on the right. Below them `.footer-bar` sits outside the `.container`, so its top line runs across the whole screen; the copyright and total visits sit in a `.container` inside it, in line with the content above. Below 1100px the logo sits above the columns; below 760px the columns become two and the links grow to 44px. The "กลับขึ้นด้านบน" control is a round floating `.to-top` button with an arrow icon, bottom right on every page (includes/footer.php). It shows after about one screen of scrolling, is a plain `#top` link without JavaScript, and moves focus to the start of the page content after scrolling (instantly when the visitor prefers reduced motion).
 
 **Page width.** Wide layouts (header, hero, home sections, card lists, footer) use `--wrap: 1440px` inside a gutter that grows with the screen (`--gutter: clamp(20px, 4vw, 64px)`), both in theme.css. Both are tokens: change them there to widen or narrow the whole site. The floating header bar narrows by 96px once the page is scrolled. Article text does not follow `--wrap`: detail pages stay in `.article-layout` (860px) and `.prose` (72ch) so lines remain readable.
 
@@ -242,6 +241,42 @@ Content can be read from the MySQL database `e2imedu` instead of data/*.json. `l
 - **Innovation categories.** config/innovation-categories.php lists the six categories. A post belongs to one when its `category` equals the name exactly (data/innovations.json and `posts.category`). `innovations.php?category=slug` filters the list, changes the hero, and shows an empty state with a link to all innovations when the category has no post; an unknown slug shows everything. To add a post to a category, set its `category` to the exact name.
 - **Shop.** shop.php reads `data/shop.json` (`id`, `title`, `summary`, `image`, `price`, `order_url`, `public`; `price` is a number or text, `order_url` must start with http:// or https://, otherwise the button goes to the contact page). `load_data('shop')` always reads the JSON file and skips MySQL, because the `posts` table has no price column yet. With no products the page shows "สินค้ากำลังจะมาเร็วๆ นี้".
 - **News removed.** News is gone from the menu, footer, home, about and search. news.php and news-detail.php redirect (301) to the home page. data/news.json and the news rows in MySQL are kept; `load_data('news')` still works.
-- **Contact details.** data/site.json and `site_settings` hold the address, phone ("02-942-8268 ต่อ 731000") and email. `phone_href()` builds the `tel:` link from the digits before "ต่อ", so the extension is shown but not dialled.
+- **Contact details.** data/site.json and `site_settings` hold the address, phone ("02-942-8268 ต่อ 731000") and email. Since round 8 contact.php and the footer show them as plain text (no `tel:`, `mailto:` or map links), so visitors select and copy them.
 - **Hero slider.** It no longer advances by itself and has no pause button; slides change on previous/next or arrow keys.
 - **Updating a live MySQL database.** Do not import database/content-schema.sql again (it drops the tables). Run database/updates/2026-10-round7.sql in phpMyAdmin (SQL tab); it holds only UPDATE statements and can be run more than once.
+
+## Round 8 notes
+
+**หน้าแรก: ประชาสัมพันธ์ และ Scoop** (อยู่ใน `index.php`, ข้อมูลใน `config/home.php`, ตัวช่วยใน `includes/rails.php`)
+- `promos` = แบนเนอร์ประชาสัมพันธ์ (ดูหัวข้อ Round 9 ด้านล่าง) ช่อง: `title`, `image`, `url` (`#` = ไม่ให้คลิก), `date` (ค.ศ. `YYYY-MM-DD` ไม่บังคับ) ไม่มีรายการ = ซ่อนทั้งส่วน ไม่มีหน้ารายการและไม่มีเมนู
+- `videos` = วิดีโอ Scoop ช่อง: `title`, `youtube` (ลิงก์ watch, youtu.be หรือ shorts), `date`, และ `image` (ภาพปกในเว็บ ไม่ใส่ก็ได้) ถ้ารหัสวิดีโอไม่ครบ 11 ตัวอักษรจะข้ามรายการนั้น ไม่มีรายการ = ซ่อนทั้งส่วน
+- แถวเลื่อนใช้ CSS scroll-snap + ปุ่มก่อนหน้า/ถัดไป (`data-rail*` ใน `assets/js/main.js`) ไม่เล่นเอง; ปุ่มจะ `disabled` เมื่อเลื่อนต่อไม่ได้
+- วิดีโอ: คลิกปกแล้วโหลด iframe จาก `youtube-nocookie.com` ถ้าไม่มี JavaScript ปกเป็นลิงก์ไป YouTube
+- CSP (`includes/bootstrap.php`) เพิ่ม `frame-src https://www.youtube-nocookie.com` (ตัวเล่น) และ `img-src ... https://i.ytimg.com` (ปกจาก YouTube) ไม่ได้แตะ `script-src` ถ้าใส่ `image` เป็นภาพในเว็บทุกรายการ จะลบ `i.ytimg.com` ออกได้
+
+**ลบเครื่องมือออนไลน์**: ออกจากเมนู หน้าแรก about search และ heroes; `tools.php` redirect 301 ไป `innovations.php`, `resources.php` redirect 301 ไป `media.php`; ปุ่ม `tool_url` ในหน้ารายละเอียดยังอยู่
+
+**ติดต่อเป็นข้อความธรรมดา**: เบอร์โทร ที่อยู่ อีเมล ใน contact.php และ footer ไม่เป็นลิงก์ (ลบ `phone_href()`) **Footer** ไม่มีคำโปรยแล้ว (ยังเก็บใน site.json/MySQL)
+
+**research.php**: ลูกศรตอน hover เดิมสีเดียวกับวงกลม แก้ใน theme.css (`.lib-row:hover::before/::after`)
+
+**หมายเหตุ**: `index.php` ยังมี `style="background-image"` ของสไลด์หลัก ซึ่ง CSP บล็อก (มีอยู่ก่อนรอบนี้ ไม่ได้แก้)
+
+## Round 9 notes: ประชาสัมพันธ์ และ Scoop เป็นสไลด์ตรงกลาง
+
+**Design plan ที่ใช้** (ใช้สีม่วงและฟอนต์เดิมของเว็บ ความต่างอยู่ที่เลย์เอาต์เท่านั้น)
+- สี: `--purple-900` ปุ่มและปกวิดีโอ, `--purple-100` พื้นรอโหลดภาพ, `--ink-muted` ข้อความรอง, พื้นขาวของส่วน
+- ตัวอักษร: ชื่อวิดีโอใช้ฟอนต์ไทยเดิมน้ำหนัก 600; วันที่และตัวนับใช้ฟอนต์ UI เดิม
+- โครง: สไลด์เดียวอยู่กลาง สไลด์ข้างเคียงโผล่ที่ขอบสองฝั่งและจาง (opacity .4); ปุ่มกลมแบบ `.hero-ctrl` ทับขอบซ้าย/ขวาของภาพ (มือถือย้ายไปแถวเดียวกับตัวนับ); ตัวนับ "N / M" ใต้สไลด์
+- ไม่ใช้จุด (dots), เงา, gradient หรือเลื่อนเอง
+- ความโดดเด่นอยู่ที่เดียวคือการวางสไลด์กลางกับขอบที่โผล่ ส่วนอื่นเงียบ
+
+**ขนาดภาพแบนเนอร์ประชาสัมพันธ์**: อัตราส่วน 2:1 (แนะนำ 1920 × 960 px, ไฟล์ .webp ไม่เกิน ~400 KB) ข้อความทั้งหมดอยู่ในภาพ เว็บแสดงเต็มความกว้างประมาณ 84% ของพื้นที่เนื้อหา และ crop ด้วย `object-fit: cover` จึงควรเว้นขอบปลอดภัยรอบข้อความ ภาพตัวอย่างปัจจุบันเป็นภาพเดิมของเว็บ (บางภาพใหญ่มาก เช่น 8334 px) ให้เปลี่ยนเป็นแบนเนอร์จริง
+
+**พฤติกรรม**: ทั้งสองส่วนใช้ฟังก์ชัน `[data-stage]` ใน `assets/js/main.js` ตัวเดียว
+- หาสไลด์ที่อยู่กลางจากตำแหน่งเลื่อน (`.is-active`, `aria-current`), ปุ่มก่อนหน้า/ถัดไปเป็น `disabled` ที่หัวและท้าย ไม่วนรอบ
+- คลิกหรือ Tab ไปที่สไลด์ข้างเคียง = เลื่อนมากลางก่อน (ยังไม่เปิดลิงก์/ไม่เล่น) กดอีกครั้งจึงเปิดหรือเล่น
+- ลูกศรซ้าย/ขวาบนคีย์บอร์ดเลื่อนทีละสไลด์; `prefers-reduced-motion` เลื่อนทันที
+- ตัวนับใช้ `aria-live="polite"` อ่านชื่อสไลด์เมื่อเปลี่ยน
+- Scoop: เล่นได้เฉพาะวิดีโอกลาง เลื่อนออกแล้ว iframe ถูกเอาออกและคืนปก (หยุดเสียง) ชื่อและวันที่แสดงเฉพาะวิดีโอกลาง
+- ลบคำอธิบายใต้หัวข้อ Scoop และ CSS/JS ของแถวการ์ดรอบ 8 แล้ว (ฟิลด์ `label` ของ promos ยังรับแต่ไม่แสดง)

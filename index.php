@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/rails.php';
 $currentPage = 'home';
 $pageTitle = 'Edu2Impact | จากงานวิจัยสู่การเปลี่ยนแปลง';
 $byDate = static function (array $a, array $b): int { return strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? '')); };
@@ -7,7 +8,6 @@ $research = sort_records(load_data('research'), true); // featured research firs
 $innovations = load_data('innovations'); usort($innovations, $byDate);
 $workshops = load_data('workshops'); usort($workshops, $byDate);
 $media = load_data('media'); usort($media, $byDate);
-$tools = tool_records();
 // Card sections show the three newest records of a dataset as equal cards that expand on hover or focus.
 $cardSection = static fn (array $records, string $kind, string $id, string $heading, string $fallback): array =>
     ['type' => 'cards', 'kind' => $kind, 'id' => $id, 'heading' => $heading, 'fallback' => $fallback, 'tone' => '', 'records' => array_slice($records, 0, 3)];
@@ -26,11 +26,14 @@ foreach (['research' => $research, 'innovations' => $innovations, 'workshops' =>
 usort($feed, static fn (array $a, array $b): int => ($b['dated'] <=> $a['dated']) ?: ($a['dated'] ? strcmp($b['record']['date'], $a['record']['date']) : 0));
 $feed = array_slice($feed, 0, 7);
 // Empty sections are left out. Light sections alternate white / tinted; the pairs section is always dark.
+$promos = home_promos();
+$videos = home_videos();
 $homeSections = array_values(array_filter([
+    $promos ? ['type' => 'promos', 'id' => 'promos', 'heading' => 'ประชาสัมพันธ์', 'tone' => ''] : null,
     $feed ? ['type' => 'latest', 'id' => 'latest', 'heading' => 'ผลงานใหม่ล่าสุด', 'tone' => ''] : null,
+    $videos ? ['type' => 'videos', 'id' => 'scoop', 'heading' => 'Scoop', 'tone' => ''] : null,
     $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'From Innovation to Workshop', 'tone' => 'dark'] : null,
     $innovations ? $cardSection($innovations, 'innovations', 'innovations', 'นวัตกรรมการศึกษาล่าสุด', 'นวัตกรรม') : null,
-    $tools ? ['type' => 'tools', 'id' => 'tools', 'heading' => 'เครื่องมือออนไลน์', 'tone' => ''] : null,
     $workshops ? $cardSection($workshops, 'workshops', 'workshops', 'อบรมและเวิร์กช็อป', 'เวิร์กช็อป') : null,
 ]));
 $nextTone = 'white';
@@ -67,10 +70,47 @@ require __DIR__ . '/includes/header.php';
     </div>
     <p class="visually-hidden" role="status" aria-live="polite" data-slider-status>สไลด์ 1 จาก <?= count($heroSlides) ?></p>
   </section>
-  <?php foreach ($homeSections as $block): $listHref = $block['type'] === 'latest' ? '' : ($block['type'] === 'cards' ? $block['kind'] . '.php' : ($block['type'] === 'tools' ? 'tools.php' : '')); ?>
+  <?php foreach ($homeSections as $block): $listHref = $block['type'] === 'latest' ? '' : ($block['type'] === 'cards' ? $block['kind'] . '.php' : ''); ?>
   <section id="<?= e($block['id']) ?>" class="home-section home-section--<?= e($block['tone']) ?> home-section--<?= e($block['type']) ?>" aria-labelledby="<?= e($block['id']) ?>-title"><div class="container">
-    <div class="home-section-heading"><h2 id="<?= e($block['id']) ?>-title"<?= $block['type'] === 'pairs' ? ' lang="en"' : '' ?>><?= e($block['heading']) ?></h2><?php if ($listHref !== ''): ?><a class="home-section-link" href="<?= e($listHref) ?>">ดูทั้งหมด<span class="visually-hidden"> <?= e($block['heading']) ?></span> <?= icon_arrow('up-right') ?></a><?php endif; ?></div>
-<?php if ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
+    <div class="home-section-heading"><h2 id="<?= e($block['id']) ?>-title"<?= in_array($block['type'], ['pairs', 'videos'], true) ? ' lang="en"' : '' ?>><?= e($block['heading']) ?></h2><?php if ($listHref !== ''): ?><a class="home-section-link" href="<?= e($listHref) ?>">ดูทั้งหมด<span class="visually-hidden"> <?= e($block['heading']) ?></span> <?= icon_arrow('up-right') ?></a><?php endif; ?></div>
+<?php if ($block['type'] === 'promos'): $promoTotal = count($promos); ?>
+    <div class="stage stage--promo" data-stage role="region" aria-roledescription="carousel" aria-label="ประชาสัมพันธ์">
+      <div class="stage__viewport">
+        <div class="stage__track" data-stage-track>
+<?php foreach ($promos as $i => $promo): $promoLive = $promo['url'] !== '#'; ?>
+          <div class="stage__item" role="group" aria-roledescription="สไลด์" aria-label="<?= $i + 1 ?> จาก <?= $promoTotal ?>" data-title="<?= e($promo['title']) ?>">
+<?php if ($promoLive): ?>
+            <a class="banner" href="<?= e($promo['url']) ?>" aria-label="<?= e($promo['title']) ?>"><img src="<?= e($promo['image']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></a>
+<?php else: ?>
+            <div class="banner"><img src="<?= e($promo['image']) ?>" alt="<?= e($promo['title']) ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></div>
+<?php endif; ?>
+<?php if ($promo['date'] !== ''): ?>            <p class="stage__caption"><time datetime="<?= e($promo['date']) ?>"><?= e(thai_date($promo['date'])) ?></time></p>
+<?php endif; ?>
+          </div>
+<?php endforeach; ?>
+        </div>
+        <div class="stage__ctrls" hidden><button class="hero-ctrl stage__ctrl" type="button" data-stage-prev aria-label="ประชาสัมพันธ์ก่อนหน้า"><?= icon_arrow('chevron-left') ?></button><button class="hero-ctrl stage__ctrl" type="button" data-stage-next aria-label="ประชาสัมพันธ์ถัดไป"><?= icon_arrow('chevron-right') ?></button></div>
+      </div>
+      <p class="stage__count" data-stage-count aria-live="polite"><span aria-hidden="true">1 / <?= $promoTotal ?></span><span class="visually-hidden">สไลด์ 1 จาก <?= $promoTotal ?></span></p>
+    </div>
+<?php elseif ($block['type'] === 'videos'): $videoTotal = count($videos); ?>
+    <div class="stage stage--video" data-stage data-stage-play role="region" aria-roledescription="carousel" aria-label="Scoop วิดีโอ">
+      <div class="stage__viewport">
+        <div class="stage__track" data-stage-track>
+<?php foreach ($videos as $i => $video): ?>
+          <div class="stage__item" role="group" aria-roledescription="สไลด์" aria-label="<?= $i + 1 ?> จาก <?= $videoTotal ?>" data-title="<?= e($video['title']) ?>">
+            <div class="clip__frame"><a class="clip__play" href="<?= e($video['watch']) ?>" target="_blank" rel="noopener noreferrer" data-video-id="<?= e($video['id']) ?>" data-video-title="<?= e($video['title']) ?>" aria-label="เล่นวิดีโอ: <?= e($video['title']) ?>"><img src="<?= e($video['cover']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"><span class="clip__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" focusable="false"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"/></svg></span></a></div>
+            <div class="stage__caption"><h3 class="clip__title"><?= e($video['title']) ?></h3>
+<?php if ($video['date'] !== ''): ?>              <p class="clip__date"><time datetime="<?= e($video['date']) ?>"><?= e(thai_date($video['date'])) ?></time></p>
+<?php endif; ?>            </div>
+          </div>
+<?php endforeach; ?>
+        </div>
+        <div class="stage__ctrls" hidden><button class="hero-ctrl stage__ctrl" type="button" data-stage-prev aria-label="วิดีโอก่อนหน้า"><?= icon_arrow('chevron-left') ?></button><button class="hero-ctrl stage__ctrl" type="button" data-stage-next aria-label="วิดีโอถัดไป"><?= icon_arrow('chevron-right') ?></button></div>
+      </div>
+      <p class="stage__count" data-stage-count aria-live="polite"><span aria-hidden="true">1 / <?= $videoTotal ?></span><span class="visually-hidden">วิดีโอ 1 จาก <?= $videoTotal ?></span></p>
+    </div>
+<?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
     <div class="latest">
       <article class="latest-main">
         <a class="latest-main__media" href="<?= e(detail_url($main['kind'], $mainRecord['id'])) ?>" tabindex="-1" aria-hidden="true"><img src="<?= e(image_path($mainRecord) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a>
@@ -110,19 +150,6 @@ require __DIR__ . '/includes/header.php';
 <?php endforeach; ?>
     </ul>
     <p class="pairs-cta"><a class="button" href="contact.php">ขอจัดเวิร์กช็อปที่โรงเรียนของคุณ <?= icon_arrow('up-right') ?></a></p>
-<?php elseif ($block['type'] === 'tools'): ?>
-    <div class="tool-list tool-list--home">
-<?php foreach (array_slice($tools, 0, 3) as $tool): $record = $tool['record']; $kind = $tool['kind']; $url = tool_url($record); $external = str_starts_with($url, 'https://'); ?>
-      <article class="tool-row">
-        <div class="tool-row__body">
-          <p class="lib-meta"><span><?= e(kind_label($kind)) ?></span></p>
-          <h3><?= e($record['title']) ?></h3>
-          <p class="tool-row__summary"><?= e($record['summary'] ?? '') ?></p>
-          <p class="actions tool-row__actions"><a class="button" href="<?= e($url) ?>"<?= $external ? ' rel="noopener"' : '' ?>><?= e(trim((string) ($record['tool_label'] ?? '')) ?: 'เปิดเครื่องมือ') ?> <?= icon_arrow('up-right') ?></a><a class="text-link" href="<?= e(detail_url($kind, $record['id'])) ?>">ดูรายละเอียด<span class="visually-hidden"> <?= e($record['title']) ?></span></a></p>
-        </div>
-      </article>
-<?php endforeach; ?>
-    </div>
 <?php else: ?>
     <ul class="xcards" data-count="<?= count($block['records']) ?>">
 <?php foreach ($block['records'] as $record): $href = detail_url($block['kind'], $record['id']); $category = trim((string) ($record['category'] ?? '')) ?: $block['fallback']; $summary = trim((string) ($record['summary'] ?? '')); ?>

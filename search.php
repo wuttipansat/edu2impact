@@ -8,7 +8,7 @@ $groups = search_groups();
 $currentPage = 'search';
 $metaRobots = 'noindex';
 $pageTitle = ($q === '' ? 'ค้นหา' : '“' . $q . '” – ค้นหา') . ' | ' . $site['name'];
-$quickLinks = ['research.php' => 'งานวิจัยและบทความ', 'tools.php' => 'เครื่องมือออนไลน์', 'innovations.php' => 'นวัตกรรมการศึกษา', 'workshops.php' => 'อบรมและเวิร์กช็อป', 'news.php' => 'ข่าวสาร', 'about.php' => 'เกี่ยวกับเรา'];
+$quickLinks = ['research.php' => 'งานวิจัยและบทความ', 'innovations.php' => 'นวัตกรรมการศึกษา', 'workshops.php' => 'อบรมและเวิร์กช็อป', 'news.php' => 'ข่าวสาร', 'about.php' => 'เกี่ยวกับเรา'];
 $searchIcon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 require __DIR__ . '/includes/header.php';
 ?>

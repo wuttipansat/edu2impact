@@ -16,7 +16,7 @@
 <?php else: ?>
 <div class="empty-guide">
   <h2>ยังไม่มีสื่อและคู่มือในตอนนี้</h2>
-  <p>ระหว่างนี้ คุณอ่านงานวิจัยและบทความ หรือเปิดใช้เครื่องมือออนไลน์ได้เลย</p>
-  <p class="actions"><a class="button" href="research.php">ไปที่งานวิจัยและบทความ</a><a class="button secondary" href="tools.php">ดูเครื่องมือออนไลน์</a></p>
+  <p>ระหว่างนี้ คุณอ่านงานวิจัยและบทความ หรือดูนวัตกรรมการศึกษาได้เลย</p>
+  <p class="actions"><a class="button" href="research.php">ไปที่งานวิจัยและบทความ</a><a class="button secondary" href="innovations.php">ดูนวัตกรรมการศึกษา</a></p>
 </div>
 <?php endif; ?>

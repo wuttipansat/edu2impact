@@ -101,11 +101,6 @@ a:hover>.icon-arrow--up-right,a:focus-visible>.icon-arrow--up-right{transform:tr
 .contact-card__label{color:var(--minimal-muted);font-size:var(--fs-sm);font-weight:600;letter-spacing:.2px}
 .contact-card__value{color:var(--minimal-ink);font-size:var(--fs-lg);font-weight:700;line-height:1.5;overflow-wrap:anywhere}
 .contact-card__value--pending{color:var(--minimal-muted);font-weight:600}
-a.contact-card__link{text-decoration:none}
-a.contact-card__link::after{content:"";position:absolute;inset:0;border-radius:inherit}
-a.contact-card__link:hover{color:var(--purple-800);text-decoration:none}
-a.contact-card__link:focus-visible{outline:0}
-a.contact-card__link:focus-visible::after{outline:3px solid var(--purple-600);outline-offset:2px}
 @media(max-width:860px){.contact-cards{grid-template-columns:1fr}.contact-card{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:16px;padding:20px}.contact-card__icon{margin:0}.contact-card__label{flex:1}.contact-card__value{flex-basis:100%}}
 @media(max-width:640px){.contact-section{padding-block:32px 48px}}
 @media(prefers-reduced-motion:reduce){.contact-card{transition:none}}

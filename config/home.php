@@ -28,5 +28,29 @@ return [
         // No post is about school leadership yet; the closest content is the learning-city facilitator work.
         ['label' => 'School Leadership', 'thai' => 'ผู้นำการเรียนรู้', 'query' => 'นักขับเคลื่อน', 'icon' => 'flag'],
     ],
+    // "ประชาสัมพันธ์": picture banners in a slider between the hero and "ผลงานใหม่ล่าสุด" (no page of its own, no menu item).
+    // The text is part of the picture, so prepare each banner at 2:1 (1920 x 960 px, under 400 KB). Fields: title (read aloud as the
+    // picture's description), image (assets/images/…), url (page or https address; "#" = not clickable), date (Y-m-d, optional,
+    // shown under the banner). "label" is still accepted but not shown. Delete every row to hide the section.
+    // The rows below are placeholders, marked "[ตัวอย่าง]".
+    'promos' => [
+        ['title' => '[ตัวอย่าง] เปิดรับสมัครเวิร์กช็อปออกแบบบทเรียนด้วย PCK Canvas สำหรับครูทุกกลุ่มสาระ', 'date' => '2026-10-22', 'label' => 'รับสมัคร', 'image' => 'assets/images/innovation-pck-canvas.webp', 'url' => '#'],
+        ['title' => '[ตัวอย่าง] เชิญร่วมเสวนา "จากงานวิจัยสู่ห้องเรียน" ร่วมกับโรงเรียนเครือข่าย', 'date' => '2026-10-18', 'label' => 'กิจกรรม', 'image' => 'assets/images/nonthaburi-learning.webp', 'url' => '#'],
+        ['title' => '[ตัวอย่าง] ผลงาน Coding4Change ได้รับเชิญนำเสนอในเวทีสะเต็มศึกษา', 'date' => '2026-10-12', 'label' => 'ข่าว', 'image' => 'assets/images/coding4change-pilot.webp', 'url' => '#'],
+        ['title' => '[ตัวอย่าง] ประกาศรายชื่อโรงเรียนที่เข้าร่วมโครงการ Smart Garden รอบที่ 2', 'date' => '2026-10-05', 'label' => 'ประกาศ', 'image' => 'assets/images/smart-garden-cover.webp', 'url' => '#'],
+        ['title' => '[ตัวอย่าง] ชุดปฏิบัติการ Hemo-Link เปิดให้ครูชีววิทยายืมไปทดลองใช้', 'date' => '2026-09-28', 'label' => 'ข่าว', 'image' => 'assets/images/hemo-link-cover.webp', 'url' => '#'],
+        ['title' => '[ตัวอย่าง] ขอเชิญส่งผลงานเข้าร่วมเวทีนำเสนอนวัตกรรมการศึกษา ปี 2569', 'date' => '2026-09-20', 'label' => 'ประกาศ', 'image' => 'assets/images/clil-hand.webp', 'url' => '#'],
+    ],
+
+    // "Scoop": videos in a centred slider after "ผลงานใหม่ล่าสุด". Fields: title, youtube (full address of the video),
+    // date (Y-m-d, optional), image (assets/images/… cover, optional; the YouTube thumbnail is used without it).
+    // Accepted addresses: youtube.com/watch?v=…, youtu.be/…, youtube.com/shorts/… . Delete every row to hide the section.
+    // The rows below are placeholders (public KU introduction videos), marked "[ตัวอย่าง]".
+    'videos' => [
+        ['title' => '[ตัวอย่าง] วีดิทัศน์แนะนำมหาวิทยาลัยเกษตรศาสตร์', 'youtube' => 'https://www.youtube.com/watch?v=eEspYsI-zz4'],
+        ['title' => '[ตัวอย่าง] Introduction Kasetsart University (KU) Thai Version', 'youtube' => 'https://www.youtube.com/watch?v=itS7EHAzHjU', 'date' => '2025-05-20'],
+        ['title' => '[ตัวอย่าง] Kasetsart University', 'youtube' => 'https://www.youtube.com/watch?v=GuEm7B_8KyA'],
+        ['title' => '[ตัวอย่าง] VDO Introduction Kasetsart University, English subtitles', 'youtube' => 'https://www.youtube.com/watch?v=HsqyH5rjT6M', 'date' => '2025-12-08'],
+    ],
     'topic_fallback' => 'research.php',
 ];

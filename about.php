@@ -7,8 +7,6 @@ foreach (['research' => 'งานวิจัย', 'innovations' => 'นวั�
     $n = count(load_data($kind));
     if ($n > 0) { $counts[] = ['n' => $n, 'label' => $label, 'href' => $kind . '.php']; }
 }
-$toolCount = count(tool_records());
-if ($toolCount > 0) { $counts[] = ['n' => $toolCount, 'label' => 'เครื่องมือออนไลน์', 'href' => 'tools.php']; }
 $steps = [
     ['title' => 'อ่านงานวิจัย', 'text' => 'ทุกเรื่องสรุปว่าศึกษาอะไร พบอะไร และนำไปใช้ในห้องเรียนอย่างไร', 'href' => 'research.php', 'cta' => 'ดูงานวิจัย'],
     ['title' => 'ลองใช้นวัตกรรม', 'text' => 'ชุดกิจกรรม แบบจำลอง และเครื่องมือออนไลน์ที่ทดลองใช้กับผู้เรียนได้', 'href' => 'innovations.php', 'cta' => 'ดูนวัตกรรม'],
