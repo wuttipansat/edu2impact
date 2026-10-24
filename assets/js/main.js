@@ -206,97 +206,144 @@
 })();
 
 (() => {
-  // Home sliders ([data-stage]): ประชาสัมพันธ์ banners and Scoop videos. One slide is centred, the neighbours peek in
-  // at both edges. The row scrolls and snaps natively (swipe, wheel, keys); the buttons step one slide. Nothing moves
-  // by itself. Without JavaScript the row keeps its scrollbar and the video covers stay links to YouTube.
+  // Home sliders ([data-stage]): ประชาสัมพันธ์ banners and Scoop videos, full window width. One slide is centred and the
+  // neighbours run out to both window edges. The row scrolls and snaps natively (swipe, wheel, keys); the buttons step
+  // one slide. It loops: copies of the last and first slides sit at either end, and when the row comes to rest on a copy
+  // it jumps, without animation, to the real slide that looks the same. Nothing moves by itself.
+  // Without JavaScript the row is a plain scrolling strip and the video covers stay links to YouTube.
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const hasScrollEnd = 'onscrollend' in window;
+
   document.querySelectorAll('[data-stage]').forEach(stage => {
     const track = stage.querySelector('[data-stage-track]');
-    const items = track ? Array.from(track.children) : [];
+    const reals = track ? Array.from(track.children) : [];
     const previous = stage.querySelector('[data-stage-prev]');
     const next = stage.querySelector('[data-stage-next]');
     const controls = stage.querySelector('.stage__ctrls');
-    const count = stage.querySelector('[data-stage-count]');
-    if (!track || !items.length || !previous || !next) return;
+    const status = stage.querySelector('[data-stage-count]');
+    if (!track || !reals.length || !previous || !next) return;
+    const total = reals.length;
     const playable = stage.hasAttribute('data-stage-play');
     const noun = playable ? 'วิดีโอ' : 'สไลด์';
+    const loops = total > 1;
     stage.setAttribute('data-stage-ready', '');
-    if (controls) controls.hidden = items.length < 2;
-    let active = -1;
+    if (controls) controls.hidden = !loops;
+
+    // Copies for the loop: hidden from assistive technology, out of the tab order and not clickable themselves.
+    const spare = loops ? Math.min(total, 2) : 0;
+    function copy(real) {
+      const clone = real.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clone.setAttribute('inert', '');
+      clone.removeAttribute('aria-current');
+      clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+      clone.querySelectorAll('a, button, iframe').forEach(node => node.setAttribute('tabindex', '-1'));
+      clone.querySelectorAll('img').forEach(img => img.setAttribute('loading', 'eager'));
+      clone.dataset.stageCopy = String(reals.indexOf(real));
+      return clone;
+    }
+    reals.slice(total - spare).reverse().forEach(real => track.prepend(copy(real)));
+    reals.slice(0, spare).forEach(real => track.append(copy(real)));
+    const slides = Array.from(track.children);
+    const realAt = index => { const node = slides[index]; return node.dataset.stageCopy === undefined ? reals.indexOf(node) : Number(node.dataset.stageCopy); };
+    track.querySelectorAll('img').forEach(cover => cover.addEventListener('error', () => cover.remove()));
+
+    let current = -1;   // index in slides (copies included) of the centred slide
+    let active = -1;    // index in reals of the centred slide
     let frame = 0;
+    let settleTimer = 0;
     let playing = null;
 
-    function centreOf(item) {
+    function offsetFor(node) {
       const box = track.getBoundingClientRect();
-      const rect = item.getBoundingClientRect();
+      const rect = node.getBoundingClientRect();
       return track.scrollLeft + rect.left - box.left - (box.width - rect.width) / 2;
     }
+    function nearest() {
+      const box = track.getBoundingClientRect();
+      const middle = box.left + box.width / 2;
+      let best = 0;
+      let distance = Infinity;
+      slides.forEach((node, i) => {
+        const rect = node.getBoundingClientRect();
+        const d = Math.abs(rect.left + rect.width / 2 - middle);
+        if (d < distance) { distance = d; best = i; }
+      });
+      return best;
+    }
+    function jump(index) {
+      // Move instantly; snapping is paused for that one change so the browser does not animate or re-snap it.
+      track.setAttribute('data-stage-jumping', '');
+      track.scrollLeft = offsetFor(slides[index]);
+      update();
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => track.removeAttribute('data-stage-jumping')));
+    }
+    function settle() {
+      settleTimer = 0;
+      const here = nearest();
+      if (slides[here].dataset.stageCopy !== undefined) jump(reals.indexOf(reals[realAt(here)]) + spare);
+    }
     function go(index) {
-      const target = items[Math.max(0, Math.min(items.length - 1, index))];
-      track.scrollTo({ left: centreOf(target), behavior: reduced.matches ? 'auto' : 'smooth' });
+      let from = nearest();
+      if (slides[from].dataset.stageCopy !== undefined) { from = realAt(from) + spare; jump(from); }
+      const target = Math.max(0, Math.min(slides.length - 1, index === 'next' ? from + 1 : index === 'previous' ? from - 1 : index));
+      track.scrollTo({ left: offsetFor(slides[target]), behavior: reduced.matches ? 'auto' : 'smooth' });
+      if (reduced.matches) { update(); settle(); }
     }
     function stop() {
       if (!playing) return;
       playing.frame.replaceChildren(playing.link);
       playing = null;
     }
-    function setActive(index) {
-      if (index === active) return;
-      active = index;
-      items.forEach((item, i) => {
-        item.classList.toggle('is-active', i === index);
-        if (i === index) item.setAttribute('aria-current', 'true'); else item.removeAttribute('aria-current');
-      });
-      previous.disabled = index <= 0;
-      next.disabled = index >= items.length - 1;
-      if (count) {
-        count.firstElementChild.textContent = (index + 1) + ' / ' + items.length;
-        count.lastElementChild.textContent = noun + ' ' + (index + 1) + ' จาก ' + items.length + ': ' + (items[index].dataset.title || '');
-      }
-      if (playing && !items[index].contains(playing.frame)) stop();
-    }
     function update() {
       frame = 0;
-      const middle = track.scrollLeft;
-      let best = 0;
-      let distance = Infinity;
-      items.forEach((item, i) => {
-        const d = Math.abs(centreOf(item) - middle);
-        if (d < distance) { distance = d; best = i; }
-      });
-      setActive(best);
+      const here = nearest();
+      if (here !== current) {
+        current = here;
+        slides.forEach((node, i) => node.classList.toggle('is-active', i === here));
+      }
+      const real = realAt(here);
+      if (real === active) return;
+      active = real;
+      reals.forEach((node, i) => { if (i === real) node.setAttribute('aria-current', 'true'); else node.removeAttribute('aria-current'); });
+      if (status) status.textContent = noun + ' ' + (real + 1) + ' จาก ' + total + ': ' + (reals[real].dataset.title || '');
+      if (playing && !reals[real].contains(playing.frame)) stop();
     }
-    function queue() { if (!frame) frame = window.requestAnimationFrame(update); }
+    function onScroll() {
+      if (!frame) frame = window.requestAnimationFrame(update);
+      if (!hasScrollEnd) { window.clearTimeout(settleTimer); settleTimer = window.setTimeout(settle, 140); }
+    }
 
-    previous.addEventListener('click', () => go(active - 1));
-    next.addEventListener('click', () => go(active + 1));
-    track.addEventListener('scroll', queue, { passive: true });
-    window.addEventListener('resize', queue);
+    previous.addEventListener('click', () => go('previous'));
+    next.addEventListener('click', () => go('next'));
+    track.addEventListener('scroll', onScroll, { passive: true });
+    if (hasScrollEnd) track.addEventListener('scrollend', settle);
+    window.addEventListener('resize', () => { jump(current < 0 ? spare : current); settle(); });
     stage.addEventListener('keydown', event => {
-      if (event.target.closest('iframe') || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+      if (!loops || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
       event.preventDefault();
-      go(active + (event.key === 'ArrowRight' ? 1 : -1));
+      go(event.key === 'ArrowRight' ? 'next' : 'previous');
     });
-    items.forEach((item, i) => {
-      // A slide at the edge only moves to the centre first; the second press opens its link or plays it.
-      // Whether it was centred is read when the pointer goes down, because the row starts scrolling at once.
-      let pressed = null;
-      item.addEventListener('pointerdown', () => { pressed = i === active; }, true);
-      item.addEventListener('click', event => {
-        const centred = pressed === null ? i === active : pressed;
-        pressed = null;
-        if (centred) return;
-        event.preventDefault();
-        event.stopPropagation();
-        go(i);
-      }, true);
-      item.addEventListener('focusin', () => { if (i !== active && pressed === null) go(i); });
-    });
+
+    // A slide at the edge (a copy included) only moves to the centre first; the second press opens its link or plays it.
+    // Whether it was centred is read when the pointer goes down, because the row starts moving straight away.
+    let pressed = null;
+    const slideAt = x => slides.findIndex(node => { const rect = node.getBoundingClientRect(); return x >= rect.left && x <= rect.right; });
+    track.addEventListener('pointerdown', event => { const i = slideAt(event.clientX); pressed = { index: i, centred: i === current }; }, true);
+    track.addEventListener('click', event => {
+      const press = pressed || { index: slideAt(event.clientX), centred: slideAt(event.clientX) === current };
+      pressed = null;
+      if (press.centred || press.index < 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      go(press.index);
+    }, true);
+    reals.forEach((real, i) => real.addEventListener('focusin', () => { if (i !== active && !pressed) go(i + spare); }));
 
     if (playable) {
-      stage.querySelectorAll('.clip__play[data-video-id]').forEach(link => {
-        const cover = link.querySelector('img');
-        if (cover) cover.addEventListener('error', () => cover.remove());
+      reals.forEach(real => {
+        const link = real.querySelector('.clip__play[data-video-id]');
+        if (!link) return;
         link.setAttribute('role', 'button');
         link.removeAttribute('target');
         link.addEventListener('keydown', event => { if (event.key === ' ') { event.preventDefault(); link.click(); } });
@@ -315,8 +362,9 @@
           player.focus();
         });
       });
+      // Copies show the cover only; pressing one is handled above (it moves to the centre).
+      slides.filter(node => node.dataset.stageCopy !== undefined).forEach(node => node.querySelectorAll('.clip__play').forEach(link => link.removeAttribute('target')));
     }
-    go(0);
-    update();
+    jump(spare);
   });
 })();

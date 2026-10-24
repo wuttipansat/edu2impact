@@ -793,33 +793,34 @@ main:focus{outline:0}
 @media(max-width:1024px){.shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.shop-grid{grid-template-columns:minmax(0,1fr);gap:40px}}
 
-/* ===================================================================== Round 9: centred sliders (home: ประชาสัมพันธ์, Scoop)
-   One slide sits in the middle of the row; the neighbours show at both edges and are dimmed.
-   The track's side padding is the peek, so the first and last slide can reach the centre. */
-.stage{--peek:8%;--stage-gap:clamp(12px,1.6vw,24px);position:relative}
-.stage--video{--peek:19%}
+/* ===================================================================== Round 9-10: centred sliders (home: ประชาสัมพันธ์, Scoop)
+   The row runs the full width of the window (outside .container). One slide sits in the middle, the neighbours run out
+   to both window edges and are dimmed. The track's side padding is the room either side of the centre slide, so any
+   slide can reach the centre. Sizes use the .stage container width (cqw), which never includes the scrollbar.
+   With JavaScript the row loops: copies of the last and first slides sit at either end (see main.js). */
+.stage{--slide:min(76cqw,1320px);--stage-gap:clamp(12px,1.4vw,24px);position:relative;container-type:inline-size;margin-top:4px}
+.stage--video{--slide:min(60cqw,1040px)}
 .stage__viewport{position:relative}
-.stage__track{display:flex;gap:var(--stage-gap);padding:0 var(--peek);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--purple-300) transparent}
+.stage__track{display:flex;gap:var(--stage-gap);padding:0 calc((100cqw - var(--slide)) / 2);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--purple-300) transparent}
 .stage[data-stage-ready] .stage__track{scrollbar-width:none}
 .stage[data-stage-ready] .stage__track::-webkit-scrollbar{display:none}
-.stage__item{flex:none;width:100%;scroll-snap-align:center;scroll-snap-stop:always}
+.stage__track[data-stage-jumping]{scroll-snap-type:none}
+.stage__item{flex:none;width:var(--slide);scroll-snap-align:center;scroll-snap-stop:always}
 .stage[data-stage-ready] .stage__item{opacity:.4;transition:opacity .35s ease}
 .stage[data-stage-ready] .stage__item.is-active{opacity:1}
+.stage__track[data-stage-jumping] .stage__item{transition:none}
 .stage__caption{margin:14px 0 0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-sm);line-height:1.6}
 .stage[data-stage-ready] .stage__item:not(.is-active) .stage__caption{visibility:hidden}
-.stage__count{margin:18px 0 0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600;text-align:center;font-variant-numeric:tabular-nums}
-.stage__ctrls{position:absolute;inset:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 calc(var(--peek) + 16px);aspect-ratio:var(--stage-ratio);pointer-events:none}
+/* Buttons sit over the left and right edge of the centre slide, half way down its picture. */
+.stage__ctrls{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;height:var(--ctrl-band);padding:0 calc((100cqw - var(--slide)) / 2 + 16px);pointer-events:none}
 .stage__ctrls[hidden]{display:none}
-.stage__ctrl:disabled{opacity:.35;cursor:default;transform:none}
-.stage__ctrl:disabled:hover{background:var(--purple-900);color:#fff;transform:none}
-.stage--promo{--stage-ratio:calc(100 / 42)}
-.stage--video{--stage-ratio:calc(100 / 34.875)}
+.stage--promo{--ctrl-band:calc(var(--slide) / 2)}
+.stage--video{--ctrl-band:calc(var(--slide) * 9 / 16)}
 @media(max-width:640px){
-  .stage{--peek:6%}
-  .stage--video{--peek:7%}
-  .stage__viewport{position:static}
-  .stage__ctrls{inset:auto 0 0;display:flex;aspect-ratio:auto;justify-content:flex-end;gap:10px;padding:0}
-  .stage__count{margin:0;min-height:44px;line-height:44px;text-align:left}
+  .stage{--slide:87cqw}
+  .stage--video{--slide:87cqw}
+  /* On a phone the buttons move under the picture, right-aligned with the centre slide. */
+  .stage__ctrls{position:static;justify-content:flex-end;gap:10px;height:auto;margin-top:12px}
 }
 @media(prefers-reduced-motion:reduce){.stage[data-stage-ready] .stage__item{transition:none}}
 
@@ -832,6 +833,7 @@ a.banner:focus-visible{outline:3px solid var(--purple-600);outline-offset:4px}
 .clip__frame{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:6px;background:var(--surface-dark)}
 .stage[data-stage-ready] .stage__item:not(.is-active) .clip__frame{transform:scale(.92)}
 .stage[data-stage-ready] .clip__frame{transition:transform .35s ease}
+.stage__track[data-stage-jumping] .clip__frame{transition:none}
 .clip__frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .clip__play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;text-decoration:none}
 .clip__play img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

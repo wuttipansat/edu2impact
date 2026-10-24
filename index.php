@@ -74,6 +74,7 @@ require __DIR__ . '/includes/header.php';
   <section id="<?= e($block['id']) ?>" class="home-section home-section--<?= e($block['tone']) ?> home-section--<?= e($block['type']) ?>" aria-labelledby="<?= e($block['id']) ?>-title"><div class="container">
     <div class="home-section-heading"><h2 id="<?= e($block['id']) ?>-title"<?= in_array($block['type'], ['pairs', 'videos'], true) ? ' lang="en"' : '' ?>><?= e($block['heading']) ?></h2><?php if ($listHref !== ''): ?><a class="home-section-link" href="<?= e($listHref) ?>">ดูทั้งหมด<span class="visually-hidden"> <?= e($block['heading']) ?></span> <?= icon_arrow('up-right') ?></a><?php endif; ?></div>
 <?php if ($block['type'] === 'promos'): $promoTotal = count($promos); ?>
+  </div>
     <div class="stage stage--promo" data-stage role="region" aria-roledescription="carousel" aria-label="ประชาสัมพันธ์">
       <div class="stage__viewport">
         <div class="stage__track" data-stage-track>
@@ -91,9 +92,10 @@ require __DIR__ . '/includes/header.php';
         </div>
         <div class="stage__ctrls" hidden><button class="hero-ctrl stage__ctrl" type="button" data-stage-prev aria-label="ประชาสัมพันธ์ก่อนหน้า"><?= icon_arrow('chevron-left') ?></button><button class="hero-ctrl stage__ctrl" type="button" data-stage-next aria-label="ประชาสัมพันธ์ถัดไป"><?= icon_arrow('chevron-right') ?></button></div>
       </div>
-      <p class="stage__count" data-stage-count aria-live="polite"><span aria-hidden="true">1 / <?= $promoTotal ?></span><span class="visually-hidden">สไลด์ 1 จาก <?= $promoTotal ?></span></p>
+      <p class="visually-hidden" data-stage-count aria-live="polite">สไลด์ 1 จาก <?= $promoTotal ?>: <?= e($promos[0]['title']) ?></p>
     </div>
 <?php elseif ($block['type'] === 'videos'): $videoTotal = count($videos); ?>
+  </div>
     <div class="stage stage--video" data-stage data-stage-play role="region" aria-roledescription="carousel" aria-label="Scoop วิดีโอ">
       <div class="stage__viewport">
         <div class="stage__track" data-stage-track>
@@ -108,7 +110,7 @@ require __DIR__ . '/includes/header.php';
         </div>
         <div class="stage__ctrls" hidden><button class="hero-ctrl stage__ctrl" type="button" data-stage-prev aria-label="วิดีโอก่อนหน้า"><?= icon_arrow('chevron-left') ?></button><button class="hero-ctrl stage__ctrl" type="button" data-stage-next aria-label="วิดีโอถัดไป"><?= icon_arrow('chevron-right') ?></button></div>
       </div>
-      <p class="stage__count" data-stage-count aria-live="polite"><span aria-hidden="true">1 / <?= $videoTotal ?></span><span class="visually-hidden">วิดีโอ 1 จาก <?= $videoTotal ?></span></p>
+      <p class="visually-hidden" data-stage-count aria-live="polite">วิดีโอ 1 จาก <?= $videoTotal ?>: <?= e($videos[0]['title']) ?></p>
     </div>
 <?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
     <div class="latest">
@@ -164,7 +166,7 @@ require __DIR__ . '/includes/header.php';
 <?php endforeach; ?>
     </ul>
 <?php endif; ?>
-  </div></section>
+  <?php if (!in_array($block['type'], ['promos', 'videos'], true)): ?></div><?php endif; ?></section>
   <?php endforeach; ?>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>
