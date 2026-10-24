@@ -66,6 +66,7 @@ if (site_url() === '') {
 } else {
     check('site_url set: share links carry the absolute address', strpos($shareHtml, 'sharer.php?u=' . rawurlencode(site_url() . '/research-detail.php?id=demo')) !== false && strpos($shareHtml, 'data-share-client') === false);
 }
+check('share links are icon-only: no visible title or app names, Thai aria-label on each',strpos($shareHtml, 'share__title') === false && strpos($shareHtml, 'แชร์เรื่องนี้') === false && strpos($shareHtml, '<span>') === false && strpos($shareHtml, 'aria-label="แชร์"') !== false);
 check('share links open in a new tab safely, with Thai labels', substr_count($shareHtml, 'target="_blank" rel="noopener noreferrer"') === 2 && strpos($shareHtml, 'aria-label="แชร์ไปที่ Facebook"') !== false && strpos($shareHtml, 'aria-label="แชร์ไปที่ X"') !== false);
 check('eye icon shows the count, and nothing at 0', visit_eye(0) === '' && strpos(visit_eye(1234), '1,234') !== false && strpos(visit_eye(1234), 'เข้าชม 1,234 ครั้ง') !== false);
 
