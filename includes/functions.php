@@ -6,6 +6,13 @@ function e($value) {
 function load_data($name) {
     $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
+    // Content can live in MySQL (see includes/content-db.php). When it is switched on but cannot be read,
+    // the JSON files below are used, so the site keeps working.
+    require_once __DIR__ . '/content-db.php';
+    if (content_source() === 'mysql') {
+        $fromDatabase = content_db_load($name);
+        if ($fromDatabase !== null) { return $fromDatabase; }
+    }
     $text = file_get_contents(__DIR__ . '/../data/' . $name . '.json');
     if ($text === false) { throw new RuntimeException('Cannot read dataset'); }
     $data = json_decode($text, true);

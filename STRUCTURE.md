@@ -217,3 +217,22 @@ Set up on the server: make `storage/` writable by PHP and closed to the web (`st
 **Research-to-workshop section (home).** `.pair` rows come from each workshop's `related` list (index.php, at most three). The source (photo, then kind and title) sits on the dark section; the workshop sits on a solid light slab that overlaps the photo's corner, and rows alternate sides. No text is placed on a photo. Hover on the slab wipes it to white; hover on the source zooms the photo slightly. Below 900px the pair stacks. Each side is one link.
 
 **Slider buttons.** `.hero-ctrl` buttons have a solid `--purple-900` fill and a 2px white ring, so they read on any slide; hover turns them `--purple-200`, press shrinks them, and the paused state (`aria-pressed=true`) is white. Focus shows a white ring with a dark gap.
+
+## Content in MySQL (optional)
+
+Content can be read from the MySQL database `e2imedu` instead of data/*.json. `load_data()` is the only place that reads content, so no page changes.
+
+| File | Purpose |
+| --- | --- |
+| database/content-schema.sql | Tables `posts` (research, innovations, workshops, media, news), `post_links` (the old `related` field), `events`, `site_settings`, plus every current record. Import it in phpMyAdmin. Importing it again replaces those four tables with data/*.json |
+| tools/json_to_sql.py | Rebuilds database/content-schema.sql from data/*.json |
+| includes/content-db.php | Reads the tables and returns records in the same shape as the JSON files |
+| tools/compare_sources.php | `php tools/compare_sources.php` checks that MySQL and data/*.json hold the same content (exit code 1 when not) |
+
+**Switch.** In private/database.php (copy of private/database.example.php, never committed) set `'content_source' => 'mysql'`. The default is `'json'`. The same file holds the credentials that includes/db.php uses for the future account pages. The database user for the public site only needs `SELECT`.
+
+**When MySQL fails.** If the connection or a query fails, `load_data()` uses data/*.json and writes one line per request to the PHP error log ("edu2impact: MySQL unavailable, using data/*.json instead"). Once content is edited in the database, the JSON files fall behind, so a failure shows the older JSON content until MySQL is back.
+
+**Mapping.** `slug` is the old `id` (URLs stay the same), `post_date` is `date` (NULL when empty), `is_public` is `public`, `body` and `refs` hold JSON arrays (`refs` is `references`), `sort_order` keeps the order of the JSON file. Hidden posts (`is_public = 0`) are left out everywhere, like `"public": false`.
+
+**Backups.** The university does not back up hosted data. Export the database from phpMyAdmin (Export tab, SQL) regularly. tools/validate_content.py, tools/segment_thai.py and data/thai-breaks.json still work from data/*.json; while content is edited in MySQL, they check the JSON copy only.
