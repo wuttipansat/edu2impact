@@ -4,12 +4,13 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function load_data($name) {
-    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events'];
+    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events', 'shop'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
     // Content can live in MySQL (see includes/content-db.php). When it is switched on but cannot be read,
     // the JSON files below are used, so the site keeps working.
     require_once __DIR__ . '/content-db.php';
-    if (content_source() === 'mysql') {
+    // 'shop' stays in data/shop.json: the posts table has no price column yet.
+    if ($name !== 'shop' && content_source() === 'mysql') {
         $fromDatabase = content_db_load($name);
         if ($fromDatabase !== null) { return $fromDatabase; }
     }
@@ -25,6 +26,21 @@ function load_data($name) {
         $data = array_values(array_filter($data, static fn ($record): bool => !is_array($record) || ($record['public'] ?? true) !== false));
     }
     return $data;
+}
+// Price for display: a number becomes "฿1,200"; text such as "ราคา 1,200 บาท" is shown as written; empty gives ''.
+function shop_price($value) {
+    if (is_int($value) || is_float($value)) { return '฿' . number_format($value, $value == (int) $value ? 0 : 2); }
+    return trim((string) $value);
+}
+// Order link of a product: only http(s) addresses are used, anything else sends the visitor to the contact page.
+function shop_order_url($record) {
+    $url = trim((string) ($record['order_url'] ?? ''));
+    return preg_match('~^https?://~i', $url) ? $url : '';
+}
+// tel: address of a phone text such as "02-942-8268 ต่อ 731000": digits before "ต่อ" only, so the extension is not dialled.
+function phone_href($phone) {
+    $main = preg_split('/\s*(?:ต่อ|ext\.?|#)\s*/iu', (string) $phone)[0];
+    return preg_replace('/[^\d+]/', '', $main);
 }
 function query_string($key) {
     return isset($_GET[$key]) && is_string($_GET[$key]) ? trim($_GET[$key]) : '';
@@ -189,6 +205,16 @@ function detail_url($kind, $id) {
     return $routes[$kind] . '?id=' . rawurlencode($id);
 }
 
+// Innovation categories (config/innovation-categories.php): slug => name, and the slug of a category name ('' when none).
+function innovation_categories() {
+    static $categories;
+    if ($categories === null) { $categories = require __DIR__ . '/../config/innovation-categories.php'; }
+    return $categories;
+}
+function innovation_category_slug($name) {
+    $slug = array_search(trim((string) $name), innovation_categories(), true);
+    return $slug === false ? '' : (string) $slug;
+}
 function hero_text($key) {
     static $heroes;
     if ($heroes === null) { $heroes = require __DIR__ . '/../config/heroes.php'; }
@@ -200,8 +226,8 @@ function hero_title_html($hero) {
     if ($pos === false) { return e($hero['title']); }
     return e(substr($hero['title'], 0, $pos)) . '<em>' . e($hero['highlight']) . '</em>' . e(substr($hero['title'], $pos + strlen($hero['highlight'])));
 }
-function render_page_hero($key) {
-    $hero = hero_text($key);
+function render_page_hero($key, array $override = []) {
+    $hero = $override + hero_text($key);
     ?><section class="page-hero page-hero--editorial"><div class="container page-hero-content"><p class="eyebrow"><?= e($hero['eyebrow']) ?></p><h1><?= e($hero['title']) ?></h1><p><?= thai_text($hero['intro']) ?></p></div></section><?php
 }
 

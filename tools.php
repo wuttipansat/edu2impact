@@ -32,6 +32,7 @@ require __DIR__ . '/includes/header.php';
       <p class="actions"><a class="button" href="innovations.php">ไปที่นวัตกรรมการศึกษา</a></p>
     </div>
 <?php endif; ?>
+    <p class="tools-all"><a class="text-link" href="innovations.php">นวัตกรรมทั้งหมด</a></p>
   </section>
 </main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

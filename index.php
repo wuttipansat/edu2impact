@@ -6,7 +6,6 @@ $byDate = static function (array $a, array $b): int { return strtotime((string) 
 $research = sort_records(load_data('research'), true); // featured research first, then newest
 $innovations = load_data('innovations'); usort($innovations, $byDate);
 $workshops = load_data('workshops'); usort($workshops, $byDate);
-$news = load_data('news'); usort($news, $byDate);
 $media = load_data('media'); usort($media, $byDate);
 $tools = tool_records();
 // Card sections show the three newest records of a dataset as equal cards that expand on hover or focus.
@@ -21,17 +20,15 @@ $pairs = array_slice($pairs, 0, 3);
 // Latest: every public post of every type, newest first. Posts without a real date follow the dated ones.
 // One main post and up to six more in the side list; nothing is invented to fill the list.
 $feed = [];
-foreach (['research' => $research, 'innovations' => $innovations, 'workshops' => $workshops, 'media' => $media, 'news' => $news] as $feedKind => $feedRecords) {
+foreach (['research' => $research, 'innovations' => $innovations, 'workshops' => $workshops, 'media' => $media] as $feedKind => $feedRecords) {
     foreach ($feedRecords as $feedRecord) { $feed[] = ['kind' => $feedKind, 'record' => $feedRecord, 'dated' => is_dated($feedRecord)]; }
 }
 usort($feed, static fn (array $a, array $b): int => ($b['dated'] <=> $a['dated']) ?: ($a['dated'] ? strcmp($b['record']['date'], $a['record']['date']) : 0));
 $feed = array_slice($feed, 0, 7);
-$feedKinds = array_values(array_unique(array_column($feed, 'kind')));
 // Empty sections are left out. Light sections alternate white / tinted; the pairs section is always dark.
 $homeSections = array_values(array_filter([
-    $feed ? ['type' => 'latest', 'id' => 'latest', 'heading' => 'งานล่าสุด', 'tone' => ''] : null,
-    $news ? $cardSection($news, 'news', 'news', 'ข่าวล่าสุด', 'ข่าวสาร') : null,
-    $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'งานที่ต่อยอดเป็นเวิร์กช็อปแล้ว', 'tone' => 'dark'] : null,
+    $feed ? ['type' => 'latest', 'id' => 'latest', 'heading' => 'ผลงานใหม่ล่าสุด', 'tone' => ''] : null,
+    $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'From Innovation to Workshop', 'tone' => 'dark'] : null,
     $innovations ? $cardSection($innovations, 'innovations', 'innovations', 'นวัตกรรมการศึกษาล่าสุด', 'นวัตกรรม') : null,
     $tools ? ['type' => 'tools', 'id' => 'tools', 'heading' => 'เครื่องมือออนไลน์', 'tone' => ''] : null,
     $workshops ? $cardSection($workshops, 'workshops', 'workshops', 'อบรมและเวิร์กช็อป', 'เวิร์กช็อป') : null,
@@ -49,7 +46,7 @@ $heroSlides = array_map(static function (array $slide): array {
     $hero = hero_text($slide['key']);
     return $slide + ['eyebrow' => $hero['eyebrow'], 'title' => hero_title_html($hero), 'text' => $hero['intro']];
 }, [
-    ['key' => 'home', 'label' => 'หน้าแรก', 'image' => 'home-hero-campus.webp', 'href' => $firstSection, 'cta' => 'ดูงานล่าสุด'],
+    ['key' => 'home', 'label' => 'หน้าแรก', 'image' => 'home-hero-campus.webp', 'href' => $firstSection, 'cta' => 'ดูผลงานใหม่ล่าสุด'],
     ['key' => 'research', 'label' => 'คลังความรู้', 'image' => 'hero-innovation.webp', 'href' => 'research.php', 'cta' => 'ดูงานวิจัย'],
     ['key' => 'innovations', 'label' => 'นวัตกรรม', 'image' => 'hero-impact.webp', 'href' => 'innovations.php', 'cta' => 'ดูนวัตกรรม'],
     ['key' => 'workshops', 'label' => 'บริการของเรา', 'image' => 'hero-resources.webp', 'href' => 'workshops.php', 'cta' => 'ดูเวิร์กช็อป'],
@@ -65,7 +62,6 @@ require __DIR__ . '/includes/header.php';
       <?php endforeach; ?>
     </div>
     <div class="hero-controls">
-      <button class="hero-ctrl hero-ctrl--pause" type="button" data-slider-toggle aria-label="หยุดเลื่อนสไลด์อัตโนมัติ" aria-pressed="false"><svg class="hero-ctrl__pause" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><svg class="hero-ctrl__play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></button>
       <button class="hero-ctrl" type="button" data-slider-prev aria-label="สไลด์ก่อนหน้า"><?= icon_arrow('chevron-left') ?></button>
       <button class="hero-ctrl" type="button" data-slider-next aria-label="สไลด์ถัดไป"><?= icon_arrow('chevron-right') ?></button>
     </div>
@@ -73,7 +69,7 @@ require __DIR__ . '/includes/header.php';
   </section>
   <?php foreach ($homeSections as $block): $listHref = $block['type'] === 'latest' ? '' : ($block['type'] === 'cards' ? $block['kind'] . '.php' : ($block['type'] === 'tools' ? 'tools.php' : '')); ?>
   <section id="<?= e($block['id']) ?>" class="home-section home-section--<?= e($block['tone']) ?> home-section--<?= e($block['type']) ?>" aria-labelledby="<?= e($block['id']) ?>-title"><div class="container">
-    <div class="home-section-heading"><h2 id="<?= e($block['id']) ?>-title"><?= e($block['heading']) ?></h2><?php if ($listHref !== ''): ?><a class="home-section-link" href="<?= e($listHref) ?>">ดูทั้งหมด<span class="visually-hidden"> <?= e($block['heading']) ?></span> <?= icon_arrow('up-right') ?></a><?php endif; ?></div>
+    <div class="home-section-heading"><h2 id="<?= e($block['id']) ?>-title"<?= $block['type'] === 'pairs' ? ' lang="en"' : '' ?>><?= e($block['heading']) ?></h2><?php if ($listHref !== ''): ?><a class="home-section-link" href="<?= e($listHref) ?>">ดูทั้งหมด<span class="visually-hidden"> <?= e($block['heading']) ?></span> <?= icon_arrow('up-right') ?></a><?php endif; ?></div>
 <?php if ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
     <div class="latest">
       <article class="latest-main">
@@ -82,24 +78,19 @@ require __DIR__ . '/includes/header.php';
           <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($main['kind'])) ?></span><?php if ($main['dated']): ?><time datetime="<?= e($mainRecord['date']) ?>"><?= e(thai_date($mainRecord['date'])) ?></time><?php endif; ?><?= visit_eye(visit_count($mainKey)) ?></p>
           <h3 class="latest-main__title"><a href="<?= e(detail_url($main['kind'], $mainRecord['id'])) ?>"><?= e($mainRecord['title']) ?></a></h3>
           <?php if (trim((string) ($mainRecord['summary'] ?? '')) !== ''): ?><p class="latest-main__summary"><?= e($mainRecord['summary']) ?></p><?php endif; ?>
-          <span class="latest-more" aria-hidden="true">อ่านต่อ <?= icon_arrow('up-right') ?></span>
         </div>
       </article>
 <?php if ($rest): ?>
-      <ul class="latest-list">
+      <ol class="latest-list">
 <?php foreach ($rest as $item): $r = $item['record']; $key = $item['kind'] . '/' . $r['id']; ?>
         <li class="latest-item">
-          <a class="latest-item__thumb" href="<?= e(detail_url($item['kind'], $r['id'])) ?>" tabindex="-1" aria-hidden="true"><img src="<?= e(image_path($r) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a>
-          <div class="latest-item__body">
-            <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($item['kind'])) ?></span><?php if ($item['dated']): ?><time datetime="<?= e($r['date']) ?>"><?= e(thai_date($r['date'])) ?></time><?php endif; ?><?= visit_eye(visit_count($key)) ?></p>
-            <h3 class="latest-item__title"><a href="<?= e(detail_url($item['kind'], $r['id'])) ?>"><?= e($r['title']) ?></a></h3>
-          </div>
+          <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($item['kind'])) ?></span><?php if ($item['dated']): ?><time datetime="<?= e($r['date']) ?>"><?= e(thai_date($r['date'])) ?></time><?php endif; ?><?= visit_eye(visit_count($key)) ?></p>
+          <h3 class="latest-item__title"><a href="<?= e(detail_url($item['kind'], $r['id'])) ?>"><?= e($r['title']) ?></a></h3>
         </li>
 <?php endforeach; ?>
-      </ul>
+      </ol>
 <?php endif; ?>
     </div>
-    <p class="latest-browse"><span>ดูทั้งหมดตามหมวด</span><?php foreach ($feedKinds as $fk): ?><a href="<?= e($fk) ?>.php"><?= e(post_kind_label($fk)) ?></a><?php endforeach; ?></p>
 <?php elseif ($block['type'] === 'pairs'): ?>
     <p class="pairs-intro">งานวิจัยและนวัตกรรมที่เราพัฒนาต่อเป็นเวิร์กช็อป ให้ครูได้ลงมือทำจริง</p>
     <ul class="pair-list">

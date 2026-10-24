@@ -10,7 +10,6 @@ function search_groups() {
     return [
         'research' => ['label' => 'งานวิจัยและบทความ', 'page' => 'research.php', 'page_name' => 'งานวิจัยและบทความ'],
         'media' => ['label' => 'สื่อและคู่มือ', 'page' => 'media.php', 'page_name' => 'สื่อและคู่มือ'],
-        'news' => ['label' => 'ข่าวสาร', 'page' => 'news.php', 'page_name' => 'ข่าวสาร'],
         'innovations' => ['label' => 'นวัตกรรมการศึกษา', 'page' => 'innovations.php', 'page_name' => 'นวัตกรรมการศึกษา'],
         'workshops' => ['label' => 'อบรมและเวิร์กช็อป', 'page' => 'workshops.php', 'page_name' => 'อบรมและเวิร์กช็อป'],
         'events' => ['label' => 'กิจกรรม', 'page' => '', 'page_name' => ''],
@@ -44,7 +43,7 @@ function search_index() {
     static $index;
     if ($index !== null) { return $index; }
     $index = [];
-    foreach (['research', 'innovations', 'workshops', 'media', 'news'] as $kind) {
+    foreach (['research', 'innovations', 'workshops', 'media'] as $kind) {
         foreach (load_data($kind) as $record) {
             if (!isset($record['id'], $record['title'])) { continue; }
             // Titles of linked records (both directions) count as keywords, so "Hemo-link" finds the workshop that links to it.

@@ -6,6 +6,7 @@ if (!isset($pageDescription)) {
     $pageDescription = $heroIntros[$currentPage ?? '']['intro'] ?? $site['description'];
 }
 $currentPage = $currentPage ?? '';
+$navKey = $navKey ?? $currentPage; // which menu entry is current (a category page differs from $currentPage)
 // One visit per visitor per page per day. Detail pages set $visitKey to "kind/id"; 404s and redirects are not counted.
 record_visit($visitKey ?? $currentPage);
 ?><!DOCTYPE html>
@@ -60,12 +61,12 @@ $shareImage = $shareUrl !== '' ? absolute_url($ogImage ?? 'assets/images/hero-in
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" hidden><span class="menu-toggle__label">เมนู</span><svg class="menu-toggle__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="menu-toggle__bars" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-toggle__cross" d="M6 6l12 12M18 6 6 18"/></svg></button>
 <nav id="main-nav" class="nav" aria-label="เมนูหลัก">
 <?php foreach ($nav as $item): ?>
-<?php $active = $currentPage === $item['key'] || in_array($currentPage, array_column($item['children'] ?? [], 'key'), true); ?>
+<?php $active = $navKey === $item['key'] || in_array($navKey, array_column($item['children'] ?? [], 'key'), true) || in_array($currentPage, $item['also'] ?? [], true); ?>
 <?php if (!empty($item['children'])): ?>
 <details class="nav-group"<?= $active ? ' data-active="true"' : '' ?>>
 <summary><span><?= e($item['label']) ?></span></summary>
 <div class="nav-submenu"><?php foreach ($item['children'] as $child): ?>
-<a href="<?= e($child['file']) ?>"<?= $currentPage === $child['key'] ? ' aria-current="page"' : '' ?>><?= e($child['label']) ?></a>
+<a href="<?= e($child['file']) ?>"<?= $navKey === $child['key'] ? ' aria-current="page"' : '' ?>><?= e($child['label']) ?></a>
 <?php endforeach; ?></div></details>
 <?php else: ?><a href="<?= e($item['file']) ?>"<?= $active ? ' aria-current="page"' : '' ?>><?= e($item['label']) ?></a><?php endif; ?>
 <?php endforeach; ?>

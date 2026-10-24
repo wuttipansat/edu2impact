@@ -1,6 +1,12 @@
 <?php
 // Innovation: "Showcase gallery" - search first, then a card grid. One link per card (title, stretched).
 ?>
+<nav class="category-filter" aria-label="หมวดนวัตกรรม"><ul>
+  <li><a href="innovations.php"<?= $categorySlug === '' ? ' aria-current="page"' : '' ?>>นวัตกรรมทั้งหมด</a></li>
+<?php foreach (innovation_categories() as $slug => $name): ?>
+  <li><a href="innovations.php?category=<?= e($slug) ?>"<?= $categorySlug === $slug ? ' aria-current="page"' : '' ?>><?= e($name) ?></a></li>
+<?php endforeach; ?>
+</ul></nav>
 <div class="show-grid" aria-live="polite">
 <?php foreach ($records as $record): ?>
   <article class="show-card">
@@ -14,4 +20,6 @@
   </article>
 <?php endforeach; ?>
 </div>
-<?php if (!$records): ?><p class="listing-none">ยังไม่มีรายการในขณะนี้</p><?php endif; ?>
+<?php if (!$records && $categorySlug !== ''): ?>
+<div class="empty-guide"><h2>หมวด<?= e($categoryName) ?>ยังไม่มีนวัตกรรม</h2><p>เรากำลังรวบรวมผลงานในหมวดนี้ ระหว่างนี้ดูนวัตกรรมหมวดอื่น หรือติดต่อทีมงานหากต้องการร่วมพัฒนา</p><p class="actions"><a class="button" href="innovations.php">ดูนวัตกรรมทั้งหมด</a><a class="text-link" href="contact.php">ติดต่อเรา</a></p></div>
+<?php elseif (!$records): ?><p class="listing-none">ยังไม่มีรายการในขณะนี้</p><?php endif; ?>

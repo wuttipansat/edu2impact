@@ -98,21 +98,16 @@
 })();
 
 (() => {
-  // Home hero slider: previous / next / pause buttons, arrow keys, auto-advance every 7 s.
-  // Auto-advance pauses on hover and focus, can be stopped with the pause button (WCAG 2.2.2), and never
-  // starts when the visitor prefers reduced motion. A status line tells screen readers which slide is showing.
+  // Home hero slider: previous / next buttons and arrow keys. Slides change only when the visitor
+  // asks for it; nothing moves on its own, so no pause control is needed (WCAG 2.2.2).
+  // A status line tells screen readers which slide is showing.
   const slider = document.querySelector('[data-slider]');
   if (!slider) return;
   const slides = [...slider.querySelectorAll('[data-slide]')];
   const previous = slider.querySelector('[data-slider-prev]');
   const next = slider.querySelector('[data-slider-next]');
-  const toggle = slider.querySelector('[data-slider-toggle]');
   const status = slider.querySelector('[data-slider-status]');
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = 0;
-  let timer;
-  let hovering = false;
-  let stopped = reduced.matches;
 
   function show(index, announce) {
     current = (index + slides.length) % slides.length;
@@ -124,35 +119,13 @@
     if (status && announce) status.textContent = `สไลด์ ${current + 1} จาก ${slides.length}`;
   }
 
-  function schedule() {
-    window.clearInterval(timer);
-    if (!stopped && !hovering) timer = window.setInterval(() => show(current + 1, false), 7000);
-  }
-
-  function setStopped(value) {
-    stopped = value;
-    if (toggle) {
-      toggle.classList.toggle('is-paused', stopped);
-      toggle.setAttribute('aria-pressed', String(stopped));
-      toggle.setAttribute('aria-label', stopped ? 'เล่นสไลด์อัตโนมัติ' : 'หยุดเลื่อนสไลด์อัตโนมัติ');
-    }
-    schedule();
-  }
-
-  previous?.addEventListener('click', () => { show(current - 1, true); schedule(); });
-  next?.addEventListener('click', () => { show(current + 1, true); schedule(); });
-  toggle?.addEventListener('click', () => setStopped(!stopped));
-  reduced.addEventListener?.('change', () => { if (reduced.matches) setStopped(true); });
-  slider.addEventListener('mouseenter', () => { hovering = true; schedule(); });
-  slider.addEventListener('mouseleave', () => { hovering = false; schedule(); });
-  slider.addEventListener('focusin', () => { hovering = true; schedule(); });
-  slider.addEventListener('focusout', event => { if (!slider.contains(event.relatedTarget)) { hovering = false; schedule(); } });
+  previous?.addEventListener('click', () => show(current - 1, true));
+  next?.addEventListener('click', () => show(current + 1, true));
   slider.addEventListener('keydown', event => {
-    if (event.key === 'ArrowLeft') { show(current - 1, true); schedule(); }
-    if (event.key === 'ArrowRight') { show(current + 1, true); schedule(); }
+    if (event.key === 'ArrowLeft') show(current - 1, true);
+    if (event.key === 'ArrowRight') show(current + 1, true);
   });
   show(0, false);
-  setStopped(stopped);
 })();
 
 (() => {

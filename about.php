@@ -3,7 +3,7 @@ require __DIR__ . '/includes/bootstrap.php';
 $currentPage = 'about'; $pageTitle = 'เกี่ยวกับเรา | ' . $site['name'];
 // Counts come straight from the data files, so they stay true as content is added.
 $counts = [];
-foreach (['research' => 'งานวิจัย', 'innovations' => 'นวัตกรรม', 'workshops' => 'เวิร์กช็อป', 'media' => 'สื่อและคู่มือ', 'news' => 'ข่าวสาร'] as $kind => $label) {
+foreach (['research' => 'งานวิจัย', 'innovations' => 'นวัตกรรม', 'workshops' => 'เวิร์กช็อป', 'media' => 'สื่อและคู่มือ'] as $kind => $label) {
     $n = count(load_data($kind));
     if ($n > 0) { $counts[] = ['n' => $n, 'label' => $label, 'href' => $kind . '.php']; }
 }

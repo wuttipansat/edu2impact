@@ -9,6 +9,7 @@ if (!$record) {
     require __DIR__ . '/footer.php';
     return;
 }
+if ($kind === 'innovations' && innovation_category_slug($record['category'] ?? '') !== '') { $navKey = 'innovations-' . innovation_category_slug($record['category']); }
 $pageTitle = $record['title'] . ' | ' . $site['name'];
 $pageDescription = $record['summary'];
 $postStyles = true;

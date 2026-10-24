@@ -5,7 +5,7 @@ require __DIR__ . '/includes/header.php';
 $email = $site['email'] ?? '';
 $hasEmail = (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 $phone = trim((string) ($site['phone'] ?? ''));
-$phoneHref = preg_replace('/[^\d+]/', '', $phone);
+$phoneHref = phone_href($phone);
 $address = trim((string) ($site['address'] ?? ''));
 ?>
 <main id="main" class="page-shell page-shell--contact"><section class="page-hero page-hero--contact"><div class="container page-hero-content"><?php $hero = hero_text('contact'); ?><p class="eyebrow"><?= e($hero['eyebrow']) ?></p><h1><?= e($hero['title']) ?></h1><p><?= thai_text($hero['intro']) ?></p></div></section><section class="section container contact-section" aria-labelledby="contact-details-heading">
