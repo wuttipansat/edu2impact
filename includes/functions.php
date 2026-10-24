@@ -4,7 +4,7 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function load_data($name) {
-    $allowed = ['site', 'research', 'innovations', 'workshops', 'events'];
+    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
     $text = file_get_contents(__DIR__ . '/../data/' . $name . '.json');
     if ($text === false) { throw new RuntimeException('Cannot read dataset'); }
@@ -27,6 +27,22 @@ function find_record($records, $id) {
         if (isset($record['id']) && $record['id'] === $id) { return $record; }
     }
     return null;
+}
+// Public address of the site from data/site.json ("https://…", no trailing slash), or '' when not set.
+function site_url(): string {
+    static $url = null;
+    if ($url === null) {
+        $value = '';
+        try { $value = trim((string) (load_data('site')['site_url'] ?? '')); } catch (Throwable $exception) { $value = ''; }
+        $url = preg_match('~\Ahttps://[^\s/]+(?:/[^\s?#]*)?\z~', $value) ? rtrim($value, '/') : '';
+    }
+    return $url;
+}
+// Absolute address for a site path such as "research.php" or "assets/images/x.webp". '' while site_url is not set,
+// so nothing ever points at a guessed domain.
+function absolute_url(string $path): string {
+    $base = site_url();
+    return $base === '' ? '' : $base . '/' . ltrim($path, '/');
 }
 function image_path($record) {
     $path = $record['image'] ?? '';
@@ -58,6 +74,18 @@ function tool_url($record) {
     if (preg_match('~\Ahttps://[^\s<>"]+\z~', $url)) { return $url; }
     if (preg_match('~\Aapps/[a-z0-9-]+/\z~', $url) && is_file(__DIR__ . '/../' . $url . 'index.html')) { return $url; }
     return '';
+}
+// Records with a tool people can open (tool_url), from innovations and research, newest first.
+// Used by tools.php and the home page. Returns [['kind' => ..., 'record' => ...], ...].
+function tool_records(): array {
+    $found = [];
+    foreach (['innovations', 'research'] as $kind) {
+        foreach (load_data($kind) as $record) {
+            if (is_array($record) && tool_url($record) !== '') { $found[] = ['kind' => $kind, 'record' => $record]; }
+        }
+    }
+    usort($found, static fn (array $a, array $b): int => strtotime((string) ($b['record']['date'] ?? '')) <=> strtotime((string) ($a['record']['date'] ?? '')));
+    return $found;
 }
 // Optional PDF download: a local assets/files/<name>.pdf that exists. No external URLs, no traversal.
 function download_url($record) {
@@ -97,6 +125,11 @@ function is_dated($record) {
 // Thai label for a linkable dataset; '' for anything else.
 function kind_label($kind) {
     $labels = ['research' => 'งานวิจัย', 'innovations' => 'นวัตกรรม', 'workshops' => 'เวิร์กช็อป'];
+    return $labels[$kind] ?? '';
+}
+// Label for any post type shown in a mixed feed (the home page "latest" list); '' for anything else.
+function post_kind_label($kind) {
+    $labels = ['research' => 'งานวิจัย', 'innovations' => 'นวัตกรรม', 'workshops' => 'เวิร์กช็อป', 'media' => 'สื่อและคู่มือ', 'news' => 'ข่าวสาร'];
     return $labels[$kind] ?? '';
 }
 // Records of a linkable dataset, loaded once per request.
@@ -145,7 +178,7 @@ function linked_records($kind, $record) {
     return $found;
 }
 function detail_url($kind, $id) {
-    $routes = ['research' => 'research-detail.php', 'innovations' => 'innovation-detail.php', 'workshops' => 'workshop-detail.php'];
+    $routes = ['research' => 'research-detail.php', 'innovations' => 'innovation-detail.php', 'workshops' => 'workshop-detail.php', 'media' => 'media-detail.php', 'news' => 'news-detail.php'];
     return $routes[$kind] . '?id=' . rawurlencode($id);
 }
 
@@ -162,7 +195,7 @@ function hero_title_html($hero) {
 }
 function render_page_hero($key) {
     $hero = hero_text($key);
-    ?><section class="page-hero page-hero--editorial"><div class="container page-hero-content"><p class="eyebrow"><?= e($hero['eyebrow']) ?></p><h1><?= e($hero['title']) ?></h1><p><?= e($hero['intro']) ?></p></div></section><?php
+    ?><section class="page-hero page-hero--editorial"><div class="container page-hero-content"><p class="eyebrow"><?= e($hero['eyebrow']) ?></p><h1><?= e($hero['title']) ?></h1><p><?= thai_text($hero['intro']) ?></p></div></section><?php
 }
 
 // ---- Listing layouts ----

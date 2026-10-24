@@ -34,7 +34,6 @@ $all = search_run('STEM');
 check('STEM finds research, innovations and workshops', $all['groups']['research'] && $all['groups']['innovations'] && $all['groups']['workshops']);
 check('empty query returns nothing', search_run('   ')['total'] === 0);
 check('AND logic narrows results', search_run('STEM ครู')['total'] <= min(search_run('STEM')['total'], search_run('ครู')['total']));
-check('partner group is indexed', (bool) search_run('Government')['groups']['pages']);
 check('event is indexed', (bool) search_run('Research to Practice Forum')['groups']['events']);
 check('nonsense finds nothing', search_run('zzzz')['total'] === 0);
 // Optional innovation fields (audience, subjects, features) are searchable.

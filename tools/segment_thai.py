@@ -24,12 +24,12 @@ except ImportError:
     sys.exit('PyThaiNLP is not installed. Run: pip install pythainlp')
 
 base = Path(__file__).resolve().parents[1]
-DATASETS = ('research', 'innovations', 'workshops')
+DATASETS = ('research', 'innovations', 'workshops', 'media', 'news')
 THAI = re.compile(r'[฀-๿]')
 
 
 def post_texts():
-    """Every summary and body paragraph that the detail pages render."""
+    """Every summary and body paragraph that the detail pages render, plus the hero intros."""
     for name in DATASETS:
         records = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
         for record in records:
@@ -38,6 +38,16 @@ def post_texts():
             for block in record.get('body', []):
                 if isinstance(block, str):
                     yield block
+    # Hero intros from config/heroes.php (page banners, home slides, the closing call and the footer).
+    import subprocess
+    try:
+        heroes = json.loads(subprocess.run(['php', '-r', 'echo json_encode(require "config/heroes.php");'],
+                                           cwd=base, capture_output=True, text=True, check=True).stdout)
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        heroes = {}
+    for hero in heroes.values():
+        if isinstance(hero.get('intro'), str):
+            yield hero['intro']
 
 
 def text_key(text):

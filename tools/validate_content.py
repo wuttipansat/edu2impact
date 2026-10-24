@@ -12,7 +12,7 @@ LINK_KINDS = ('research', 'innovations', 'workshops')
 records_by_kind = {}  # dataset -> ids, filled as files load; links are checked once every file is loaded
 links = []  # (dataset, record id, position, kind, id)
 hidden = set()  # (dataset, id) of records with "public": false
-for name in ('site', 'research', 'innovations', 'workshops', 'events'):
+for name in ('site', 'research', 'innovations', 'workshops', 'media', 'news', 'events'):
     try:
         data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
         if name == 'site':
@@ -20,6 +20,11 @@ for name in ('site', 'research', 'innovations', 'workshops', 'events'):
             for key in ('name', 'university', 'description', 'email', 'phone', 'address'):
                 assert isinstance(data.get(key), str), key + ' must be text'
             assert isinstance(data.get('demo_mode'), bool), 'demo_mode must be true or false'
+            site_url = data.get('site_url', '')
+            assert isinstance(site_url, str), 'site_url must be text'
+            assert site_url == '' or re.fullmatch(r'https://[^\s/]+(?:/[^\s?#]*)?', site_url) and not site_url.endswith('/'), 'site_url must be empty or an https:// address without a trailing slash'
+            if site_url == '':
+                print('Note: site_url is empty, so share buttons, og:url and og:image are switched off. Set it in data/site.json.')
             continue
         assert isinstance(data, list), 'must be an array'
         if name == 'events':

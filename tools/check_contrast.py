@@ -1,13 +1,13 @@
 """Check WCAG AA contrast for the colour pairs the site uses. Python 3; no packages.
 
-Reads token values from assets/css/minimal-palette.css so the check follows the CSS.
+Reads token values from assets/css/theme.css so the check follows the CSS.
 Exit code 1 if any pair is below its threshold.
 """
 import re
 import sys
 from pathlib import Path
 
-css = (Path(__file__).resolve().parents[1] / 'assets/css/minimal-palette.css').read_text(encoding='utf-8')
+css = (Path(__file__).resolve().parents[1] / 'assets/css/theme.css').read_text(encoding='utf-8')
 tokens = dict(re.findall(r'--(purple-\d+|accent-warm|minimal-ink|minimal-muted|minimal-surface|minimal-line):\s*(#[0-9a-fA-F]{6})', css))
 
 

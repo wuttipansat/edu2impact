@@ -1,5 +1,5 @@
 /* Post (detail) header: eyebrow badge, back link, author / date / reading-time bar. Loaded last on detail pages. */
-.article-content .eyebrow{display:inline-flex;align-items:center;margin-bottom:14px;padding:6px 14px;border:1px solid rgba(116,58,140,.18);border-radius:999px;background:var(--purple-50)!important;color:var(--purple-700)!important;line-height:1.5}
+.article-content .eyebrow{display:inline-flex;align-items:center;margin-bottom:14px;padding:6px 14px;border:1px solid rgba(116,58,140,.18);border-radius:999px;background:var(--purple-50);color:var(--purple-700);line-height:1.5}
 .article-content h1{margin-bottom:0}
 .back-link svg{flex:0 0 auto;transition:transform .2s ease}
 .back-link:hover svg,.back-link:focus-visible svg{transform:translateX(-3px)}

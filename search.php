@@ -8,7 +8,7 @@ $groups = search_groups();
 $currentPage = 'search';
 $metaRobots = 'noindex';
 $pageTitle = ($q === '' ? 'ค้นหา' : '“' . $q . '” – ค้นหา') . ' | ' . $site['name'];
-$quickLinks = ['research.php' => 'Research', 'innovations.php' => 'Innovation', 'workshops.php' => 'Workshop', 'partners.php' => 'Partners', 'about.php' => 'About'];
+$quickLinks = ['research.php' => 'งานวิจัยและบทความ', 'tools.php' => 'เครื่องมือออนไลน์', 'innovations.php' => 'นวัตกรรมการศึกษา', 'workshops.php' => 'อบรมและเวิร์กช็อป', 'news.php' => 'ข่าวสาร', 'about.php' => 'เกี่ยวกับเรา'];
 $searchIcon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -24,7 +24,7 @@ require __DIR__ . '/includes/header.php';
 <?php if ($q === ''): ?>
     <div class="search-message">
       <h2>พิมพ์คำที่ต้องการค้นหา</h2>
-      <p>ค้นหาได้ทั้งงานวิจัย นวัตกรรม เวิร์กช็อป กิจกรรม และทุกหน้าในเว็บไซต์</p>
+      <p>ค้นหาได้ทั้งงานวิจัย นวัตกรรม เวิร์กช็อป ข่าว และทุกหน้าในเว็บไซต์</p>
       <?php $suggestions = search_suggestions(); if ($suggestions): ?>
       <p class="search-message__label" id="search-suggest-label">ลองค้นหา</p>
       <ul class="search-suggest" aria-labelledby="search-suggest-label"><?php foreach ($suggestions as $word): ?><li><a href="search.php?q=<?= e(rawurlencode($word)) ?>"><?= e($word) ?></a></li><?php endforeach; ?></ul>

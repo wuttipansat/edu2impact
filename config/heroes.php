@@ -1,14 +1,18 @@
 <?php
-// Single source of truth for hero text. Used by the home slider and by each page's hero banner.
+// Single source of truth for hero text. Used by the home slider, each page's hero banner, the closing
+// contact call (the 'contact' entry) and the site search index.
 // 'search' is the search.php banner only; it is not a home slide.
+// The eyebrow names the menu group and page ("กลุ่มเมนู / หน้า"), so it matches config/navigation.php.
 // `highlight` must be a substring of `title`; the slider wraps it in <em>.
 return [
- 'home' => ['eyebrow' => 'EDU2IMPACT / HOME', 'title' => 'Research to Impact.', 'highlight' => 'Impact.', 'intro' => 'งานวิจัยการศึกษาที่พร้อมนำไปใช้จริง'],
- 'research' => ['eyebrow' => 'EDU2IMPACT / RESEARCH', 'title' => 'Research with a way forward.', 'highlight' => 'way forward.', 'intro' => 'ผลงานวิจัยที่ช่วยอธิบายปัญหาและนำไปใช้ได้จริง'],
- 'innovations' => ['eyebrow' => 'EDU2IMPACT / INNOVATION', 'title' => 'Ideas ready to use.', 'highlight' => 'to use.', 'intro' => 'นวัตกรรมการศึกษาที่พร้อมทดลองใช้ในห้องเรียน'],
- 'workshops' => ['eyebrow' => 'EDU2IMPACT / WORKSHOP', 'title' => 'Learn it hands-on.', 'highlight' => 'hands-on.', 'intro' => 'เวิร์กช็อปสำหรับครูและเครือข่ายการศึกษา'],
- 'partners' => ['eyebrow' => 'EDU2IMPACT / PARTNERS', 'title' => 'Partners that move research forward.', 'highlight' => 'forward.', 'intro' => 'เครือข่ายที่ช่วยให้งานวิจัยถูกนำไปใช้และขยายผล'],
- 'contact' => ['eyebrow' => 'EDU2IMPACT / CONTACT', 'title' => "Let's create impact together.", 'highlight' => 'together.', 'intro' => 'สนใจนำงานวิจัย นวัตกรรม หรือเวิร์กช็อปไปประยุกต์ใช้ในโรงเรียนหรือหน่วยงานของคุณ ติดต่อเราเพื่อหารือแนวทางความร่วมมือ'],
- 'about' => ['eyebrow' => 'EDU2IMPACT / ABOUT', 'title' => 'What is EDU2IMPACT?', 'highlight' => 'EDU2IMPACT?', 'intro' => 'แพลตฟอร์มที่เชื่อมงานวิจัยกับการนำไปใช้จริง'],
- 'search' => ['eyebrow' => 'EDU2IMPACT / SEARCH', 'title' => 'Find anything.', 'highlight' => 'anything.', 'intro' => 'ค้นหางานวิจัย นวัตกรรม เวิร์กช็อป และทุกหน้าในเว็บไซต์'],
+ 'home' => ['eyebrow' => 'หน้าแรก', 'title' => 'จากงานวิจัยสู่การเปลี่ยนแปลง', 'highlight' => 'การเปลี่ยนแปลง', 'intro' => 'อ่านสรุปงานวิจัย เปิดใช้เครื่องมือออนไลน์ และดูเวิร์กช็อปจากมหาวิทยาลัยเกษตรศาสตร์'],
+ 'research' => ['eyebrow' => 'คลังความรู้ / งานวิจัยและบทความ', 'title' => 'เปิดโลกงานวิจัยทางการศึกษา', 'highlight' => 'เปิดโลก', 'intro' => 'แต่ละเรื่องสรุปว่าศึกษาอะไร พบอะไร และนำไปใช้ในห้องเรียนอย่างไร'],
+ 'media' => ['eyebrow' => 'คลังความรู้ / สื่อและคู่มือ', 'title' => 'สื่อและคู่มือที่ดาวน์โหลดได้', 'highlight' => 'ดาวน์โหลดได้', 'intro' => 'คู่มือและสื่อการสอนที่ทำต่อจากงานวิจัยและนวัตกรรมในเว็บไซต์นี้'],
+ 'tools' => ['eyebrow' => 'นวัตกรรม / เครื่องมือออนไลน์', 'title' => 'ค้นพบเครื่องมือจัดการเรียนรู้', 'highlight' => 'จัดการเรียนรู้', 'intro' => 'เครื่องมือบนเว็บที่พัฒนาจากงานวิจัยและนวัตกรรมของเรา'],
+ 'innovations' => ['eyebrow' => 'นวัตกรรม / นวัตกรรมการศึกษา', 'title' => 'นวัตกรรมที่ทดลองใช้ในห้องเรียนได้', 'highlight' => 'ทดลองใช้ในห้องเรียนได้', 'intro' => 'ชุดกิจกรรม แบบจำลอง และหลักสูตรที่ครูนำไปใช้กับผู้เรียนได้'],
+ 'workshops' => ['eyebrow' => 'บริการของเรา / อบรมและเวิร์กช็อป', 'title' => 'อบรมแบบลงมือทำ สำหรับครู', 'highlight' => 'ลงมือทำ', 'intro' => 'ดูหัวข้อที่เคยจัด แล้วติดต่อทีมเพื่อจัดที่โรงเรียนของคุณ'],
+ 'news' => ['eyebrow' => 'เกี่ยวกับเรา / ข่าวสาร', 'title' => 'ข่าวและประกาศ', 'highlight' => 'ประกาศ', 'intro' => 'ข่าวกิจกรรม รอบอบรม และประกาศจากทีม EDU2IMPACT'],
+ 'contact' => ['eyebrow' => 'เกี่ยวกับเรา / ติดต่อเรา', 'title' => 'สนใจนำไปใช้ในการจัดการเรียนรู้?', 'highlight' => 'จัดการเรียนรู้', 'intro' => 'ติดต่อเราเพื่อขอใช้เครื่องมือ ขอจัดเวิร์กช็อป หรือถามรายละเอียดของงานวิจัย'],
+ 'about' => ['eyebrow' => 'เกี่ยวกับเรา', 'title' => 'EDU2IMPACT คืออะไร', 'highlight' => 'คืออะไร', 'intro' => 'งานวิจัย นวัตกรรม และเวิร์กช็อปด้านการศึกษา ที่ครูและโรงเรียนนำไปใช้ต่อได้'],
+ 'search' => ['eyebrow' => 'ค้นหา', 'title' => 'ค้นหาได้ทุกเรื่อง', 'highlight' => 'ทุกเรื่อง', 'intro' => 'ค้นหางานวิจัย นวัตกรรม เวิร์กช็อป ข่าว และทุกหน้าในเว็บไซต์'],
 ];

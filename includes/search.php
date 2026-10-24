@@ -1,6 +1,6 @@
 <?php
 // Site-wide search: index, scoring, highlighting and excerpts. Used by search.php.
-// Content comes from data/*.json, config/search-pages.php, config/partner-groups.php and config/heroes.php.
+// Content comes from data/*.json, config/search-pages.php and config/heroes.php.
 
 const SEARCH_MAX_LENGTH = 100;
 const SEARCH_GROUP_LIMIT = 20;
@@ -8,9 +8,11 @@ const SEARCH_GROUP_LIMIT = 20;
 // Result groups in display order: type => [label, listing page or '', listing page name].
 function search_groups() {
     return [
-        'research' => ['label' => 'งานวิจัย', 'page' => 'research.php', 'page_name' => 'Research'],
-        'innovations' => ['label' => 'นวัตกรรม', 'page' => 'innovations.php', 'page_name' => 'Innovation'],
-        'workshops' => ['label' => 'เวิร์กช็อป', 'page' => 'workshops.php', 'page_name' => 'Workshop'],
+        'research' => ['label' => 'งานวิจัยและบทความ', 'page' => 'research.php', 'page_name' => 'งานวิจัยและบทความ'],
+        'media' => ['label' => 'สื่อและคู่มือ', 'page' => 'media.php', 'page_name' => 'สื่อและคู่มือ'],
+        'news' => ['label' => 'ข่าวสาร', 'page' => 'news.php', 'page_name' => 'ข่าวสาร'],
+        'innovations' => ['label' => 'นวัตกรรมการศึกษา', 'page' => 'innovations.php', 'page_name' => 'นวัตกรรมการศึกษา'],
+        'workshops' => ['label' => 'อบรมและเวิร์กช็อป', 'page' => 'workshops.php', 'page_name' => 'อบรมและเวิร์กช็อป'],
         'events' => ['label' => 'กิจกรรม', 'page' => '', 'page_name' => ''],
         'pages' => ['label' => 'หน้าเว็บไซต์', 'page' => '', 'page_name' => ''],
     ];
@@ -42,7 +44,7 @@ function search_index() {
     static $index;
     if ($index !== null) { return $index; }
     $index = [];
-    foreach (['research', 'innovations', 'workshops'] as $kind) {
+    foreach (['research', 'innovations', 'workshops', 'media', 'news'] as $kind) {
         foreach (load_data($kind) as $record) {
             if (!isset($record['id'], $record['title'])) { continue; }
             // Titles of linked records (both directions) count as keywords, so "Hemo-link" finds the workshop that links to it.
@@ -87,19 +89,6 @@ function search_index() {
             'url' => $page['url'],
             'date' => '',
             'category' => '',
-        ];
-    }
-    foreach (require __DIR__ . '/../config/partner-groups.php' as $i => [$english, $thai, $description]) {
-        $index[] = [
-            'type' => 'pages',
-            'title' => 'Partners: ' . $english . ' · ' . $thai,
-            'summary' => $description,
-            'keywords' => 'partners พันธมิตร ' . $english . ' ' . $thai,
-            'text' => search_join([$english, $thai, $description]),
-            'body' => '',
-            'url' => 'partners.php#partner-' . ($i + 1),
-            'date' => '',
-            'category' => 'Partners',
         ];
     }
     return $index;

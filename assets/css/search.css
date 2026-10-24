@@ -59,7 +59,7 @@
 }
 
 /* ===== Header icon ===== */
-.header-search{display:inline-grid;flex:none;place-items:center;width:44px;height:44px;margin-left:-22px;border-radius:50%;color:#fff!important;text-decoration:none!important}
+.header-search{display:inline-grid;flex:none;place-items:center;width:44px;height:44px;margin-left:-22px;border-radius:50%;color:#fff;text-decoration:none!important}
 .header-search:hover{background:rgba(255,255,255,.12)}
 .header-search:active{background:rgba(255,255,255,.2)}
 .header-search:focus-visible{outline:3px solid var(--purple-300);outline-offset:2px}

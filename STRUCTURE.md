@@ -1,32 +1,45 @@
 # EDU2Impact website structure
 
-The current build is a public content site with six main pages. Authenticated account workflows are not included.
+The current build is a public content site. Authenticated account workflows are not included.
 
 ## Navigation
 
 | Menu item | Destination | Key |
 | --- | --- | --- |
-| Home | index.php | home |
-| Research | research.php | research |
-| Innovation | innovations.php | innovations |
-| Workshop | workshops.php | workshops |
-| Partners | partners.php | partners |
-| About | about.php | about |
+| หน้าแรก | index.php | home |
+| คลังความรู้ → งานวิจัยและบทความ, สื่อและคู่มือ | research.php, media.php | research, media |
+| นวัตกรรม → เครื่องมือออนไลน์, นวัตกรรมการศึกษา | tools.php, innovations.php | tools, innovations |
+| บริการของเรา → อบรมและเวิร์กช็อป | workshops.php | workshops |
+| เกี่ยวกับเรา → เกี่ยวกับเรา, ข่าวสาร, ติดต่อเรา | about.php, news.php, contact.php | about, news, contact |
 
-Menu items are defined in config/navigation.php. Each `key` must equal the page's `$currentPage`; for Research, Innovation and Workshop it is also the dataset name, because includes/detail.php sets `$currentPage = $kind` and links back to `$kind.php`. The current page is shown as one flat purple fill. Contact is linked from the footer.
+Menu items are defined in config/navigation.php: five top-level items, four of them dropdown groups. Each child has `label`, `file` and `key`; dropdowns show titles only. A child `key` must equal the page's `$currentPage`; for research, innovations, workshops, media and news it is also the dataset name, because includes/detail.php sets `$currentPage = $kind`. The group holding the current page, and the current page itself, are shown in bold on a soft pill (no underline). Dropdowns open on click, Enter or Space, close with Esc or an outside click, and become a full-screen accordion at 1100px and below (assets/js/main.js). The header has a search button and a "ติดต่อเรา" button. At the very top of a page it has no bar: on pages with a hero (`.home-hero` or `.page-hero`) it sits transparent over the hero, which pads its top by `--header-h`; on pages without one (detail pages, 404) it uses dark text on the light page. Once the page scrolls, `.header--scrolled` fades in the floating purple bar (theme.css "Round 5: header"; all of it sits inside `:has()`, so an old browser keeps the solid bar). The mobile menu and open dropdowns always have solid backgrounds.
+
+partners.php was removed: it now answers 301 and sends old links to about.php. config/partner-groups.php was deleted with it.
+
+Pages added in 2026: `tools.php` lists every research or innovation record that has a `tool_url` (`tool_records()` in includes/functions.php). `media.php` / `media-detail.php` read `data/media.json`, and `news.php` / `news-detail.php` read `data/news.json`; both start empty (same fields as the other datasets: id, title, date, summary, body, image, category, public). The footer sitemap is built from the same navigation config; contact details come from data/site.json and are hidden when empty.
+
+Home page (index.php) sections, in order: hero slider, "งานล่าสุด" (one main post plus up to six more from every public post type, newest first; posts without a real date follow the dated ones; nothing is invented to fill it), latest news (only when there is news), "งานที่ต่อยอดเป็นเวิร์กช็อปแล้ว" (each workshop's `related` source as a photo card, a connector, and the workshop as a solid card, plus a button to contact.php), latest innovations, online tools, workshops. The hero slider has no index rail: previous, next and pause buttons sit bottom right (bottom left on phones), a hidden status line tells screen readers "สไลด์ N จาก M", and auto-advance stays off when the visitor prefers reduced motion. Any section with no data is left out, and the light sections alternate white and tinted around the dark one. News, research, innovations and workshops use the same expanding card (`.xcard` in theme.css): equal size at rest; hover or keyboard focus widens one card and slides up its summary; touch screens and narrow windows show the summary all the time.
+
+## Styles
+
+Stylesheets load in this order (includes/header.php): `main.css` (base components), `home.css` (home only), `listing.css` (listing pages), `post-byline.css` (detail pages), `search.css`, then `theme.css` last. theme.css holds the colour tokens (`--purple-50` … `--purple-900` and the role tokens built on them), the type stack (Schibsted Grotesk for Latin, Noto Sans Thai for Thai) and the whole visual layer, organised by page section. Change colours and type there, not in the base files, and avoid `!important`. Thai text never gets negative letter-spacing.
+
+The closing contact call above the footer (includes/footer.php) takes its title and line from the `contact` entry in config/heroes.php and is hidden on contact.php. Listing counts are written as `<span class="item-count"><strong>N</strong> label</span>` so the number can be set large.
 
 ## Pages
 
 | Page | File | Content |
 | --- | --- | --- |
-| Home | index.php | Hero slider (5 slides), latest research, latest innovation, workshops, upcoming events |
+| Home | index.php | Hero slider (5 slides), latest posts, news, research-to-workshop pairs, innovations, tools, workshops |
 | Research | research.php | "Evidence library": featured study, two picks, text-first list |
 | Innovation | innovations.php | "Showcase gallery": card grid (data/innovations.json) |
 | Workshop | workshops.php | Workshop posts list (data/workshops.json); each post's detail page has a "request this workshop" contact box |
 | Detail pages | research-detail.php, innovation-detail.php, workshop-detail.php (`?id=…`) | Single record; unknown ID returns 404 |
-| Partners | partners.php | Six partner categories |
-| About | about.php | What EDU2IMPACT is |
-| Contact | contact.php | Contact details from data/site.json |
+| News | news.php | News list (data/news.json) |
+| Online tools | tools.php | Records with a `tool_url` |
+| Media and guides | media.php | Media list (data/media.json) |
+| About | about.php | What EDU2IMPACT is, content counts taken from the data files, and a three-step guide |
+| Contact | contact.php | Phone, email and address from data/site.json only (the ones filled in); a short note shows while all three are empty |
 | Search | search.php (`?q=…`) | Site-wide search results; not in the nav, opened from the header icon |
 
 Hero text (eyebrow, title, highlighted words, one-line intro) for every page and for the home slider lives in config/heroes.php; edit it there and both places stay in sync. Upload config/ with the PHP files.
@@ -64,7 +77,6 @@ What is indexed (includes/search.php, `search_index()`):
 | data/research.json, innovations.json, workshops.json | One per record: title, summary, category, author, body | The detail page |
 | data/events.json | One per event: title, meta, type | index.php#events |
 | config/search-pages.php | One per page: title, summary, keywords, plus that page's hero text from config/heroes.php | The page |
-| config/partner-groups.php | One per partner group (also read by partners.php) | partners.php#partner-N |
 
 Scoring: matching is a case-insensitive substring search (works for Thai, which has no spaces between words). The query is split on spaces and every term must match (AND). Per term: title 10, category or keywords 5, summary 3, any text 1; the whole query found in the title adds 10. Ties go to the newest date, then the title. Titles of a record's linked records (see `related` below, both directions) are added to its keywords, so searching for an innovation's name also finds the workshops linked to it.
 
@@ -143,7 +155,7 @@ The detail page renders the block as a `<figure class="prose-figure">` (styles i
 
 ### Thai line breaking
 
-Browsers break Thai lines with a built-in dictionary that splits unfamiliar words (loanwords, names) mid-word. `tools/segment_thai.py` (needs `pip install pythainlp`) segments every summary and body paragraph of research, innovations and workshops, and writes word boundaries to `data/thai-breaks.json`, keyed by a SHA-1 of the paragraph text. On detail pages, `thai_text()` in includes/functions.php wraps each Thai word in `<span class="tw">` (`white-space:nowrap`, assets/css/post-byline.css) with `<wbr>` between Thai words, so lines break only between words while paragraphs stay justified on wide screens. A paragraph with no entry, because it was added or edited after the last run, is escaped as plain text exactly as before, so stale breaks never appear; `tools/validate_content.py` prints a reminder with the count. The JSON content itself is never modified, so search and copy-paste are unaffected.
+Browsers break Thai lines with a built-in dictionary that splits unfamiliar words (loanwords, names) mid-word. `tools/segment_thai.py` (needs `pip install pythainlp`) segments every summary and body paragraph of research, innovations, workshops, media and news, plus the hero intros in config/heroes.php (shown on page banners, home slides, the closing call and the footer), and writes word boundaries to `data/thai-breaks.json`, keyed by a SHA-1 of the paragraph text. On detail pages, `thai_text()` in includes/functions.php wraps each Thai word in `<span class="tw">` (`white-space:nowrap`, assets/css/post-byline.css) with `<wbr>` between Thai words, so lines break only between words while paragraphs stay justified on wide screens. A paragraph with no entry, because it was added or edited after the last run, is escaped as plain text exactly as before, so stale breaks never appear; `tools/validate_content.py` prints a reminder with the count. The JSON content itself is never modified, so search and copy-paste are unaffected.
 
 ## Web tools in apps/
 
@@ -185,3 +197,23 @@ These files prepare an authenticated researcher/reviewer workflow. No public pag
 | private/database.example.php | Credentials template; copy to private/database.php on the server only |
 
 `Require all denied` needs Apache 2.4. On Nginx or another server, block includes/, config/, database/ and private/ in the server configuration, or keep them outside the document root.
+
+## Visit counter, share buttons and social meta
+
+**Visit counter.** `includes/visits.php`: `record_visit($pageKey)` runs from includes/header.php on every page; `visit_count($pageKey)`, `visit_total()` and `visit_label()` read the result. Page keys are the page name (`home`, `research`) or `kind/id` on detail pages. A visitor counts once per page per day (Thailand time): the file keeps only an HMAC hash of IP + User-Agent + page + date + secret for today, never the IP or User-Agent, and drops yesterday's hashes. Bots, non-GET, HEAD, prefetch, 404 and redirects are not counted. Counts live in `storage/visits.json` (read-modify-write under `flock`; per-day counts kept for 90 days). If the file cannot be written the page loads normally and nothing is counted. Counts are shown as an eye icon and a number (`visit_eye()`; screen readers hear "เข้าชม N ครั้ง"): in the detail-page byline, on post cards in the listings, the home "latest" list and the expanding cards, and in the footer ("ทั้งหมด N"); all are hidden at 0. The footer total adds up each day's distinct visitors, so it counts visits, not people. If the storage folder is missing, `visits_prepare()` creates it (with a .htaccess); if it cannot be written, one line a day goes to the PHP error log and the page loads without counts. Run `php tools/check_visits.php` on the server to see what is wrong and how to fix it.
+
+Set up on the server: make `storage/` writable by PHP and closed to the web (`storage/.htaccess` does this on Apache; on Nginx add `location /storage { deny all; }`). Put a long random string in `config/visits.local.php` (copy config/visits.example.php; the file is not committed). Without it, a secret is created once in `storage/.visits-secret`. Run `php tools/test_visits.php` after changing includes/visits.php.
+
+**Share buttons.** includes/share.php (`render_share()`), called from includes/detail.php before "งานที่เกี่ยวข้อง". Plain links to Facebook and X, no SDK, no counts. With `site_url` in data/site.json (`https://…`, no trailing slash) the links are built on the server. Without it the buttons stay hidden until assets/js/main.js fills in the address of the page being read (page plus `?id=`); without JavaScript they stay hidden. The server never guesses a domain from the request. Canonical, `og:url`, `og:image` and `twitter:image` need `site_url` (Facebook reads them without running JavaScript), so no preview image appears until it is set. `absolute_url($path)` in includes/functions.php builds the full URL.
+
+**Open Graph / Twitter Card.** includes/header.php writes `og:site_name`, `og:locale`, `og:type` (article on detail pages), `og:title`, `og:description` (summary, or the page's hero intro) and `twitter:card` on every page. Detail pages use the record image for `og:image`; other pages use `assets/images/hero-innovation.webp`. A 1200×630 image works best for sharing.
+
+**Footer and back to top.** The footer is one row on desktop: the logo (about 32–40px) with the contact details that are filled in on the left, the four sitemap columns on the right, and one slim bar below with the copyright and total visits. There is no divider between the logo and the columns. Below 1100px the logo sits above the columns; below 760px the columns become two and the links grow to 44px. The "กลับขึ้นด้านบน" control is a round floating `.to-top` button with an arrow icon, bottom right on every page (includes/footer.php). It shows after about one screen of scrolling, is a plain `#top` link without JavaScript, and moves focus to the start of the page content after scrolling (instantly when the visitor prefers reduced motion).
+
+**Page width.** Wide layouts (header, hero, home sections, card lists, footer) use `--wrap: 1440px` inside a gutter that grows with the screen (`--gutter: clamp(20px, 4vw, 64px)`), both in theme.css. Both are tokens: change them there to widen or narrow the whole site. The floating header bar narrows by 96px once the page is scrolled. Article text does not follow `--wrap`: detail pages stay in `.article-layout` (860px) and `.prose` (72ch) so lines remain readable.
+
+**Link underline.** Text links share one drawn underline (theme.css, "Round 6 / 1"): a background gradient grows from left to right on hover and keyboard focus and withdraws on leaving. It follows text across several lines. The colour is `--draw-line` (the link colour; a light purple inside dark sections); the offset is `--draw-offset`. To give a new link the effect, add its selector to the lists in that block. Links inside article text (`.prose a`) keep a thin line all the time and thicken on hover. With reduced motion the line appears at once. Whole-card links (research-to-workshop, latest posts, xcards) draw the line under the title when the card is hovered or focused.
+
+**Research-to-workshop section (home).** `.pair` rows come from each workshop's `related` list (index.php, at most three). The source (photo, then kind and title) sits on the dark section; the workshop sits on a solid light slab that overlaps the photo's corner, and rows alternate sides. No text is placed on a photo. Hover on the slab wipes it to white; hover on the source zooms the photo slightly. Below 900px the pair stacks. Each side is one link.
+
+**Slider buttons.** `.hero-ctrl` buttons have a solid `--purple-900` fill and a 2px white ring, so they read on any slide; hover turns them `--purple-200`, press shrinks them, and the paused state (`aria-pressed=true`) is white. Focus shows a white ring with a dark gap.

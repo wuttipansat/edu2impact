@@ -1,39 +1,81 @@
 (() => {
+  // Header menu. Desktop: dropdown groups opened by click / Enter / Space (never hover alone), one at a time,
+  // closed by Esc (focus returns to the group), a click outside, or Tab leaving the group.
+  // Up to 1100px: the nav is a full-screen accordion behind the menu button; the page behind it does not scroll.
   const toggle = document.querySelector('.menu-toggle');
   const nav = document.getElementById('main-nav');
   if (!toggle || !nav) return;
+  const header = document.querySelector('.header');
+  const label = toggle.querySelector('.menu-toggle__label');
   const groups = [...nav.querySelectorAll('details')];
   const mobile = window.matchMedia('(max-width: 1100px)');
-  function closeGroups() { groups.forEach(group => { group.open = false; }); }
-  function sync() {
-    toggle.hidden = !mobile.matches;
-    nav.hidden = mobile.matches;
-    toggle.setAttribute('aria-expanded', 'false');
-    closeGroups();
-  }
-  toggle.addEventListener('click', () => {
-    const open = toggle.getAttribute('aria-expanded') !== 'true';
+  const summaryOf = group => group.querySelector('summary');
+  const linksOf = group => [...group.querySelectorAll('.nav-submenu a')];
+  function mark(group) { summaryOf(group).setAttribute('aria-expanded', String(group.open)); }
+  function closeGroups() { groups.forEach(group => { group.open = false; mark(group); }); }
+  function setMenu(open) {
     nav.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
+    if (label) label.textContent = open ? 'ปิด' : 'เมนู';
     if (!open) closeGroups();
+    document.documentElement.classList.toggle('menu-open', open && mobile.matches);
+  }
+  function sync() {
+    toggle.hidden = !mobile.matches;
+    setMenu(!mobile.matches);
+  }
+  toggle.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+  groups.forEach(group => {
+    mark(group);
+    group.addEventListener('toggle', () => {
+      mark(group);
+      if (group.open) groups.forEach(other => { if (other !== group) { other.open = false; mark(other); } });
+    });
+    group.addEventListener('focusout', event => {
+      if (!mobile.matches && group.open && event.relatedTarget && !group.contains(event.relatedTarget)) { group.open = false; }
+    });
+    group.addEventListener('keydown', event => {
+      const links = linksOf(group);
+      const summary = summaryOf(group);
+      const at = links.indexOf(document.activeElement);
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (!group.open) group.open = true;
+        (links[at + 1] || links[0])?.focus();
+      } else if (event.key === 'ArrowUp' && at >= 0) {
+        event.preventDefault();
+        (at === 0 ? summary : links[at - 1]).focus();
+      } else if (event.key === 'Home' && at >= 0) { event.preventDefault(); links[0].focus(); }
+      else if (event.key === 'End' && at >= 0) { event.preventDefault(); links[links.length - 1].focus(); }
+    });
   });
-  groups.forEach(group => group.addEventListener('toggle', () => {
-    if (group.open) groups.forEach(other => { if (other !== group) other.open = false; });
-  }));
   document.addEventListener('click', event => { if (!nav.contains(event.target)) closeGroups(); });
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape') return;
     const open = groups.find(group => group.open);
-    if (open) { open.open = false; open.querySelector('summary').focus(); }
-    else if (mobile.matches && !nav.hidden) {
-      nav.hidden = true;
-      toggle.setAttribute('aria-expanded', 'false');
-      toggle.focus();
-    }
+    if (open) { open.open = false; summaryOf(open).focus(); }
+    else if (mobile.matches && !nav.hidden) { setMenu(false); toggle.focus(); }
   });
-  nav.addEventListener('click', event => { if (mobile.matches && event.target.closest('a')) sync(); });
+  nav.addEventListener('click', event => { if (mobile.matches && event.target.closest('a')) setMenu(false); });
   mobile.addEventListener('change', sync);
   sync();
+
+  // Small screens: the sticky header slides away while reading down the page and returns on the first
+  // scroll up. It stays put while the menu is open or focus is inside it. Layout never moves.
+  if (header) {
+    const small = window.matchMedia('(max-width: 760px)');
+    let last = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      const busy = toggle.getAttribute('aria-expanded') === 'true' || header.contains(document.activeElement);
+      const hide = small.matches && !busy && y > last && y > 120;
+      header.classList.toggle('header--hidden', hide);
+      header.classList.toggle('header--scrolled', y > 24);
+      last = y;
+    }, { passive: true });
+    header.addEventListener('focusin', () => header.classList.remove('header--hidden'));
+    header.classList.toggle('header--scrolled', window.scrollY > 24);
+  }
 })();
 
 (() => {
@@ -56,48 +98,61 @@
 })();
 
 (() => {
+  // Home hero slider: previous / next / pause buttons, arrow keys, auto-advance every 7 s.
+  // Auto-advance pauses on hover and focus, can be stopped with the pause button (WCAG 2.2.2), and never
+  // starts when the visitor prefers reduced motion. A status line tells screen readers which slide is showing.
   const slider = document.querySelector('[data-slider]');
   if (!slider) return;
   const slides = [...slider.querySelectorAll('[data-slide]')];
-  const dots = [...slider.querySelectorAll('[data-slider-dot]')];
   const previous = slider.querySelector('[data-slider-prev]');
   const next = slider.querySelector('[data-slider-next]');
+  const toggle = slider.querySelector('[data-slider-toggle]');
+  const status = slider.querySelector('[data-slider-status]');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   let current = 0;
   let timer;
-  let paused = false;
+  let hovering = false;
+  let stopped = reduced.matches;
 
-  function show(index) {
+  function show(index, announce) {
     current = (index + slides.length) % slides.length;
     slides.forEach((slide, i) => {
       const active = i === current;
       slide.classList.toggle('is-active', active);
       slide.setAttribute('aria-hidden', String(!active));
     });
-    dots.forEach((dot, i) => {
-      const active = i === current;
-      dot.classList.toggle('is-active', active);
-      dot.setAttribute('aria-selected', String(active));
-    });
+    if (status && announce) status.textContent = `สไลด์ ${current + 1} จาก ${slides.length}`;
   }
 
   function schedule() {
     window.clearInterval(timer);
-    if (!paused) timer = window.setInterval(() => show(current + 1), 7000);
+    if (!stopped && !hovering) timer = window.setInterval(() => show(current + 1, false), 7000);
   }
 
-  previous?.addEventListener('click', () => { show(current - 1); schedule(); });
-  next?.addEventListener('click', () => { show(current + 1); schedule(); });
-  dots.forEach((dot, i) => dot.addEventListener('click', () => { show(i); schedule(); }));
-  slider.addEventListener('mouseenter', () => { paused = true; schedule(); });
-  slider.addEventListener('mouseleave', () => { paused = false; schedule(); });
-  slider.addEventListener('focusin', () => { paused = true; schedule(); });
-  slider.addEventListener('focusout', event => { if (!slider.contains(event.relatedTarget)) { paused = false; schedule(); } });
+  function setStopped(value) {
+    stopped = value;
+    if (toggle) {
+      toggle.classList.toggle('is-paused', stopped);
+      toggle.setAttribute('aria-pressed', String(stopped));
+      toggle.setAttribute('aria-label', stopped ? 'เล่นสไลด์อัตโนมัติ' : 'หยุดเลื่อนสไลด์อัตโนมัติ');
+    }
+    schedule();
+  }
+
+  previous?.addEventListener('click', () => { show(current - 1, true); schedule(); });
+  next?.addEventListener('click', () => { show(current + 1, true); schedule(); });
+  toggle?.addEventListener('click', () => setStopped(!stopped));
+  reduced.addEventListener?.('change', () => { if (reduced.matches) setStopped(true); });
+  slider.addEventListener('mouseenter', () => { hovering = true; schedule(); });
+  slider.addEventListener('mouseleave', () => { hovering = false; schedule(); });
+  slider.addEventListener('focusin', () => { hovering = true; schedule(); });
+  slider.addEventListener('focusout', event => { if (!slider.contains(event.relatedTarget)) { hovering = false; schedule(); } });
   slider.addEventListener('keydown', event => {
-    if (event.key === 'ArrowLeft') { show(current - 1); schedule(); }
-    if (event.key === 'ArrowRight') { show(current + 1); schedule(); }
+    if (event.key === 'ArrowLeft') { show(current - 1, true); schedule(); }
+    if (event.key === 'ArrowRight') { show(current + 1, true); schedule(); }
   });
-  show(0);
-  schedule();
+  show(0, false);
+  setStopped(stopped);
 })();
 
 (() => {
@@ -137,5 +192,42 @@
     const target = event.target;
     if (target instanceof Element && (target.closest('input, textarea, select') || target.isContentEditable)) return;
     if (open()) event.preventDefault();
+  });
+})();
+
+(() => {
+  // Floating "back to top" button: appears after about one screen of scrolling. Without JavaScript it stays
+  // visible and works as a plain #top link. Focus moves to the start of the page content afterwards.
+  const button = document.querySelector('.to-top');
+  if (!button) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  button.setAttribute('data-js', '');
+  function update() { button.classList.toggle('is-visible', window.scrollY > window.innerHeight * 0.9); }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    window.scrollTo({ top: 0, behavior: reduced.matches ? 'auto' : 'smooth' });
+    const main = document.getElementById('main');
+    if (main) { main.setAttribute('tabindex', '-1'); main.focus({ preventScroll: true }); }
+  });
+})();
+
+(() => {
+  // Share buttons without "site_url": complete the links with the address of the page being read
+  // (the page itself plus its ?id=, nothing else) and reveal them. Plain links; no third-party script.
+  const boxes = document.querySelectorAll('[data-share-client]');
+  if (!boxes.length || !/^https?:$/.test(window.location.protocol)) return;
+  const here = new URL(window.location.href);
+  const id = here.searchParams.get('id');
+  const page = here.origin + here.pathname + (id ? '?id=' + encodeURIComponent(id) : '');
+  boxes.forEach(box => {
+    box.querySelectorAll('a[data-share]').forEach(link => {
+      link.href = link.dataset.share === 'facebook'
+        ? 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(page)
+        : 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(page) + '&text=' + encodeURIComponent(link.dataset.title || '');
+    });
+    box.hidden = false;
   });
 })();
