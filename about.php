@@ -16,7 +16,7 @@ require __DIR__ . '/includes/header.php';
 ?>
 <main id="main" class="page-shell page-shell--about"><?php render_page_hero('about'); ?>
 <section class="about-intro" aria-labelledby="about-intro-title"><div class="container about-intro__grid">
-  <div class="about-intro__text"><h2 id="about-intro-title">เว็บไซต์นี้มีไว้ทำอะไร</h2><p>EDU2IMPACT เก็บงานวิจัย นวัตกรรม และเวิร์กช็อปด้านการศึกษาของมหาวิทยาลัยเกษตรศาสตร์ไว้ในที่เดียว ครูและโรงเรียนอ่านสรุปงานวิจัย เปิดใช้เครื่องมือออนไลน์ หรือติดต่อทีมเพื่อขอนำงานชิ้นใดชิ้นหนึ่งไปใช้ได้</p></div>
+  <div class="about-intro__text"><h2 id="about-intro-title">เว็บไซต์นี้มีไว้ทำอะไร</h2><p>KUEDU2IMPACT เก็บงานวิจัย นวัตกรรม และเวิร์กช็อปด้านการศึกษาของคณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ไว้ในที่เดียว ครูและโรงเรียนอ่านสรุปงานวิจัย เปิดใช้เครื่องมือออนไลน์ หรือติดต่อทีมเพื่อขอนำงานชิ้นใดชิ้นหนึ่งไปใช้ได้</p></div>
 <?php if ($counts): ?>  <ul class="about-counts" aria-label="จำนวนเนื้อหาในเว็บไซต์"><?php foreach ($counts as $c): ?><li><a href="<?= e($c['href']) ?>"><strong><?= (int) $c['n'] ?></strong><span><?= e($c['label']) ?></span></a></li><?php endforeach; ?></ul>
 <?php endif; ?>
 </div></section>

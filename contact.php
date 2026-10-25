@@ -6,6 +6,10 @@ $email = $site['email'] ?? '';
 $hasEmail = (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
 $phone = trim((string) ($site['phone'] ?? ''));
 $address = trim((string) ($site['address'] ?? ''));
+// Map of the faculty (Bangkhen campus). Google's embed address needs no API key; the pin comes from this search text.
+$mapQuery = 'คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ บางเขน';
+$mapEmbed = 'https://www.google.com/maps?q=' . rawurlencode($mapQuery) . '&output=embed&hl=th';
+$mapLink = 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode($mapQuery);
 ?>
 <main id="main" class="page-shell page-shell--contact"><section class="page-hero page-hero--contact"><div class="container page-hero-content"><?php $hero = hero_text('contact'); ?><p class="eyebrow"><?= e($hero['eyebrow']) ?></p><h1><?= e($hero['title']) ?></h1><p><?= thai_text($hero['intro']) ?></p></div></section><section class="section container contact-section" aria-labelledby="contact-details-heading">
   <h2 id="contact-details-heading" class="visually-hidden">ช่องทางติดต่อ</h2>
@@ -36,5 +40,10 @@ $address = trim((string) ($site['address'] ?? ''));
   <?php else: ?>
   <p class="contact-empty">ยังไม่ได้เพิ่มอีเมลและเบอร์โทรศัพท์ในเว็บไซต์ ระหว่างนี้ติดต่อผ่านคณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ได้</p>
   <?php endif; ?>
+  <div class="contact-map">
+    <h2 class="visually-hidden">แผนที่</h2>
+    <div class="contact-map__frame"><iframe src="<?= e($mapEmbed) ?>" title="แผนที่ คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์" width="1280" height="400" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+    <p class="contact-map__caption"><span>คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ วิทยาเขตบางเขน</span> <a class="contact-map__link" href="<?= e($mapLink) ?>" target="_blank" rel="noopener">เปิดใน Google Maps<span class="visually-hidden"> (เปิดในแท็บใหม่)</span></a></p>
+  </div>
 </section></main>
 <?php require __DIR__ . '/includes/footer.php'; ?>

@@ -21,7 +21,7 @@ record_visit($visitKey ?? $currentPage);
 $shareTitle = preg_replace('~\s*\|\s*' . preg_quote($site['name'], '~') . '\z~u', '', $pageTitle);
 $sharePath = $pagePath ?? (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'index.php' ? '' : basename($_SERVER['SCRIPT_NAME'] ?? ''));
 $shareUrl = http_response_code() === 404 ? '' : absolute_url($sharePath);
-$shareImage = $shareUrl !== '' ? absolute_url($ogImage ?? 'assets/images/hero-innovation.webp') : '';
+$shareImage = $shareUrl !== '' ? absolute_url(share_image_path($ogImage ?? null)) : '';
 ?>
 <meta property="og:site_name" content="<?= e($site['name']) ?>">
 <meta property="og:locale" content="th_TH">
@@ -35,6 +35,11 @@ $shareImage = $shareUrl !== '' ? absolute_url($ogImage ?? 'assets/images/hero-in
 <meta property="og:url" content="<?= e($shareUrl) ?>">
 <?php endif; ?>
 <?php if ($shareImage !== ''): ?><meta property="og:image" content="<?= e($shareImage) ?>">
+<meta property="og:image:secure_url" content="<?= e($shareImage) ?>">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="<?= e($shareTitle) ?>">
 <meta name="twitter:image" content="<?= e($shareImage) ?>">
 <meta name="twitter:image:alt" content="<?= e($shareTitle) ?>">
 <?php endif; ?>
@@ -57,7 +62,7 @@ $shareImage = $shareUrl !== '' ? absolute_url($ogImage ?? 'assets/images/hero-in
 <body id="top">
 <a class="skip-link" href="#main">ข้ามไปเนื้อหา</a>
 <header class="header"><div class="header-glow" aria-hidden="true"></div><div class="container header-inner">
-<div class="brand-block"><a class="brand brand--image" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก"><img class="brand-logo" src="assets/images/header-logo.png" alt="Faculty of Education"></a></div>
+<div class="brand-block"><a class="brand brand--image" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก"><img class="brand-logo" src="assets/images/header-logo.webp" width="466" height="160" alt="คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์"></a></div>
 <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" hidden><span class="menu-toggle__label">เมนู</span><svg class="menu-toggle__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="menu-toggle__bars" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-toggle__cross" d="M6 6l12 12M18 6 6 18"/></svg></button>
 <nav id="main-nav" class="nav" aria-label="เมนูหลัก">
 <?php foreach ($nav as $item): ?>

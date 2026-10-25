@@ -9,13 +9,12 @@ $footerAddress = trim((string) ($site['address'] ?? ''));
 ?><footer class="footer">
 <div class="container footer-main">
 <div class="footer-top-row">
-<div class="footer-intro"><a class="brand footer-brand" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก">edu<span>2</span>impact</a></div>
+<div class="footer-intro"><a class="brand footer-brand" href="index.php" aria-label="<?= e($site['name']) ?> หน้าแรก">kuedu<span>2</span>impact</a></div>
 <?php if ($footerEmail !== '' || $footerPhone !== '' || $footerAddress !== ''): ?><ul class="footer-contact-list"><?php if ($footerAddress !== ''): ?><li><?= e($footerAddress) ?></li><?php endif; ?><?php if ($footerPhone !== ''): ?><li><?= e($footerPhone) ?></li><?php endif; ?><?php if ($footerEmail !== ''): ?><li><?= e($footerEmail) ?></li><?php endif; ?></ul><?php endif; ?>
 </div>
 <nav class="footer-nav" aria-label="แผนผังเว็บไซต์"><?php foreach ($footerGroups as $group): ?><div class="footer-col"><h2 class="footer-col__title"><?= e($group['label']) ?></h2><ul class="footer-links"><?php foreach ($group['children'] as $child): ?><li><a href="<?= e($child['file']) ?>"<?= ($navKey ?? $currentPage ?? '') === $child['key'] ? ' aria-current="page"' : '' ?>><?= e($child['label']) ?></a></li><?php endforeach; ?></ul></div><?php endforeach; ?></nav>
 </div>
-<?php $footerVisits = visit_eye(visit_total(), 'ผู้เข้าชมทั้งหมด', 'ทั้งหมด'); ?>
-<div class="footer-bar"><div class="container footer-bar__inner"><span class="footer-copy">© <?= date('Y') ?> <?= e($site['name']) ?>, <?= e($site['university']) ?></span><?php if ($footerVisits !== ''): ?><span class="footer-copy"><?= $footerVisits ?></span><?php endif; ?></div></div>
+<div class="footer-bar"><div class="container footer-bar__inner"><span class="footer-copy">© <?= date('Y') ?> <?= e($site['name']) ?>, <?= e($site['university']) ?></span></div></div>
 </footer>
 <a class="to-top" href="#top" aria-label="กลับขึ้นด้านบน"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg></a>
 </body></html>

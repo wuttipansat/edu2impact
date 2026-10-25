@@ -12,6 +12,15 @@ LINK_KINDS = ('research', 'innovations', 'workshops')
 records_by_kind = {}  # dataset -> ids, filled as files load; links are checked once every file is loaded
 links = []  # (dataset, record id, position, kind, id)
 hidden = set()  # (dataset, id) of records with "public": false
+
+# A merge that was committed with its markers still in the file breaks the site without any visible error
+# (round 11: data/thai-breaks.json carried "<<<<<<< HEAD", so no Thai line break was ever applied).
+CONFLICT = re.compile(r'^(?:<{7}(?: |$)|={7}$|>{7}(?: |$))', re.M)
+for folder in ('data', 'config', 'includes', 'database'):
+    for path in sorted((base / folder).rglob('*')):
+        if path.is_file() and path.suffix in ('.json', '.php', '.sql', '.css', '.js'):
+            if CONFLICT.search(path.read_text(encoding='utf-8', errors='replace')):
+                errors.append(f'{path.relative_to(base)}: unresolved merge conflict markers (<<<<<<<, =======, >>>>>>>)')
 for name in ('site', 'research', 'innovations', 'workshops', 'media', 'news', 'events'):
     try:
         data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
@@ -138,8 +147,9 @@ for kind, target in hidden_links:
 # still show on the page, but the browser may break their lines mid-word.
 try:
     breaks = json.loads((base / 'data' / 'thai-breaks.json').read_text(encoding='utf-8')).get('paragraphs', {})
-except (ValueError, OSError):
+except (ValueError, OSError) as exc:
     breaks = {}
+    errors.append(f'data/thai-breaks.json cannot be read as JSON ({exc}). Run: python3 tools/segment_thai.py')
 missing = 0
 for name in LINK_KINDS:
     for record in json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8')):
@@ -149,3 +159,6 @@ for name in LINK_KINDS:
                 missing += 1
 if missing:
     print(f'Note: {missing} Thai paragraph(s) are not segmented yet. Run: python3 tools/segment_thai.py')
+if errors:  # raised after the first report, such as an unreadable data/thai-breaks.json
+    print('\n'.join(errors))
+    sys.exit(1)

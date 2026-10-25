@@ -7,7 +7,8 @@ page (thai_text() in includes/functions.php) then lets the browser break lines o
 
 Usage (once per content change, before uploading; validate_content.py reminds you):
     pip install pythainlp
-    python3 tools/segment_thai.py
+    python3 tools/segment_thai.py            (texts from data/*.json)
+    python3 tools/segment_thai.py --mysql    (texts as the live site reads them, needs private/database.php)
 
 Each entry is keyed by a hash of the paragraph text, so editing a paragraph never shows stale
 breaks: until this script runs again, that paragraph renders as plain text, as before.
@@ -28,11 +29,36 @@ DATASETS = ('research', 'innovations', 'workshops', 'media', 'news')
 THAI = re.compile(r'[฀-๿]')
 
 
+def mysql_records():
+    """Records as the live site reads them (MySQL when private/database.php exists, else data/*.json)."""
+    import subprocess
+    code = ('require "includes/functions.php"; $all = []; '
+            'foreach (%s as $n) { $all[$n] = load_data($n); } echo json_encode($all, JSON_UNESCAPED_UNICODE);'
+            % json.dumps(list(DATASETS)))
+    result = subprocess.run(['php', '-r', code], cwd=base, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.exit('Could not read content through PHP: ' + result.stderr.strip())
+    return json.loads(result.stdout)
+
+
+FROM_MYSQL = '--mysql' in sys.argv
+_live = None
+
+
+def records_for(name):
+    """data/*.json by default. With --mysql the texts that the site shows from the database."""
+    global _live
+    if FROM_MYSQL:
+        if _live is None:
+            _live = mysql_records()
+        return _live[name]
+    return json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
+
+
 def post_texts():
     """Every summary and body paragraph that the detail pages render, plus the hero intros."""
     for name in DATASETS:
-        records = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
-        for record in records:
+        for record in records_for(name):
             if isinstance(record.get('summary'), str):
                 yield record['summary']
             for block in record.get('body', []):

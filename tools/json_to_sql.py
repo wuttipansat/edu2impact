@@ -15,7 +15,7 @@ def q(v):
     return "'"+s+"'"
 def j(v): return None if v is None else json.dumps(v,ensure_ascii=False)
 out=[]
-out.append("""-- edu2impact: create tables and load the current content from data/*.json
+out.append("""-- KUEDU2IMPACT: create tables and load the current content from data/*.json
 -- Import this file into database e2imedu with phpMyAdmin (Import tab). Importing it again replaces everything in these four tables with the content of data/*.json.
 SET NAMES utf8mb4;
 SET time_zone = '+07:00';

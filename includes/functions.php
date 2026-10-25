@@ -62,6 +62,15 @@ function absolute_url(string $path): string {
     $base = site_url();
     return $base === '' ? '' : $base . '/' . ltrim($path, '/');
 }
+// Share image for Facebook, LINE and X: the 1200x630 JPEG twin made by tools/make_og_images.py
+// (assets/images/og/<name>.jpg) when it exists, otherwise the default card. Never a WebP.
+function share_image_path(?string $cover): string {
+    if ($cover !== null && preg_match('~\Aassets/images/([a-zA-Z0-9_-]+)\.(?:png|jpg|jpeg|webp)\z~', $cover, $match)
+        && is_file(__DIR__ . '/../assets/images/og/' . $match[1] . '.jpg')) {
+        return 'assets/images/og/' . $match[1] . '.jpg';
+    }
+    return 'assets/images/og-default.jpg';
+}
 function image_path($record) {
     $path = $record['image'] ?? '';
     // Local image assets only; no traversal, external URLs or executable formats.
@@ -278,6 +287,8 @@ function thai_breaks(): array
         $text = @file_get_contents(__DIR__ . '/../data/thai-breaks.json');
         $data = $text === false ? null : json_decode($text, true);
         if (is_array($data) && is_array($data['paragraphs'] ?? null)) { $map = $data['paragraphs']; }
+        // Without this line a broken file (for example leftover merge markers) turns Thai line breaking off silently.
+        else { error_log('thai-breaks: data/thai-breaks.json cannot be read, Thai lines will break by browser default. Run: python3 tools/segment_thai.py'); }
     }
     return $map;
 }

@@ -2,7 +2,7 @@
 require __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/rails.php';
 $currentPage = 'home';
-$pageTitle = 'Edu2Impact | จากงานวิจัยสู่การเปลี่ยนแปลง';
+$pageTitle = 'KUEDU2IMPACT | จากงานวิจัยสู่การเปลี่ยนแปลง';
 $byDate = static function (array $a, array $b): int { return strtotime((string) ($b['date'] ?? '')) <=> strtotime((string) ($a['date'] ?? '')); };
 $research = sort_records(load_data('research'), true); // featured research first, then newest
 $innovations = load_data('innovations'); usort($innovations, $byDate);
@@ -28,6 +28,7 @@ $feed = array_slice($feed, 0, 7);
 // Empty sections are left out. Light sections alternate white / tinted; the pairs section is always dark.
 $promos = home_promos();
 $videos = home_videos();
+$facultyLinks = home_faculty_links();
 $homeSections = array_values(array_filter([
     $promos ? ['type' => 'promos', 'id' => 'promos', 'heading' => 'ประชาสัมพันธ์', 'tone' => ''] : null,
     $feed ? ['type' => 'latest', 'id' => 'latest', 'heading' => 'ผลงานใหม่ล่าสุด', 'tone' => ''] : null,
@@ -35,6 +36,7 @@ $homeSections = array_values(array_filter([
     $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'From Innovation to Workshop', 'tone' => 'dark'] : null,
     $innovations ? $cardSection($innovations, 'innovations', 'innovations', 'นวัตกรรมการศึกษาล่าสุด', 'นวัตกรรม') : null,
     $workshops ? $cardSection($workshops, 'workshops', 'workshops', 'อบรมและเวิร์กช็อป', 'เวิร์กช็อป') : null,
+    $facultyLinks ? ['type' => 'sites', 'id' => 'faculty-sites', 'heading' => 'เว็บไซต์ของคณะ', 'tone' => ''] : null,
 ]));
 $nextTone = 'white';
 foreach ($homeSections as &$section) {
@@ -112,6 +114,12 @@ require __DIR__ . '/includes/header.php';
       </div>
       <p class="visually-hidden" data-stage-count aria-live="polite">วิดีโอ 1 จาก <?= $videoTotal ?>: <?= e($videos[0]['title']) ?></p>
     </div>
+<?php elseif ($block['type'] === 'sites'): ?>
+    <ul class="site-links">
+<?php foreach ($facultyLinks as $link): ?>
+      <li><a class="site-link" href="<?= e($link['url']) ?>" target="_blank" rel="noopener"><span class="site-link__name"><?= e($link['title']) ?></span><span class="site-link__host"><?= e($link['note'] !== '' ? $link['note'] : $link['host']) ?></span><span class="site-link__go" aria-hidden="true"><?= icon_arrow('up-right') ?></span><span class="visually-hidden"> (เปิดในแท็บใหม่)</span></a></li>
+<?php endforeach; ?>
+    </ul>
 <?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
     <div class="latest">
       <article class="latest-main">

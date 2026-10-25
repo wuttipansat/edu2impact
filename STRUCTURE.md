@@ -1,4 +1,4 @@
-# EDU2Impact website structure
+# KUEDU2IMPACT website structure
 
 The current build is a public content site. Authenticated account workflows are not included.
 
@@ -37,7 +37,7 @@ The closing contact call above the footer (includes/footer.php) takes its title 
 | Detail pages | research-detail.php, innovation-detail.php, workshop-detail.php (`?id=…`) | Single record; unknown ID returns 404 |
 | News | news.php | News list (data/news.json) |
 | Media and guides | media.php | Media list (data/media.json) |
-| About | about.php | What EDU2IMPACT is, content counts taken from the data files, and a three-step guide |
+| About | about.php | What KUEDU2IMPACT is, content counts taken from the data files, and a three-step guide |
 | Contact | contact.php | Phone, email and address from data/site.json only (the ones filled in); a short note shows while all three are empty |
 | Search | search.php (`?q=…`) | Site-wide search results; not in the nav, opened from the header icon |
 
@@ -57,7 +57,7 @@ includes/listing-layouts/workshops.php lists every record in data/workshops.json
 
 `date` stays a required key: set it to the day the workshop was held, or to an empty string when it has no single date. `is_dated()` in includes/functions.php is the one test for "has a real Y-m-d date". With an empty date the detail page shows no date and the home page card shows no date. Workshops have no `category` (the validator allows it to be left out for workshops only); the detail page eyebrow then reads "WORKSHOP / EDU2IMPACT" and the home card shows "Workshop".
 
-Each workshop is one that schools, communities and organisations can ask EDU2IMPACT to run, usually adapted from a research or innovation post and linked back to it with `related` (data/workshops.json has Hemo-Link and the Nonthaburi curriculum). On a workshop's detail page, includes/detail.php adds a single "ติดต่อทีมงาน" button linking to contact.php, after the facts and before the related cards (style `.workshop-contact` in assets/css/main.css); nothing is needed in the data.
+Each workshop is one that schools, communities and organisations can ask KUEDU2IMPACT to run, usually adapted from a research or innovation post and linked back to it with `related` (data/workshops.json has Hemo-Link and the Nonthaburi curriculum). On a workshop's detail page, includes/detail.php adds a single "ติดต่อทีมงาน" button linking to contact.php, after the facts and before the related cards (style `.workshop-contact` in assets/css/main.css); nothing is needed in the data.
 
 Listing pages have no search, category or sort controls and ignore `category` and `sort`. A non-empty `?q=` on research.php, innovations.php or workshops.php redirects (302) to `search.php?q=…`, so old links keep working. Layout styles are in assets/css/listing.css, loaded only on these pages.
 
@@ -296,3 +296,80 @@ Content can be read from the MySQL database `e2imedu` instead of data/*.json. `l
   - Tab ผ่านเฉพาะสไลด์จริง ลูกศรซ้าย/ขวาวนรอบได้; reduced-motion เปลี่ยนทันทีแต่ยังวนรอบ
   - มีสไลด์ใบเดียว: ไม่คัดลอก ซ่อนปุ่ม ไม่วน; ไม่มี JS: แถวเลื่อนธรรมดาเต็มจอ
 - เลือกใช้ clone แทนการย้ายลำดับ DOM เพราะการย้ายสไลด์ระหว่างเลื่อนทำให้ focus และ iframe ที่กำลังเล่นหลุดได้
+
+## Round 11 notes
+
+### Thai line breaks (thai-breaks.json)
+- `data/thai-breaks.json` had leftover merge-conflict markers (`<<<<<<< HEAD`), so it was not valid JSON and `thai_text()` showed plain text on every page; the browser then split words such as "เวิร์|กช็อป".
+- Rebuilt with `python3 tools/segment_thai.py`. Run it again after any change to Thai text that passes through `thai_text()` (summaries, body paragraphs, `config/heroes.php` intros).
+- `python3 tools/segment_thai.py --mysql` segments the texts as the live site reads them (MySQL when `private/database.php` exists, otherwise `data/*.json`). Use it when content was edited in MySQL only. The default mode reads `data/*.json` and keeps records marked `"public": false`.
+- `tools/validate_content.py` now fails when a file under data/, config/, includes/ or database/ contains `<<<<<<<`, `=======` or `>>>>>>>` at the start of a line, or when `data/thai-breaks.json` is not valid JSON. `thai_breaks()` also writes one `error_log` line if the file cannot be read.
+
+### Site name: KUEDU2IMPACT
+- Every visible name comes from `data/site.json` / `site_settings.name` (title, og:site_name, logo label, footer) plus the strings in index.php, about.php, config/heroes.php and config/search-pages.php. Search keywords keep the old spelling `edu2impact` next to `kuedu2impact`.
+- Internal names are kept on purpose, because renaming them has no visible benefit and would break things: env vars `EDU2IMPACT_DB_CONFIG` and `EDU2IMPACT_DATA_SOURCE` (the host may already set them), session name `edu2impact_session` (renaming logs every admin out), the prefixes in `error_log` lines, temp-file names, and the database name.
+
+### Faculty logo
+- `assets/images/header-logo.webp` (466×160, lossless, transparent) replaces `header-logo.png`. It is the faculty's white-on-transparent logo, trimmed to its artwork and sits directly on the purple header; the white plate, padding and radius were removed from `.brand-logo`. Height 40px on desktop, 36px at 1100px and below; the link keeps a 44px tap target.
+- The untouched original (2000×600 PNG) is kept in `assets/images/source/faculty-logo.png` and is not loaded by any page. Do not recolour the logo file.
+
+### Facebook share picture
+- Cause 1: `site_url` is empty in `data/site.json` and `site_settings`, so `includes/header.php` prints no `og:image`, `og:url` or canonical (it never guesses a domain from the request). Set it (SQL is in `database/updates/2026-10-25-01.sql`, commented until the domain is known).
+- Cause 2: covers were WebP. `share_image_path()` (includes/functions.php) now returns the JPEG twin `assets/images/og/<cover name>.jpg`, or `assets/images/og-default.jpg` (campus photo, 1200×630) when a post has no cover or no twin.
+- `python3 tools/make_og_images.py` makes the twins (1200×630, under 300 KB, covers that would need enlarging by more than 1.4x are placed whole on the theme purple). Run it next to `segment_thai.py` whenever a cover image is added. Page banners (`hero-*`, `home-hero*`) get no twin.
+- Extra tags: `og:image:secure_url`, `og:image:type` (image/jpeg), `og:image:width/height`, `og:image:alt`. The share buttons already build their links on the server once `site_url` is set.
+- After uploading: run the SQL, open https://developers.facebook.com/tools/debug/, paste the home and one post link, press "Scrape Again" (Facebook keeps the old card), and if it reports HTTP 403 check that the host does not block the `facebookexternalhit` user agent.
+
+### Owner names (author)
+- The table of names to correct was empty in round 11, so no name was changed. Only the style was unified: `รศ. ดร.ศศิเทพ` and `รศ. ดร.ชาตรี` had a space after "ดร."; now no name has one. Done in `data/innovations.json`, the seed in `database/content-schema.sql`, and as `UPDATE posts … REPLACE()` lines in `database/updates/2026-10-25-01.sql` (author, summary and body).
+- To correct a name later: change it in `data/*.json` and add `UPDATE posts SET author = '…' WHERE author = '…';` to the SQL file, then run `python3 tools/segment_thai.py` (bodies are hashed).
+
+### Text changes (round 11)
+- Home and research intros in `config/heroes.php` (the home slide, the research slide and the research.php banner all read `research.intro`). The footer line comes from `site.name` and `site.university` (now "คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์"). about.php names the faculty before the university.
+
+### Page scale (round 11)
+At 100% zoom the pages looked too big. Sizes were cut with the type tokens and clamp() values in `assets/css/theme.css` only (no `zoom`, `transform: scale` or `html{font-size:%}`).
+
+I could not measure other sites (edu.ku.ac.th, ku.ac.th, edu.chula.ac.th, ed.stanford.edu, gse.harvard.edu): the sandbox proxy refuses those hosts. The target values below come from common practice for Thai university and education sites at 1440px (body 16–17px, h1 under 64px, header about 64px, hero not taller than three quarters of the window). Re-measure on a normal connection if you want to tune them.
+
+| Part (1440×900) | Before | After |
+|---|---|---|
+| body text | 18px | 17px (16px on small screens) |
+| meta / labels | 14–15px | 14px |
+| lead under the title | 22px | 19px |
+| home hero title | 95px | 63px |
+| inner page title | 76px | 50px |
+| section heading (h2) | 48px | 34px |
+| card headings (h3) | 20–30px | 18–20px (feature 24px) |
+| header | 74px | 62px (tap targets stay 44px) |
+| logo | 48px | 40px |
+| home hero height | 860px | 666px (`clamp(520px, 74svh, 680px)`) |
+| inner hero height | 437–522px | 302–334px |
+| section padding | 104px | 72px (48px on mobile) |
+| list counter `.item-count strong` | 80px | 48px |
+| container `--wrap` / gutter | 1440px / 64px | 1280px / 56px |
+| promo slide / Scoop slide max | 1320px / 1040px | 1120px / 880px |
+
+- The home hero keeps one height for every slide (the copy is bottom-aligned), and the long intros fit at 1280×720, 1366×768, 390 and 360px (checked slide by slide).
+- The hero lead may be up to 58ch wide; inner-page leads 62ch.
+
+### Contact map
+- contact.php shows a Google Maps embed under the three contact cards: `https://www.google.com/maps?q=<search text>&output=embed&hl=th` (no API key). The pin comes from the search text "คณะศึกษาศาสตร์ มหาวิทยาลัยเกษตรศาสตร์ บางเขน" (variable `$mapQuery`). If Google puts the pin on the wrong building, replace the text with coordinates, for example `13.84,100.57` (check them in Google Maps first).
+- The iframe is lazy-loaded and titled; below it is a text link "เปิดใน Google Maps" (new tab, 44px high). Height 400px on desktop, 300px on phones, 12px corners, 1px border, no shadow.
+- CSP: only `https://www.google.com` was added to `frame-src` in includes/bootstrap.php. No other directive changed.
+
+### Home: links to the faculty's other sites
+- Last section of the home page (id `faculty-sites`, heading "เว็บไซต์ของคณะ"), before the closing call in the footer. Data: `config/faculty-links.php` (title, https url, optional note). `home_faculty_links()` in includes/rails.php drops rows without a title or an https address. Tone follows the alternating system (this one comes out light).
+- Two designs were built and compared in screenshots:
+  1. a two-column directory with hairline rows and a ring arrow, which was calm but read as a list rather than as buttons;
+  2. six solid purple tiles, which read as buttons but made a heavy block right above the dark closing call.
+  The chosen design is in between: a 3×2 grid of outlined buttons (white, 1px hairline, 10px corners, no shadow). Each shows the site name, its web address (taken from the url) and a ring with an arrow; hover and keyboard focus fill the whole button purple. 2 columns at 1024px and below, 1 column at 560px and below. At rest it stays quiet so it does not compete with the content above.
+- Every link opens in a new tab (`target="_blank" rel="noopener"`), says "(เปิดในแท็บใหม่)" to screen readers, is at least 88px high, and uses our own inline arrow icon (the CSP does not allow the target sites' favicons). The longest name fits on one line down to 360px.
+
+### Workshops page (round 11)
+- Problem: a bare list of titles with a document icon (it looked like a list of files), a large gap above the heading and a giant "2". Nothing said who teaches, what it is, or what it builds on.
+- Design plan (frontend-design). Colour: existing purple tokens plus the lilac `--purple-200` block already used by the home "From Innovation to Workshop" pairs. Type: Noto Sans Thai, titles 20–24px/600, summary 16–17px muted, small labels 14–16px. Layout: rows with the cover on the left (4:3, 220–320px) and text on the right; one pattern for 1, 2 or many items, no zigzag. Memorable element: the cover with a lilac block offset behind it, borrowed from the home page so the pages belong together. Everything else is hairlines and type.
+- Checked against the "AI default" list: no identical shadowed cards, no gradient, no capital-letter labels above headings, no 01/02/03, no arrow on every link, no scroll animation.
+- Each row: cover, title (stretched link to the detail page), summary (3 lines), speaker (วิทยากร), what it builds on ("ต่อยอดจากนวัตกรรม/งานวิจัย" from `related`, its own link above the stretched one so there are no nested links), date only when set, and "ดูรายละเอียด". A workshop with no cover drops the picture column; one without a speaker or `related` drops those lines.
+- A button "ขอจัดเวิร์กช็อปที่โรงเรียนของคุณ" (to contact.php, same wording as the home page) sits in the heading row, visible before any scrolling; the closing call is below the list. No steps, prices, group sizes or durations were invented.
+- The count is now a small "N รายการ" under the heading instead of a 48px number. Tested with 8 temporary records (with and without cover, speaker, source and date) at 1440, 1024, 390 and 360px; the mock data was not committed.

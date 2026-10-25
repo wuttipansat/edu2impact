@@ -56,3 +56,22 @@ function home_videos(): array {
     }
     return $videos;
 }
+
+// Buttons to the faculty's other websites (last home section) from config/faculty-links.php: title, url, host, note.
+// Only https addresses are linked; a row without a title or a usable address is skipped.
+function home_faculty_links(): array {
+    $links = [];
+    foreach ((require __DIR__ . '/../config/faculty-links.php') as $row) {
+        if (!is_array($row) || trim((string) ($row['title'] ?? '')) === '') { continue; }
+        $url = trim((string) ($row['url'] ?? ''));
+        $parts = parse_url($url);
+        if (!is_array($parts) || ($parts['scheme'] ?? '') !== 'https' || ($parts['host'] ?? '') === '') { continue; }
+        $links[] = [
+            'title' => trim((string) $row['title']),
+            'url' => $url,
+            'host' => strtolower(preg_replace('/^www\./i', '', (string) $parts['host'])),
+            'note' => trim((string) ($row['note'] ?? '')),
+        ];
+    }
+    return $links;
+}
