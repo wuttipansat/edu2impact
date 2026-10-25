@@ -6,7 +6,6 @@
 .post-byline{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;margin:22px 0 28px;padding-block:16px;border-block:1px solid var(--minimal-line)}
 .post-byline__item{display:inline-flex;align-items:center;gap:9px;color:var(--minimal-muted);font-size:var(--fs-sm);line-height:1.5}
 .post-byline__item>svg{flex:0 0 auto;color:var(--purple-600)}
-.post-byline__author{gap:12px}
 .post-byline__avatar{display:grid;place-items:center;flex:0 0 auto;width:40px;height:40px;border-radius:50%;background:var(--purple-600);color:#fff;font:800 var(--fs-base)/1 "Manrope","Noto Sans Thai",sans-serif;object-fit:cover}
 .post-byline__text{display:flex;flex-direction:column;line-height:1.35}
 .post-byline__text small{color:var(--minimal-muted);font-size:var(--fs-xs)}
@@ -29,9 +28,18 @@
 /* Byline: author, date and reading time on one line, each with a matching outline icon. */
 .post-byline{flex-wrap:nowrap;column-gap:24px}
 .post-byline__item{white-space:nowrap}
-.post-byline__author{gap:9px;min-width:0}
-.post-byline__author strong{overflow:hidden;text-overflow:ellipsis;color:var(--minimal-ink);font-weight:700;font-size:var(--fs-sm)}
-@media(max-width:560px){.post-byline{flex-wrap:wrap;row-gap:10px}.post-byline__author{flex-basis:100%}}
+@media(max-width:560px){.post-byline{flex-wrap:wrap;row-gap:10px}}
 
 /* Thai words from thai_text() (includes/functions.php): lines break between words, never inside one. */
 .tw{white-space:nowrap}
+
+/* Round 12: the team section sits right above "อ้างอิง" with the same heading size and top rule. One line per person:
+   the academic title in a narrow right-aligned column, the name after it, so names line up on one edge however long
+   the titles are. Two columns of people on wide screens, one on phones. */
+.record-team{margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}
+.record-team h2{margin:0 0 12px;color:var(--minimal-ink);font-family:var(--font-thai);font-size:var(--fs-lg);font-weight:600}
+.record-team ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px;margin:0;padding:0;list-style:none}
+.record-team li{display:grid;grid-template-columns:4.75rem minmax(0,1fr);align-items:baseline;column-gap:12px;padding-block:5px;font-size:var(--fs-sm);line-height:1.5}
+.record-team__role{color:var(--minimal-muted);font-size:var(--fs-xs);text-align:right;white-space:nowrap}
+.record-team__name{color:var(--minimal-ink);font-weight:600}
+@media(max-width:640px){.record-team ul{grid-template-columns:minmax(0,1fr)}}

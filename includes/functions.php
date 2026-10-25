@@ -260,6 +260,31 @@ function author_initial($name) {
     return $name === '' ? '' : mb_strtoupper(mb_substr($name, 0, 1));
 }
 
+// Split an author line ("รศ. ดร.ก ข, ดร.ค ง และ จ ฉ") into people: [['title' => 'รศ. ดร.', 'name' => 'ก ข'], ...].
+// The title is the run of academic abbreviations at the start (รศ. ผศ. ศ. ดร. Prof. Dr. Assoc. Asst.).
+function author_people($line): array {
+    $line = trim((string) $line);
+    if ($line === '') { return []; }
+    $parts = preg_split('/\s*,\s*|\s+และ\s+/u', $line);
+    $people = [];
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if ($part === '') { continue; }
+        $title = '';
+        if (preg_match('/^((?:(?:รศ|ผศ|ศ|ดร|Prof|Dr|Assoc|Asst)\.\s*)+)(.+)$/u', $part, $m)) { $title = trim($m[1]); $part = trim($m[2]); }
+        $people[] = ['title' => $title, 'name' => $part];
+    }
+    return $people;
+}
+// Short form for cards and lists: one or two people in full, otherwise the first person and how many more.
+function author_short($line): string {
+    $people = author_people($line);
+    $n = count($people);
+    if ($n <= 2) { return trim((string) $line); }
+    $first = $people[0];
+    return trim($first['title'] . $first['name']) . ' และอีก ' . ($n - 1) . ' คน';
+}
+
 // Bold stroked arrow icon used wherever the site previously printed an arrow glyph.
 // $dir: right | up-right | chevron-right | chevron-left
 function icon_arrow(string $dir = 'right'): string

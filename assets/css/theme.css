@@ -299,7 +299,6 @@ html{scroll-padding-top:84px}
 .lib-meta{gap:4px 12px;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-xs);font-weight:500}
 .lib-meta span:first-child{color:var(--accent-on-light)}
 .lib-meta span+span::before{content:none}
-.lib-author{color:var(--ink-muted);font-size:var(--fs-sm)}
 
 .lib-top{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px;margin:0}
 /* Featured study: photo with the text set on a dark fade, like the hero. */
@@ -312,7 +311,6 @@ html{scroll-padding-top:84px}
 .lib-feature__body h3{margin:0;font-family:var(--font-thai);font-size:clamp(20px,1.7vw,24px);font-weight:600;line-height:1.4;text-shadow:none}
 .lib-feature__body h3 a,.lib-feature__body h3 a:hover{color:#fff;text-decoration:none}
 .lib-feature__summary{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0;color:var(--on-dark-muted);line-height:1.7}
-.lib-feature .lib-author{color:var(--on-dark-muted)}
 .lib-cta{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;text-decoration:none}
 .lib-feature .lib-cta{position:relative;z-index:2;margin-top:8px;padding:8px 18px;border:1px solid rgba(255,255,255,.4);border-radius:var(--radius-pill);background:transparent;color:#fff;font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600}
 .lib-feature .lib-cta:hover{border-color:var(--purple-200);background:var(--purple-200);color:var(--purple-900);text-decoration:none}
@@ -574,21 +572,10 @@ html:not(.menu-open) body:has(.home-hero,.page-hero,#main) .header:not(.header--
   .home-hero-inner{padding-block:calc(56px + var(--header-h)) 132px}
 }
 .home-hero-overlay::after{content:"";position:absolute;inset:0 0 auto;height:220px;background:linear-gradient(180deg,rgba(43,15,53,.78),rgba(43,15,53,0))}
-/* Pages without a dark hero (detail pages, 404, search): the top header uses dark text on the light page. */
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav>a,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav-group>summary,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .header-search{color:var(--ink)}
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav>a:hover,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav-group>summary:hover,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .header-search:hover{background:rgba(68,23,82,.08);color:var(--purple-900)}
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav-group[data-active=true]>summary,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav>a[aria-current=page],
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .nav-group[open]>summary{background:rgba(68,23,82,.1);color:var(--purple-900)}
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .menu-toggle{background:rgba(68,23,82,.08);color:var(--purple-900)}
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) .menu-toggle[aria-expanded=true]{background:var(--purple-800);color:#fff}
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) a:focus-visible,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) button:focus-visible,
-body:not(:has(.home-hero,.page-hero)) .header:not(.header--scrolled) summary:focus-visible{outline-color:var(--purple-700)}
+/* Pages without a dark hero (detail pages, 404, search): the logo is white, so the top header sits on a full-width purple band
+   with the same white text as on the hero pages. Once the page scrolls the floating bar takes over as before. */
+body:not(:has(.home-hero,.page-hero)):has(#main) .header:not(.header--scrolled){background:var(--surface-dark)}
+body:not(:has(.home-hero,.page-hero)):has(#main) .header{padding-block:14px}
 @media(max-width:1100px){
   .nav-group[data-active=true]>summary,.nav>a[aria-current=page]{background:rgba(255,255,255,.1)}
   html.menu-open .header .nav>a,html.menu-open .header .nav-group>summary{color:#fff}
@@ -855,23 +842,34 @@ a.banner:focus-visible{outline:3px solid var(--purple-600);outline-offset:4px}
 @media(max-width:640px){.clip__icon{width:56px;height:56px}}
 @media(prefers-reduced-motion:reduce){.stage[data-stage-ready] .clip__frame,.clip__icon{transition:none}.clip__play:hover .clip__icon{transform:none}}
 
-/* ===================================================================== Round 11: links to the faculty's other sites
-   Six outlined buttons in a 3x2 grid. Each shows the site name and its web address (so people see they are leaving),
-   with a ring and arrow at the end. At rest they stay quiet (white, hairline border, no shadow); on hover or focus the
-   whole button fills purple. The section is light, so it sits calmly above the dark closing call. */
-.site-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;padding:0;list-style:none}
-.site-link{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:16px;height:100%;min-height:104px;padding:18px 20px 18px 24px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);text-decoration:none;transition:background-color .2s ease,border-color .2s ease,color .2s ease}
-.site-link__name{grid-column:1;font-family:var(--font-thai);font-size:var(--fs-lg);font-weight:600;line-height:1.4}
-.site-link__host{grid-column:1;margin-top:2px;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-xs);font-weight:500;overflow-wrap:anywhere;transition:color .2s ease}
-.site-link__go{grid-column:2;grid-row:1/3;display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--purple-200);border-radius:50%;color:var(--purple-800);transition:border-color .2s ease,color .2s ease}
-.site-link__go .icon-arrow{width:20px;height:20px}
-.site-link:hover,.site-link:focus-visible{border-color:var(--purple-800);background:var(--purple-800);color:#fff;text-decoration:none}
-.site-link:hover .site-link__host,.site-link:focus-visible .site-link__host{color:var(--purple-200)}
-.site-link:hover .site-link__go,.site-link:focus-visible .site-link__go{border-color:rgba(255,255,255,.5);color:#fff}
-.site-link:focus-visible{outline-offset:3px}
-@media(max-width:1024px){.site-links{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.site-links{grid-template-columns:minmax(0,1fr)}.site-link{min-height:88px}}
-@media(prefers-reduced-motion:reduce){.site-link,.site-link__host,.site-link__go{transition:none}}
+/* ===================================================================== Round 12: links to the faculty's other sites
+   One joined bar: the six sites sit side by side in a single row, sharing their borders like the spines on a shelf,
+   each as wide as its name needs. A small up-right arrow at the end of each says it opens another site; no web
+   address. On hover or focus a segment fills purple. Narrow screens fold the same bar into a 2-column block. */
+.home-section.home-section--sites{padding:40px 0 48px}
+.home-section--sites .home-section-heading{margin:0 0 16px;padding:0;border-bottom:0}
+.home-section--sites .home-section-heading::after{display:none}
+.home-section--sites .home-section-heading h2{font-size:var(--fs-h3);font-weight:600}
+.site-links{display:flex;margin:0;padding:0;overflow:hidden;border:1px solid var(--purple-500);border-radius:12px;background:#fff;list-style:none}
+.site-links li{display:flex;flex:1 1 auto;min-width:0}
+.site-links li+li{border-left:1px solid var(--purple-200)}
+.site-link{display:flex;flex:1;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:8px 16px 8px 18px;color:var(--purple-900);text-decoration:none;transition:background-color .2s ease,color .2s ease}
+.site-link__name{font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:500;line-height:1.35;white-space:nowrap}
+.site-link__go{flex:none;display:grid;place-items:center;color:var(--purple-600);transition:color .2s ease,transform .2s ease}
+.site-link__go .icon-arrow{width:16px;height:16px}
+.site-link:hover,.site-link:focus-visible{background:var(--purple-800);color:#fff;text-decoration:none}
+.site-link:hover .site-link__go,.site-link:focus-visible .site-link__go{color:#fff;transform:translate(2px,-2px)}
+.site-link:focus-visible{outline:3px solid var(--purple-300);outline-offset:-4px}
+@media(max-width:1100px){
+  .site-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .site-links li+li{border-left:0}
+  .site-links li{border-top:1px solid var(--purple-200)}
+  .site-links li:nth-child(-n+2){border-top:0}
+  .site-links li:nth-child(even){border-left:1px solid var(--purple-200)}
+  .site-link__name{white-space:normal}
+}
+@media(max-width:400px){.site-link{padding-inline:14px 12px}}
+@media(prefers-reduced-motion:reduce){.site-link,.site-link__go{transition:none}.site-link:hover .site-link__go,.site-link:focus-visible .site-link__go{transform:none}}
 
 /* ===================================================================== Round 11: workshops catalogue
    Rows, not cards: cover on the left, then title, summary, speaker and the source it builds on. The cover sits on a

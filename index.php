@@ -117,7 +117,7 @@ require __DIR__ . '/includes/header.php';
 <?php elseif ($block['type'] === 'sites'): ?>
     <ul class="site-links">
 <?php foreach ($facultyLinks as $link): ?>
-      <li><a class="site-link" href="<?= e($link['url']) ?>" target="_blank" rel="noopener"><span class="site-link__name"><?= e($link['title']) ?></span><span class="site-link__host"><?= e($link['note'] !== '' ? $link['note'] : $link['host']) ?></span><span class="site-link__go" aria-hidden="true"><?= icon_arrow('up-right') ?></span><span class="visually-hidden"> (เปิดในแท็บใหม่)</span></a></li>
+      <li><a class="site-link" href="<?= e($link['url']) ?>" target="_blank" rel="noopener"><span class="site-link__name"><?= e($link['title']) ?></span><span class="site-link__go" aria-hidden="true"><?= icon_arrow('up-right') ?></span><span class="visually-hidden"> (เปิดในแท็บใหม่)</span></a></li>
 <?php endforeach; ?>
     </ul>
 <?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>

@@ -57,7 +57,6 @@ a:hover>.icon-arrow--up-right,a:focus-visible>.icon-arrow--up-right{transform:tr
 .lib-feature__body h3{font-size:clamp(22px,2.2vw,28px);font-weight:800;line-height:1.35;letter-spacing:-.3px;text-shadow:0 1px 12px rgba(43,15,53,.5)}
 .lib-feature__body h3 a,.lib-feature__body h3 a:hover{color:#fff}
 .lib-feature__summary{color:rgba(255,255,255,.86);-webkit-line-clamp:2}
-.lib-feature .lib-author{color:rgba(255,255,255,.72)}
 .lib-feature .lib-cta{position:relative;z-index:2;margin-top:6px;padding:9px 16px;border-radius:999px;background:#fff;color:var(--purple-800);font-size:var(--fs-sm)}
 .lib-feature .lib-cta:hover{background:var(--purple-200);color:var(--purple-900);text-decoration:none}
 .lib-feature:hover{transform:translateY(-2px);box-shadow:0 24px 48px rgba(43,15,53,.22)}
