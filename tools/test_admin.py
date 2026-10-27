@@ -219,6 +219,22 @@ fields, buttons, html = a.form(f'post-edit.php?id={pid1}')
 check('draft shows publish + draft buttons', ('op', 'publish') in buttons and ('op', 'draft') in buttons)
 check('publish', save_post(a, fields, 'publish', page=f'post-edit.php?id={pid1}')[0] == 303)
 check('published is 200 on the site', anon.req(f'research-detail.php?id={slug1}', base=SITE)[0] == 200 if MYSQL else True)
+if MYSQL:
+    # views: counted on the post page, shown on the admin list, and kept when the link name changes
+    def visit(path):
+        r = urllib.request.Request(SITE + '/' + path, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0) Chrome/126.0'})
+        with urllib.request.urlopen(r) as resp: return resp.read().decode('utf-8', 'replace')
+    page = visit(f'research-detail.php?id={slug1}')
+    check('first visit to a post page shows 1', re.search(r'class="views".*?<span aria-hidden="true">1</span>', page, re.S) is not None)
+    check('views row is in post_views', sql(f"SELECT total FROM post_views WHERE page_key='research/{slug1}'") == [['1']])
+    check('list pages show no view counts', 'class="views"' not in visit('research.php') and 'class="views"' not in visit('index.php'))
+    newslug = 'renamed-' + tag.lower()
+    fields, buttons, html = a.form(f'post-edit.php?id={pid1}')
+    check('rename link name', save_post(a, set_field(fields, 'slug', newslug), 'save', page=f'post-edit.php?id={pid1}')[0] == 303)
+    check('views follow the renamed link name', sql(f"SELECT total FROM post_views WHERE page_key='research/{newslug}'") == [['1']] and sql(f"SELECT COUNT(*) FROM post_views WHERE page_key='research/{slug1}'") == [['0']]
+          and sql(f"SELECT views FROM post_view_days WHERE page_key='research/{newslug}'") == [['1']])
+    check('admin list shows the count', re.search(r'เข้าชม 1\b', a.req('index.php')[1]) is not None)
+    slug1 = newslug
 check('hide', a.post('index.php', {'op': 'hide', 'id': pid1}, 'index.php')[0] == 303)
 check('hidden is 404', anon.req(f'research-detail.php?id={slug1}', base=SITE)[0] == 404 if MYSQL else True)
 page = a.req('index.php')[1]
@@ -307,6 +323,7 @@ s2, html, _ = entity('shop.php', [('op', 'save'), ('title', 'y'), ('slug', 'test
 check('shop: duplicate link name gets a plain message', s == 303 and s2 == 200 and 'ซ้ำ' in html, (s, s2))
 if MYSQL:
     sql(f"DELETE FROM shop_items WHERE slug='test-{tagh}'")
+    sql("DELETE FROM post_views WHERE page_key LIKE 'research/renamed-%'"); sql("DELETE FROM post_view_days WHERE page_key LIKE 'research/renamed-%'")
 
 # editor limits
 if os.environ.get('EDITOR_EMAIL'):

@@ -7,7 +7,7 @@
 <div class="lib-list" aria-live="polite">
 <?php foreach ($records as $record): ?>
   <article class="lib-row">
-    <p class="lib-meta"><span><?= e($record['category'] ?? $fallbackCategory) ?></span><?php if (is_dated($record)): ?><span><?= e(thai_date($record['date'])) ?></span><?php endif; ?><?= visit_eye(visit_count($kind . '/' . $record['id'])) ?></p>
+    <p class="lib-meta"><span><?= e($record['category'] ?? $fallbackCategory) ?></span><?php if (is_dated($record)): ?><span><?= e(thai_date($record['date'])) ?></span><?php endif; ?></p>
     <h3><a class="lib-stretch" href="<?= e(detail_url($kind, $record['id'])) ?>"><?= e($record['title']) ?></a></h3>
     <p class="lib-row__summary"><?= e($record['summary'] ?? '') ?></p>
   </article>

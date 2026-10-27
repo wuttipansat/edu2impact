@@ -1,6 +1,7 @@
 <?php
 // Posts for the admin: load, read the form, validate, save with revisions and an optimistic lock, render the form.
 require_once __DIR__ . '/media-lib.php';
+require_once dirname(__DIR__) . '/visits.php';
 
 const POST_COLUMNS = ['kind', 'slug', 'title', 'summary', 'body', 'refs', 'audience', 'subjects', 'features', 'image', 'image_id', 'post_date',
     'author', 'category', 'tool_url', 'tool_label', 'download_id', 'download_label', 'featured', 'is_public', 'sort_order'];
@@ -279,6 +280,7 @@ function admin_post_save(array $p, ?int $id, string $action = ''): array {
         if ($v['slug'] !== $cur['slug']) {   // keep links in both directions pointing at the renamed post
             $db->prepare('DELETE FROM post_links WHERE from_kind = ? AND from_slug = ?')->execute([$cur['kind'], $cur['slug']]);
             $db->prepare('UPDATE IGNORE post_links SET to_slug = ? WHERE to_kind = ? AND to_slug = ?')->execute([$v['slug'], $cur['kind'], $cur['slug']]);
+            admin_views_move($cur['kind'] . '/' . $cur['slug'], $cur['kind'] . '/' . $v['slug']);
         }
         admin_post_set_links($cur['kind'], $v['slug'], $links);
         $db->commit();
@@ -290,6 +292,33 @@ function admin_post_save(array $p, ?int $id, string $action = ''): array {
         error_log('edu2impact admin post save: ' . $e->getMessage());
         return [$id, ['db' => 'บันทึกไม่สำเร็จ: ' . ($e->getCode() === '42000' || str_contains($e->getMessage(), 'denied') ? 'ผู้ใช้ฐานข้อมูลของหลังบ้านไม่มีสิทธิ์เขียน' : 'ข้อมูลบางอย่างฐานข้อมูลไม่รับ')]];
     }
+}
+
+// A renamed post keeps its view count: move the counter rows to the new page key. A missing table or missing right must
+// never stop the save, so errors are only logged (MySQL does not abort the transaction for them).
+function admin_views_move(string $oldKey, string $newKey): void {
+    try {
+        $db = admin_db();
+        $db->prepare('UPDATE IGNORE post_views SET page_key = ? WHERE page_key = ?')->execute([$newKey, $oldKey]);
+        $db->prepare('UPDATE IGNORE post_view_days SET page_key = ? WHERE page_key = ?')->execute([$newKey, $oldKey]);
+    } catch (Throwable $e) { error_log('edu2impact admin: view counts not moved (' . $e->getMessage() . ')'); }
+}
+
+// Counts written by the old file counter (storage/visits.json) are copied into the tables once, the first time the
+// admin list opens while post_views is still empty. Only post pages ("kind/slug") are taken.
+function admin_views_import_legacy(PDO $db): void {
+    if (defined('VISITS_FILE') || !is_file(visits_file())) { return; }
+    try {
+        if ((int) $db->query('SELECT COUNT(*) FROM post_views')->fetchColumn() > 0) { return; }
+        $now = date('Y-m-d H:i:s');
+        $add = $db->prepare('INSERT IGNORE INTO post_views (page_key, total, updated_at) VALUES (?, ?, ?)');
+        $day = $db->prepare('INSERT IGNORE INTO post_view_days (page_key, day, views) VALUES (?, ?, ?)');
+        foreach (visits_read()['pages'] as $key => $page) {
+            if (!is_string($key) || !str_contains($key, '/') || (int) ($page['total'] ?? 0) <= 0) { continue; }
+            $add->execute([$key, (int) $page['total'], $now]);
+            foreach ((array) ($page['days'] ?? []) as $d => $n) { if (preg_match('/\A\d{4}-\d{2}-\d{2}\z/', (string) $d)) { $day->execute([$key, $d, (int) $n]); } }
+        }
+    } catch (Throwable $e) { error_log('edu2impact admin: old view counts not imported (' . $e->getMessage() . ')'); }
 }
 
 // Record in the shape the public detail page reads (used by preview).

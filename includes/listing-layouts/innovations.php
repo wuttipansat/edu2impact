@@ -14,7 +14,6 @@
     <div class="show-card__body">
       <h3><a class="show-card__link" href="<?= e(detail_url($kind, $record['id'])) ?>"><?= e($record['title']) ?></a></h3>
       <p><?= e($record['summary'] ?? '') ?></p>
-      <?php $views = visit_eye(visit_count($kind . '/' . $record['id'])); if ($views !== ''): ?><p class="show-card__views"><?= $views ?></p><?php endif; ?>
       <span class="show-card__cta" aria-hidden="true"><?= e($listing['cta']) ?> <?= icon_arrow() ?></span>
     </div>
   </article>

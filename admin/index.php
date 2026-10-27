@@ -24,11 +24,20 @@ $st = $db->prepare('SELECT p.id, p.kind, p.slug, p.title, p.is_public, p.image_i
     FROM posts p LEFT JOIN media m ON m.id = p.image_id WHERE ' . implode(' AND ', $where) . ' ORDER BY changed DESC, p.id DESC' . ($all ? '' : ' LIMIT 50'));
 $st->execute($args); $rows = $st->fetchAll();
 $qs = http_build_query(array_filter(['kind' => $kind, 'q' => $q, 'all' => $all ? '1' : '']));
-$warn = '';
-if (!auth_https()) { $warn = 'หน้านี้ไม่ได้เปิดผ่าน HTTPS ไม่ควรล็อกอินจากที่นี่'; }
-elseif (admin_is_admin($user) && !empty(admin_config()['setup_token'])) { $warn = 'ลบบรรทัด setup_token ออกจากไฟล์ private/database.php (ใช้แค่ครั้งแรก)'; }
+$warns = [];
+if (!auth_https()) { $warns[] = 'หน้านี้ไม่ได้เปิดผ่าน HTTPS ไม่ควรล็อกอินจากที่นี่'; }
+elseif (admin_is_admin($user) && !empty(admin_config()['setup_token'])) { $warns[] = 'ลบบรรทัด setup_token ออกจากไฟล์ private/database.php (ใช้แค่ครั้งแรก)'; }
+$viewsState = visits_db_status();
+if ($viewsState === 'missing') { $warns[] = 'ตัวนับการเข้าชมยังไม่พร้อม: import ไฟล์ database/updates/2026-10-28-01-views.sql ใน phpMyAdmin'; }
+elseif ($viewsState === 'denied') { $warns[] = 'ตัวนับการเข้าชมยังเขียนข้อมูลไม่ได้: ผู้ใช้ฐานข้อมูลของเว็บต้องมีสิทธิ์ INSERT, UPDATE, DELETE ที่ตาราง post_views, post_view_days, post_view_seen (วิธีทำอยู่ท้ายไฟล์ 2026-10-28-01-views.sql)'; }
+elseif ($viewsState === 'unavailable') { $warns[] = 'ตัวนับการเข้าชมเชื่อมต่อฐานข้อมูลไม่ได้'; }
+$views = [];
+if ($viewsState === 'ok') {
+    admin_views_import_legacy($db);
+    try { $views = $db->query('SELECT page_key, total FROM post_views')->fetchAll(PDO::FETCH_KEY_PAIR); } catch (Throwable $e) { $views = []; }
+}
 admin_head('โพสต์ทั้งหมด', 'home', ['wide' => true]);
-if ($warn) { echo '<p class="notice notice--error" role="alert">' . e($warn) . '</p>'; }
+foreach ($warns as $warn) { echo '<p class="notice notice--error" role="alert">' . e($warn) . '</p>'; }
 ?>
 <p><a class="btn btn--big" href="post-edit.php">+ สร้างโพสต์ใหม่</a></p>
 <form class="toolbar" method="get" action="index.php"><label>ค้นหาจากหัวข้อ<input type="search" name="q" value="<?= e($q) ?>"></label><?php if ($kind): ?><input type="hidden" name="kind" value="<?= e($kind) ?>"><?php endif; ?><button class="btn btn--ghost" type="submit">ค้นหา</button></form>
@@ -39,7 +48,7 @@ echo $link('', 'ทั้งหมด'); foreach (ADMIN_KINDS as $k => $label) {
 <ul class="posts"><?php foreach ($rows as $r): ?><li class="post">
 <?php if ($r['image_id']): ?><img class="post__img" src="media-img.php?id=<?= (int) $r['image_id'] ?>&amp;v=<?= e((string) $r['v']) ?>" alt="" loading="lazy"><?php else: ?><span class="post__img"></span><?php endif; ?>
 <div><a class="post__title" href="post-edit.php?id=<?= (int) $r['id'] ?>"><?= e($r['title']) ?></a>
-<div class="post__meta"><?= e(ADMIN_KINDS[$r['kind']] ?? $r['kind']) ?> · <?= $r['is_public'] ? '<span class="tag tag--live">เผยแพร่แล้ว</span>' : '<span class="tag">ร่าง (ยังไม่แสดงบนเว็บ)</span>' ?> · แก้ล่าสุด <?= e(admin_time($r['changed'])) ?></div></div>
+<div class="post__meta"><?= e(ADMIN_KINDS[$r['kind']] ?? $r['kind']) ?> · <?= $r['is_public'] ? '<span class="tag tag--live">เผยแพร่แล้ว</span>' : '<span class="tag">ร่าง (ยังไม่แสดงบนเว็บ)</span>' ?> · แก้ล่าสุด <?= e(admin_time($r['changed'])) ?><?php if ($viewsState === 'ok'): ?> · <span class="muted">เข้าชม <?= number_format((int) ($views[$r['kind'] . '/' . $r['slug']] ?? 0)) ?></span><?php endif; ?></div></div>
 <div class="inline"><a class="btn btn--small btn--ghost" href="post-edit.php?id=<?= (int) $r['id'] ?>">แก้ไข</a>
 <?php if ($r['is_public']): ?><a class="btn btn--small btn--ghost" href="../<?= e(detail_url($r['kind'], $r['slug'])) ?>" target="_blank" rel="noopener">ดูบนเว็บ</a><?php endif; ?></div></li><?php endforeach; ?></ul>
 <?php if (!$all && $total > count($rows)): ?><p><a href="index.php?<?= e(http_build_query(array_filter(['kind' => $kind, 'q' => $q, 'all' => '1']))) ?>">แสดงทั้งหมด (<?= $total ?> โพสต์)</a></p><?php endif; ?>

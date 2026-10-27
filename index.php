@@ -120,21 +120,21 @@ require __DIR__ . '/includes/header.php';
       <li><a class="site-link" href="<?= e($link['url']) ?>" target="_blank" rel="noopener"><span class="site-link__name"><?= e($link['title']) ?></span><span class="site-link__go" aria-hidden="true"><?= icon_arrow('up-right') ?></span><span class="visually-hidden"> (เปิดในแท็บใหม่)</span></a></li>
 <?php endforeach; ?>
     </ul>
-<?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; $mainKey = $main['kind'] . '/' . $mainRecord['id']; ?>
+<?php elseif ($block['type'] === 'latest'): $main = $feed[0]; $rest = array_slice($feed, 1); $mainRecord = $main['record']; ?>
     <div class="latest">
       <article class="latest-main">
         <a class="latest-main__media" href="<?= e(detail_url($main['kind'], $mainRecord['id'])) ?>" tabindex="-1" aria-hidden="true"><img src="<?= e(image_path($mainRecord) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></a>
         <div class="latest-main__body">
-          <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($main['kind'])) ?></span><?php if ($main['dated']): ?><time datetime="<?= e($mainRecord['date']) ?>"><?= e(thai_date($mainRecord['date'])) ?></time><?php endif; ?><?= visit_eye(visit_count($mainKey)) ?></p>
+          <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($main['kind'])) ?></span><?php if ($main['dated']): ?><time datetime="<?= e($mainRecord['date']) ?>"><?= e(thai_date($mainRecord['date'])) ?></time><?php endif; ?></p>
           <h3 class="latest-main__title"><a href="<?= e(detail_url($main['kind'], $mainRecord['id'])) ?>"><?= e($mainRecord['title']) ?></a></h3>
           <?php if (trim((string) ($mainRecord['summary'] ?? '')) !== ''): ?><p class="latest-main__summary"><?= e($mainRecord['summary']) ?></p><?php endif; ?>
         </div>
       </article>
 <?php if ($rest): ?>
       <ol class="latest-list">
-<?php foreach ($rest as $item): $r = $item['record']; $key = $item['kind'] . '/' . $r['id']; ?>
+<?php foreach ($rest as $item): $r = $item['record']; ?>
         <li class="latest-item">
-          <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($item['kind'])) ?></span><?php if ($item['dated']): ?><time datetime="<?= e($r['date']) ?>"><?= e(thai_date($r['date'])) ?></time><?php endif; ?><?= visit_eye(visit_count($key)) ?></p>
+          <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($item['kind'])) ?></span><?php if ($item['dated']): ?><time datetime="<?= e($r['date']) ?>"><?= e(thai_date($r['date'])) ?></time><?php endif; ?></p>
           <h3 class="latest-item__title"><a href="<?= e(detail_url($item['kind'], $r['id'])) ?>"><?= e($r['title']) ?></a></h3>
         </li>
 <?php endforeach; ?>
@@ -166,7 +166,7 @@ require __DIR__ . '/includes/header.php';
       <li class="xcard">
         <img class="xcard__img" src="<?= e(image_path($record) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy">
         <div class="xcard__panel">
-          <p class="xcard__meta"><span><?= e($category) ?></span><?php if (is_dated($record)): ?><span><?= e(thai_date($record['date'])) ?></span><?php endif; ?><?= visit_eye(visit_count($block['kind'] . '/' . $record['id'])) ?></p>
+          <p class="xcard__meta"><span><?= e($category) ?></span><?php if (is_dated($record)): ?><span><?= e(thai_date($record['date'])) ?></span><?php endif; ?></p>
           <h3 class="xcard__title"><a class="xcard__link" href="<?= e($href) ?>"><?= e($record['title']) ?></a></h3>
           <?php if ($summary !== ''): ?><div class="xcard__more"><div><p class="xcard__summary"><?= e($summary) ?></p><span class="xcard__cta" aria-hidden="true">อ่านต่อ <?= icon_arrow('up-right') ?></span></div></div><?php endif; ?>
         </div>

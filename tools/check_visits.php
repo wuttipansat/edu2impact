@@ -9,6 +9,13 @@ $report = static function (bool $ok, string $label, string $fix = '') use (&$pro
     if (!$ok) { $problems++; if ($fix !== '') { echo '      วิธีแก้: ' . $fix . "\n"; } }
 };
 
+// Round 15: with content_source = mysql the counts are in MySQL (the file checks below only matter for the fallback).
+$state = visits_db_status();
+if ($state !== 'file') {
+    $report($state === 'ok', 'ตัวนับเก็บใน MySQL ได้ (ตาราง post_views, post_view_days, post_view_seen)',
+        ['missing' => 'import database/updates/2026-10-28-01-views.sql ใน phpMyAdmin', 'denied' => 'ให้ผู้ใช้ DB ของเว็บมีสิทธิ์ INSERT, UPDATE, DELETE ที่ 3 ตารางนี้ (ดูท้ายไฟล์ SQL) หรือใส่ counter_user/counter_pass ใน private/database.php', 'unavailable' => 'ตรวจ host/ชื่อ/ผู้ใช้/รหัสผ่านใน private/database.php'][$state] ?? '');
+    if ($state === 'ok') { echo "note  โหมด MySQL ใช้งานได้ ไม่ต้องใช้โฟลเดอร์ storage/ (ข้อตรวจไฟล์ด้านล่างใช้เฉพาะกรณีสำรอง)\n"; }
+}
 $file = visits_file();
 $dir = dirname($file);
 $report(is_dir($dir), 'โฟลเดอร์ storage/ มีอยู่', 'สร้างโฟลเดอร์ ' . $dir . ' (mkdir storage) แล้วให้ผู้ใช้ที่รัน PHP เขียนได้');

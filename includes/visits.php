@@ -12,9 +12,66 @@
 //     "today": { "date": "YYYY-MM-DD", "seen": [hash, …] } }
 // Per-day counts are kept for 90 days. If the file cannot be read or written the page still loads and
 // nothing is shown or counted.
+//
+// Round 15: when content comes from MySQL (private/database.php 'content_source' => 'mysql') the counts live in the
+// tables post_views, post_view_days and post_view_seen (database/updates/2026-10-28-01-views.sql) instead, because
+// hosted PHP often cannot write storage/. Only post pages are counted there (page key "<kind>/<slug>"). The file code
+// below stays as the fallback when MySQL is not used, the tables are missing or the database user may not write.
+
+require_once __DIR__ . '/content-db.php';
 
 const VISITS_KEEP_DAYS = 90;
 const VISITS_BOT_PATTERN = '~bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|whatsapp|telegram|curl|wget|python-requests|python-urllib|headless|lighthouse|pingdom|uptime|monitor|scanner|httpclient|go-http-client|java/|libwww~i';
+
+// Connection used for counting, or null to use the file. 'counter_user'/'counter_pass' in private/database.php give the
+// counter its own database user; otherwise the public site's user is used. Tests that define VISITS_FILE use the file.
+function visits_db(?Throwable $failure = null): ?PDO {
+    static $pdo = false;
+    if ($failure !== null) { $pdo = null; return null; }
+    if ($pdo !== false) { return $pdo; }
+    $pdo = null;
+    if (defined('VISITS_FILE') || content_source() !== 'mysql') { return null; }
+    $config = content_db_config();
+    if (is_string($config['counter_user'] ?? null) && is_string($config['counter_pass'] ?? null) && $config['counter_user'] !== '') {
+        try {
+            $pdo = new PDO('mysql:host=' . ($config['host'] ?? 'localhost') . ';dbname=' . ($config['name'] ?? '') . ';charset=utf8mb4', $config['counter_user'], $config['counter_pass'],
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_TIMEOUT => 3]);
+        } catch (Throwable $exception) { visits_warn('counter database user cannot connect'); $pdo = null; }
+        return $pdo;
+    }
+    return $pdo = content_pdo();
+}
+
+// The database could not be used for counting (table missing, no write right, connection lost): log once a day and
+// use the file from now on in this request.
+function visits_db_failed(Throwable $exception): void {
+    visits_db($exception);
+    $code = $exception instanceof PDOException ? (int) ($exception->errorInfo[1] ?? 0) : 0;
+    visits_warn('MySQL counter failed (' . ($code === 1146 ? 'run database/updates/2026-10-28-01-views.sql' : ($code === 1142 || $code === 1143 ? 'the database user may not write post_views, post_view_days, post_view_seen' : get_class($exception) . ' ' . $code)) . ')');
+}
+
+// 'ok', 'file' (MySQL not used), 'unavailable', 'missing' (tables not imported) or 'denied' (user cannot write). For the admin page.
+function visits_db_status(): string {
+    if (content_source() !== 'mysql') { return 'file'; }
+    $pdo = visits_db();
+    if (!$pdo) { return 'unavailable'; }
+    try {
+        $pdo->query('SELECT 1 FROM post_views LIMIT 1');
+        $pdo->query('SELECT 1 FROM post_view_days LIMIT 1');
+        $pdo->query('SELECT 1 FROM post_view_seen LIMIT 1');
+    } catch (Throwable $exception) { return 'missing'; }
+    try {
+        // These change nothing (WHERE 1 = 0) but MySQL still checks the write rights.
+        $pdo->exec("INSERT INTO post_views (page_key, total) SELECT 'x', 0 FROM DUAL WHERE 1 = 0");
+        $pdo->exec('UPDATE post_views SET total = total WHERE 1 = 0');
+        $pdo->exec("INSERT INTO post_view_days (page_key, day, views) SELECT 'x', CURDATE(), 0 FROM DUAL WHERE 1 = 0");
+        $pdo->exec('UPDATE post_view_days SET views = views WHERE 1 = 0');
+        $pdo->exec('DELETE FROM post_view_days WHERE 1 = 0');
+        $pdo->exec("INSERT INTO post_view_seen (hash, day) SELECT 'x', CURDATE() FROM DUAL WHERE 1 = 0");
+        $pdo->exec('DELETE FROM post_view_seen WHERE 1 = 0');
+    } catch (Throwable $exception) { return 'denied'; }
+    return 'ok';
+}
 
 function visits_file(): string {
     return defined('VISITS_FILE') ? VISITS_FILE : __DIR__ . '/../storage/visits.json';
@@ -52,6 +109,11 @@ function visits_secret(): string {
     if (is_file($local)) {
         $config = require $local;
         if (is_array($config) && is_string($config['secret'] ?? null) && strlen($config['secret']) >= 16) { return $secret = $config['secret']; }
+    }
+    // MySQL mode: derived from the database password, so nothing has to be written anywhere.
+    $db = visits_db() ? content_db_config() : null;
+    if (is_array($db) && is_string($db['pass'] ?? null) && strlen($db['pass']) >= 8) {
+        return $secret = hash_hmac('sha256', 'edu2impact-visits|' . ($db['name'] ?? ''), $db['pass']);
     }
     $path = dirname(visits_file()) . '/.visits-secret';
     $stored = is_file($path) ? trim((string) @file_get_contents($path)) : '';
@@ -106,6 +168,10 @@ function record_visit(string $pageKey, ?array $ctx = null): bool {
         $pageHash = $hash('page:' . $pageKey);
         $siteHash = $hash('site');
 
+        if ($pdo = visits_db()) {
+            try { return visits_record_db($pdo, $pageKey, $date, $pageHash); }
+            catch (Throwable $exception) { visits_db_failed($exception); }
+        }
         if (!visits_prepare()) { return false; }
         $handle = @fopen(visits_file(), 'c+');
         if (!$handle) { return visits_warn('cannot open ' . visits_file()); }
@@ -157,13 +223,49 @@ function record_visit(string $pageKey, ?array $ctx = null): bool {
     }
 }
 
+// MySQL mode: one visitor opening one post once per day. INSERT IGNORE on the unique hash decides who is new, so two
+// requests at the same moment can never both count. Returns true when this visit was counted.
+function visits_record_db(PDO $pdo, string $pageKey, string $date, string $pageHash): bool {
+    $now = (new DateTimeImmutable('now', new DateTimeZone('Asia/Bangkok')))->format('Y-m-d H:i:s');
+    $pdo->beginTransaction();
+    try {
+        $seen = $pdo->prepare('INSERT IGNORE INTO post_view_seen (hash, day) VALUES (?, ?)');
+        $seen->execute([$pageHash, $date]);
+        $counted = $seen->rowCount() === 1;
+        if ($counted) {
+            $pdo->prepare('INSERT INTO post_views (page_key, total, updated_at) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE total = total + 1, updated_at = VALUES(updated_at)')->execute([$pageKey, $now]);
+            $pdo->prepare('INSERT INTO post_view_days (page_key, day, views) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE views = views + 1')->execute([$pageKey, $date]);
+        }
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        throw $exception;
+    }
+    if (random_int(1, 100) === 1) { // no cron on the host: tidy up now and then
+        $pdo->prepare('DELETE FROM post_view_seen WHERE day < ?')->execute([$date]);
+        $pdo->prepare('DELETE FROM post_view_days WHERE day < ?')->execute([(new DateTimeImmutable($date))->modify('-' . VISITS_KEEP_DAYS . ' days')->format('Y-m-d')]);
+    }
+    return $counted;
+}
+
 // Total visits to one page, or 0.
 function visit_count(string $pageKey): int {
+    if ($pdo = visits_db()) {
+        try {
+            $stmt = $pdo->prepare('SELECT total FROM post_views WHERE page_key = ?');
+            $stmt->execute([$pageKey]);
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable $exception) { visits_db_failed($exception); }
+    }
     return (int) (visits_read()['pages'][$pageKey]['total'] ?? 0);
 }
 
-// Total visits to the whole site (distinct visitors per day, added up), or 0.
+// Total visits to every counted page (file mode: distinct visitors per day on the whole site, added up), or 0.
 function visit_total(): int {
+    if ($pdo = visits_db()) {
+        try { return (int) $pdo->query('SELECT COALESCE(SUM(total), 0) FROM post_views')->fetchColumn(); }
+        catch (Throwable $exception) { visits_db_failed($exception); }
+    }
     return (int) (visits_read()['site']['total'] ?? 0);
 }
 

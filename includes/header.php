@@ -7,8 +7,12 @@ if (!isset($pageDescription)) {
 }
 $currentPage = $currentPage ?? '';
 $navKey = $navKey ?? $currentPage; // which menu entry is current (a category page differs from $currentPage)
-// One visit per visitor per page per day. Detail pages set $visitKey to "kind/id"; 404s and redirects are not counted.
-record_visit($visitKey ?? $currentPage);
+// One visit per visitor per post per day. Only post pages set $visitKey ("kind/slug"); other pages are not counted, and
+// 404s and redirects never are. The number is read after this call, so the current visit is already in it.
+if (isset($visitKey)) {
+    record_visit($visitKey);
+    if (!headers_sent()) { header('Cache-Control: no-cache'); } // a cached copy would show an old number
+}
 ?><!DOCTYPE html>
 <html lang="th">
 <head>
