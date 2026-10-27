@@ -1,0 +1,2 @@
+/* Banner on the admin's unsaved-post preview (the only admin style that loads on a public page). */
+.admin-preview-bar{position:sticky;top:0;z-index:99;padding:.6rem 1rem;background:#1a1a1a;color:#fff;font:600 16px/1.4 system-ui,"Noto Sans Thai",Tahoma,sans-serif;text-align:center}

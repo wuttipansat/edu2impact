@@ -133,7 +133,7 @@ function media_can_draw_share(string $mime): bool {
     };
 }
 
-// Ids of media used only by hidden things (posts with is_public = 0, hidden home items or shop items).
+// Ids of media used only by hidden things (posts with is_public = 0, hidden home items or shop items), plus admin uploads nobody public uses yet.
 // file.php answers 404 for these; a file shared with anything public is still served. Share twins follow their cover.
 function media_hidden_ids(): array {
     $pdo = content_pdo();
@@ -164,6 +164,15 @@ function media_hidden_ids(): array {
         if (!content_db_missing_table($exception)) { throw $exception; }
     }
     $ids = array_diff_key($hidden, $public);
+    // A file uploaded in the admin that no public record uses yet (not attached, or attached only to a draft) stays private.
+    // Rows from the migration have uploaded_by NULL and are not touched. Before the admin migration the column does not exist.
+    try {
+        foreach ($pdo->query('SELECT id FROM media WHERE uploaded_by IS NOT NULL AND og_of IS NULL') as $upload) {
+            if (!isset($public[(int) $upload['id']])) { $ids[(int) $upload['id']] = true; }
+        }
+    } catch (Throwable $exception) {
+        if (!content_db_missing_table($exception) && !str_contains($exception->getMessage(), 'uploaded_by')) { throw $exception; }
+    }
     foreach (media_rows() as $row) {
         if ($row['og_of'] !== null && isset($ids[$row['og_of']])) { $ids[$row['id']] = true; }
     }

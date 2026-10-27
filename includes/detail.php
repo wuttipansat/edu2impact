@@ -1,5 +1,6 @@
 <?php
-$record = find_record(load_data($kind), query_string('id'));
+// The hidden admin's preview page sets $GLOBALS['admin_preview_record'] (an unsaved post). Nothing public ever sets it.
+$record = $GLOBALS['admin_preview_record'] ?? find_record(load_data($kind), query_string('id'));
 $currentPage = $kind;
 if (!$record) {
     http_response_code(404);

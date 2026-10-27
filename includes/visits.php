@@ -90,7 +90,7 @@ function visits_countable(array $ctx): bool {
 
 // Count one visit to $pageKey. Returns true when the visit was new and counted.
 function record_visit(string $pageKey, ?array $ctx = null): bool {
-    if ($pageKey === '') { return false; }
+    if ($pageKey === '' || defined('ADMIN_PREVIEW')) { return false; } // the admin preview is never a visit
     $ctx ??= [
         'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
         'ip' => $_SERVER['REMOTE_ADDR'] ?? '',
