@@ -172,7 +172,7 @@ Future integration should join Project ID, Researcher ID and Innovation ID; main
 
 ## Upload and verification
 
-Back up the existing website. Upload this directory's PHP files plus config/, includes/, assets/ (including assets/files/, the PDFs linked by `download_url`) and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content. The supplied data files hold real records only (no placeholder records) and have `demo_mode` set to false. Do not upload tools/, templates/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
+Back up the existing website. Upload this directory's PHP files (including file.php) plus config/, includes/, assets/ (including assets/files/, the PDFs linked by `download_url`) and apps/ to a PHP-enabled staging directory first. Preserve the production data/ directory if it has newer real content. The supplied data files hold real records only (no placeholder records) and have `demo_mode` set to false. Do not upload tools/, templates/, backup/, this guide or Git metadata to the public document root. Hero images are WebP files (max 1920px wide) in assets/images/; the old hero PNGs were removed, so delete them from the server only after the new files are live.
 
 Run on a PHP host:
 
@@ -219,22 +219,57 @@ Set up on the server: make `storage/` writable by PHP and closed to the web (`st
 
 ## Content in MySQL (optional)
 
-Content can be read from the MySQL database `e2imedu` instead of data/*.json. `load_data()` is the only place that reads content, so no page changes.
+Content can be read from the MySQL database `e2imedu` instead of the files. `load_data()` is the only place that reads content, so pages do not change. Since round 13 everything that belongs to a post lives in MySQL, images and PDFs included, so posts can be added, edited, hidden and given pictures in phpMyAdmin without FTP. The Thai guide for the content team is templates/README-phpmyadmin.md.
+
+| In MySQL | Was | Table |
+| --- | --- | --- |
+| Posts (research, innovations, workshops, media, news), every field including `audience`, `subjects`, `features`, `download_url`, `download_label` | data/*.json | `posts` |
+| Links between posts (`related`) | data/*.json | `post_links` |
+| Cover images, images between paragraphs, 1200×630 share images, PDFs | assets/images/, assets/images/og/, assets/files/ | `media` |
+| "ประชาสัมพันธ์" banners and "Scoop" videos | config/home.php `promos`, `videos` | `home_items` (`type` promo / video) |
+| Shop | data/shop.json | `shop_items` |
+| Events, site settings | data/events.json, data/site.json | `events`, `site_settings` |
+| Thai line breaks | data/thai-breaks.json | `thai_breaks` |
+
+Design images stay as files and are not in the database: header-logo, favicon, apple-touch-icon, hero-*.webp, home-hero-campus.webp, og-default.jpg, icon-*.svg, content-placeholder.png. So do apps/, config/navigation.php, config/innovation-categories.php, config/heroes.php and the other config files.
 
 | File | Purpose |
 | --- | --- |
-| database/content-schema.sql | Tables `posts` (research, innovations, workshops, media, news), `post_links` (the old `related` field), `events`, `site_settings`, plus every current record. Import it in phpMyAdmin. Importing it again replaces those four tables with data/*.json |
+| database/content-schema.sql | First install only: tables `posts`, `post_links`, `events`, `site_settings` with every record. It drops and rebuilds those four tables, so never import it after content has been edited in phpMyAdmin |
+| database/updates/2026-10-27-01-structure.sql | Round 13 structure: tables `media`, `home_items`, `shop_items`, `thai_breaks`, the new `posts` and `events` columns, foreign keys, Thai column comments, the views `v_posts` and `v_media` |
+| database/updates/2026-10-27-02-media-NN.sql | Round 13 images: every file that content uses plus its share twin, one INSERT per file (hex literal), split so no file is over ~1.5 MB |
+| database/updates/2026-10-27-03-content.sql | Round 13 data: links posts to their cover rows, fills the new post columns, copies promos/videos, shop, event extras and Thai breaks |
+| database/thai-breaks.sql | Written by `tools/segment_thai.py --sql` or `--phpmyadmin-json`; import after adding or editing paragraphs |
+| tools/content_to_sql.py | Rebuilds the round 13 media and content files from the repo (`--max-kb` for smaller files) |
 | tools/json_to_sql.py | Rebuilds database/content-schema.sql from data/*.json |
-| includes/content-db.php | Reads the tables and returns records in the same shape as the JSON files |
-| tools/compare_sources.php | `php tools/compare_sources.php` checks that MySQL and data/*.json hold the same content (exit code 1 when not) |
+| includes/content-db.php | Reads the tables and returns records in the same shape as the files; the 503 page |
+| includes/media-store.php | Resolves image and PDF references to addresses, sizes and share images |
+| file.php | Sends one file from `media` (see below) |
+| tools/compare_sources.php | `php tools/compare_sources.php` checks that MySQL and the files hold the same content, comparing images and PDFs by the SHA-256 of their bytes (exit code 1 when not) |
+
+**Upload order on the server.** All SQL files are safe to import more than once: they never drop a table and never overwrite what was edited in phpMyAdmin. They work on MySQL 5.7+ and MariaDB 10.2+ (tested on MySQL 8.0.46 and MariaDB 10.11).
+
+1. Upload the PHP files (file.php, includes/, tools/ stays off the server). With `content_source` still `'json'` nothing changes. With `'mysql'` and the round 13 tables not yet created, promos, videos, the shop and Thai breaks read their old files and the error log says which file to import; everything else already works.
+2. phpMyAdmin > e2imedu > Import: `2026-10-27-01-structure.sql`, then `2026-10-27-02-media-01.sql` … `-07.sql` in order, then `2026-10-27-03-content.sql`. Use the Import tab, not the SQL tab, for the media files. If an import stops with "max_allowed_packet" or "MySQL server has gone away", rebuild smaller files with `python3 tools/content_to_sql.py --max-kb 700` and import again (rows already imported are skipped).
+3. Run `php tools/compare_sources.php` (locally against a copy of the database, or on the server if PHP CLI is available). Every line must say ok.
+4. Set `'content_source' => 'mysql'` in private/database.php if it is not set yet, open every page and check the pictures.
+5. Only after that, the content image files can be removed from the server (they stay in the repo): the 15 files in assets/images/ and 15 in assets/images/og/ listed at the top of each `2026-10-27-02-media-NN.sql` ("ในไฟล์นี้: …"). `assets/images/clil-completed-repertory-grid.webp` and its share twin are used by nothing and were not migrated. Keep every design image listed above.
+
+**References.** A record names a file as `media:<id>` (a row of `media`) or by its old path. content-db.php returns `media:<id>` for `posts.image_id`, `posts.download_id`, `home_items.image_id`, `shop_items.image_id` and body blocks written `{"media": <id>, "alt": "…", "caption": "…"}`; when an id column is empty, the old `image` path is used. An old path also resolves to the `media` row whose `filename` is that path (the migration keeps the old paths as filenames), and to the file on disk only when no row has it. `image_path()`, `body_image()`, `download_url()`, `file_size_label()` and `share_image_path()` in includes/functions.php do this through includes/media-store.php, so templates still print whatever `image_path()` returns. A body image needs alt text: its own `alt`, or the row's `alt_default`.
+
+**file.php.** `file.php?id=12&v=<first 16 hex of the SHA-256>`; pages get the address from `media_url()` and never build it by hand. `sha256` and `bytes` are generated columns, so MySQL recomputes them whenever `data` changes, the address changes with them, and file.php can send `Cache-Control: public, max-age=31536000, immutable` (five minutes without a matching `v`). `ETag` is the SHA-256 and `If-None-Match` answers 304 without reading the bytes. The type is checked from the bytes with finfo (webp, jpeg, png, pdf only); images get a sandbox CSP, PDFs `Content-Disposition: inline` with a cleaned file name. It answers 404 for unknown ids, for other types, while content comes from JSON, and for files used only by hidden posts or hidden home/shop items (a file that something public also uses is still sent; share twins follow their cover). It loads no page header and counts no visits. Rows added in phpMyAdmin with only the file chosen work too: mime, width and height are read from the bytes for that request.
+
+**Share images.** `og:image` is always a JPEG: the cover's stored twin (`media.og_of` = cover id, made from assets/images/og/ by the migration), otherwise `file.php?id=<cover>&og=1`, which draws a 1200×630 card with GD (crop to fill, or the whole picture on the theme's dark purple when it would be enlarged more than 1.4×, like tools/make_og_images.py), otherwise og-default.jpg when this server's GD cannot read the cover's format.
 
 **Switch.** In private/database.php (copy of private/database.example.php, never committed) set `'content_source' => 'mysql'`. The default is `'json'`. The same file holds the credentials that includes/db.php uses for the future account pages. The database user for the public site only needs `SELECT`.
 
-**When MySQL fails.** If the connection or a query fails, `load_data()` uses data/*.json and writes one line per request to the PHP error log ("edu2impact: MySQL unavailable, using data/*.json instead"). Once content is edited in the database, the JSON files fall behind, so a failure shows the older JSON content until MySQL is back.
+**When MySQL fails.** With `'mysql'` switched on there is no fallback to data/*.json any more: once content is edited in phpMyAdmin the files are out of date, and showing them would publish old text and pictures without anyone noticing. If the connection or a query fails, every page answers `503` with `Retry-After: 300`, `Cache-Control: no-store` and a short Thai notice ("ปิดปรับปรุงชั่วคราว"), file.php answers 503 too, and the PHP error log says what failed. includes/bootstrap.php buffers the page so a failure halfway through never shows half a page. The single exception is a table that a migration has not created yet (MySQL error 1146): that dataset reads its old file and the log names the migration to import. Thai line breaks never cause a 503; on an error they are just left out.
 
-**Mapping.** `slug` is the old `id` (URLs stay the same), `post_date` is `date` (NULL when empty), `is_public` is `public`, `body` and `refs` hold JSON arrays (`refs` is `references`), `sort_order` keeps the order of the JSON file. Hidden posts (`is_public = 0`) are left out everywhere, like `"public": false`.
+**Mapping.** `slug` is the old `id` (URLs stay the same), `post_date` is `date` (NULL when empty), `is_public` is `public`, `body`, `refs`, `audience`, `subjects` and `features` hold JSON arrays (`refs` is `references`), `image_id` and `download_id` point at `media`, `sort_order` keeps the order of the JSON file. Hidden posts (`is_public = 0`) are left out everywhere, like `"public": false`. In `shop_items`, a `price` that is a plain number is formatted as baht, any other text is shown as written.
 
-**Backups.** The university does not back up hosted data. Export the database from phpMyAdmin (Export tab, SQL) regularly. tools/validate_content.py, tools/segment_thai.py and data/thai-breaks.json still work from data/*.json; while content is edited in MySQL, they check the JSON copy only.
+**Thai line breaks.** In MySQL mode `thai_text()` reads the `thai_breaks` table. A paragraph added or edited in phpMyAdmin shows as plain text (lines break where the browser decides) until its breaks are added: export the `posts` table from phpMyAdmin as JSON, run `python3 tools/segment_thai.py --phpmyadmin-json posts.json`, and import the resulting database/thai-breaks.sql.
+
+**Backups.** The university does not back up hosted data, and with images in the database a lost database means lost pictures too. Export the whole database from phpMyAdmin (Export > Custom > all tables, Format SQL, "Dump binary columns in hexadecimal notation" on, compression gzipped) at least after every editing session and keep copies off the server. tools/validate_content.py still checks data/*.json only.
 
 ## Round 7 notes
 

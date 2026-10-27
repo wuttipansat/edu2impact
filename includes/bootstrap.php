@@ -1,4 +1,7 @@
 <?php
+// The whole page is buffered, so a database failure halfway through can still answer a clean 503 page
+// (content_unavailable() in includes/content-db.php) instead of half a page.
+ob_start();
 require_once __DIR__ . '/functions.php';
 header('Content-Type: text/html; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');

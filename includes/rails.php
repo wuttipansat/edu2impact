@@ -1,6 +1,7 @@
 <?php
-// Home "ประชาสัมพันธ์" cards and "Scoop" videos. Both come from config/home.php ('promos', 'videos'); nothing is read from
-// data/*.json or MySQL yet. Every helper drops entries it cannot use, so a bad row never breaks the page.
+// Home "ประชาสัมพันธ์" cards and "Scoop" videos: load_data('promos') and load_data('videos'), which read the MySQL table
+// home_items when content comes from MySQL, otherwise config/home.php ('promos', 'videos'). Every helper drops entries it
+// cannot use, so a bad row never breaks the page.
 
 // 11-character video ID from a youtube.com/watch?v=, youtu.be/ or youtube.com/shorts/ (or /embed/) address, '' otherwise.
 function youtube_video_id(string $url): string {
@@ -17,10 +18,10 @@ function youtube_video_id(string $url): string {
     return preg_match('/\A[A-Za-z0-9_-]{11}\z/', $id) ? $id : '';
 }
 
-// Cards for the "ประชาสัมพันธ์" slider: title, date (Y-m-d, optional), label, image (assets/images/…), url.
+// Cards for the "ประชาสัมพันธ์" slider: title, date (Y-m-d, optional), label, image (assets/images/… or media:<id>), url.
 function home_promos(): array {
     $cards = [];
-    foreach ((require __DIR__ . '/../config/home.php')['promos'] ?? [] as $row) {
+    foreach (load_data('promos') as $row) {
         if (!is_array($row) || trim((string) ($row['title'] ?? '')) === '') { continue; }
         $url = trim((string) ($row['url'] ?? ''));
         // Only on-site paths, anchors and https addresses are linked.
@@ -41,7 +42,7 @@ function home_promos(): array {
 // Without a local cover the YouTube thumbnail is used (needs i.ytimg.com in the CSP img-src).
 function home_videos(): array {
     $videos = [];
-    foreach ((require __DIR__ . '/../config/home.php')['videos'] ?? [] as $row) {
+    foreach (load_data('videos') as $row) {
         if (!is_array($row)) { continue; }
         $id = youtube_video_id((string) ($row['youtube'] ?? ''));
         if ($id === '' || trim((string) ($row['title'] ?? '')) === '') { continue; }

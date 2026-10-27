@@ -72,8 +72,7 @@ function home_date(array $item): string { return is_dated($item['record']) ? tha
 function home_img($source, string $class = '', bool $eager = false, string $alt = ''): string {
     $path = is_array($source) ? image_path($source) : (string) $source;
     if ($path === '') { $path = 'assets/images/content-placeholder.png'; }
-    static $sizes = [];
-    $size = $sizes[$path] ??= (@getimagesize(__DIR__ . '/../' . $path) ?: [0, 0]);
+    $size = image_size($path);
     $dims = $size[0] > 0 ? ' width="' . (int) $size[0] . '" height="' . (int) $size[1] . '"' : '';
     $loading = $eager ? ' fetchpriority="high" decoding="async"' : ' loading="lazy" decoding="async"';
     return '<img' . ($class !== '' ? ' class="' . e($class) . '"' : '') . ' src="' . e($path) . '" alt="' . e($alt) . '"' . $dims . $loading . '>';

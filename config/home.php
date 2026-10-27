@@ -28,6 +28,8 @@ return [
         // No post is about school leadership yet; the closest content is the learning-city facilitator work.
         ['label' => 'School Leadership', 'thai' => 'ผู้นำการเรียนรู้', 'query' => 'นักขับเคลื่อน', 'icon' => 'flag'],
     ],
+    // When content comes from MySQL (private/database.php 'content_source' => 'mysql'), "ประชาสัมพันธ์" and "Scoop" are read
+    // from the table home_items instead of the two lists below (templates/README-phpmyadmin.md); edit them there.
     // "ประชาสัมพันธ์": picture banners in a slider between the hero and "ผลงานใหม่ล่าสุด" (no page of its own, no menu item).
     // The text is part of the picture, so prepare each banner at 2:1 (1920 x 960 px, under 400 KB). Fields: title (read aloud as the
     // picture's description), image (assets/images/…), url (page or https address; "#" = not clickable), date (Y-m-d, optional,

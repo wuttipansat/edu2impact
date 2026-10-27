@@ -4,15 +4,20 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function load_data($name) {
-    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events', 'shop'];
+    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events', 'shop', 'promos', 'videos'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
-    // Content can live in MySQL (see includes/content-db.php). When it is switched on but cannot be read,
-    // the JSON files below are used, so the site keeps working.
+    // Content can live in MySQL (see includes/content-db.php). When it is switched on but cannot be read, the page
+    // answers 503 instead of showing the older data/*.json copy. Only a table that a migration has not created yet
+    // falls back to its file (content_db_load() returns null).
     require_once __DIR__ . '/content-db.php';
-    // 'shop' stays in data/shop.json: the posts table has no price column yet.
-    if ($name !== 'shop' && content_source() === 'mysql') {
-        $fromDatabase = content_db_load($name);
+    if (content_source() === 'mysql') {
+        try { $fromDatabase = content_db_load($name); } catch (ContentUnavailable $exception) { content_unavailable(); }
         if ($fromDatabase !== null) { return $fromDatabase; }
+    }
+    // "ประชาสัมพันธ์" and "Scoop" rows live in config/home.php while content comes from JSON.
+    if ($name === 'promos' || $name === 'videos') {
+        $rows = (require __DIR__ . '/../config/home.php')[$name] ?? [];
+        return is_array($rows) ? array_values($rows) : [];
     }
     $text = file_get_contents(__DIR__ . '/../data/' . $name . '.json');
     if ($text === false) { throw new RuntimeException('Cannot read dataset'); }
@@ -62,27 +67,45 @@ function absolute_url(string $path): string {
     $base = site_url();
     return $base === '' ? '' : $base . '/' . ltrim($path, '/');
 }
-// Share image for Facebook, LINE and X: the 1200x630 JPEG twin made by tools/make_og_images.py
-// (assets/images/og/<name>.jpg) when it exists, otherwise the default card. Never a WebP.
+// Share image for Facebook, LINE and X, always a 1200x630 JPEG, never a WebP. $cover is what image_path() returned.
+// A cover from the media table uses its stored twin (media.og_of), or one file.php draws with GD; a cover on disk uses
+// the twin made by tools/make_og_images.py (assets/images/og/<name>.jpg). Otherwise the default card.
 function share_image_path(?string $cover): string {
+    require_once __DIR__ . '/media-store.php';
+    if ($cover !== null && ($row = media_row_from_url($cover))) { return media_share_src($row) ?? 'assets/images/og-default.jpg'; }
     if ($cover !== null && preg_match('~\Aassets/images/([a-zA-Z0-9_-]+)\.(?:png|jpg|jpeg|webp)\z~', $cover, $match)
         && is_file(__DIR__ . '/../assets/images/og/' . $match[1] . '.jpg')) {
         return 'assets/images/og/' . $match[1] . '.jpg';
     }
     return 'assets/images/og-default.jpg';
 }
+// Address for src="…" of a record's image: "media:<id>" (a row of the media table, served by file.php) or an old
+// assets/images/… path, which also resolves to the media row stored under that filename. Local images only; no
+// traversal, external URLs or executable formats. '' when there is no usable image.
 function image_path($record) {
-    $path = $record['image'] ?? '';
-    // Local image assets only; no traversal, external URLs or executable formats.
-    if (is_string($path) && preg_match('~\Aassets/images/[a-zA-Z0-9_/-]+\.(?:png|jpg|jpeg|webp)\z~', $path)
-        && is_file(__DIR__ . '/../' . $path)) { return $path; }
-    return '';
+    require_once __DIR__ . '/media-store.php';
+    return media_image_src($record['image'] ?? '');
 }
-// A body item is a paragraph (string) or an image block {"image": "assets/images/…", "alt": "…", "caption": "…"}.
-// Returns the image path when the block is a valid local image, otherwise ''.
+// [width, height] of an address returned by image_path(); [0, 0] when unknown.
+function image_size(string $src): array {
+    require_once __DIR__ . '/media-store.php';
+    return media_image_size($src);
+}
+// A body item is a paragraph (string) or an image block {"image": "assets/images/…" or "media:<id>", "alt": "…",
+// "caption": "…"} (in MySQL also written {"media": <id>, …}). Returns the image address when the block is a usable image
+// with alt text (its own, or the media row's alt_default), otherwise ''.
 function body_image($block) {
-    if (!is_array($block) || !is_string($block['alt'] ?? null) || trim($block['alt']) === '') { return ''; }
+    if (!is_array($block) || body_image_alt($block) === '') { return ''; }
     return image_path($block);
+}
+function body_image_alt($block): string {
+    if (!is_array($block)) { return ''; }
+    $alt = is_string($block['alt'] ?? null) ? trim($block['alt']) : '';
+    if ($alt === '') {
+        require_once __DIR__ . '/media-store.php';
+        $alt = trim((string) (media_row($block['image'] ?? '')['alt_default'] ?? ''));
+    }
+    return $alt;
 }
 // Paragraphs and image captions of a body as text (for search); image paths and alt text are left out.
 function body_text($body) {
@@ -102,15 +125,23 @@ function tool_url($record) {
     if (preg_match('~\Aapps/[a-z0-9-]+/\z~', $url) && is_file(__DIR__ . '/../' . $url . 'index.html')) { return $url; }
     return '';
 }
-// Optional PDF download: a local assets/files/<name>.pdf that exists. No external URLs, no traversal.
+// Optional PDF download: a PDF in the media table ("media:<id>", or an old path stored as its filename) or a local
+// assets/files/<name>.pdf that exists. No external URLs, no traversal.
 function download_url($record) {
+    require_once __DIR__ . '/media-store.php';
     $url = $record['download_url'] ?? '';
-    if (!is_string($url) || !preg_match('~\Aassets/files/[a-z0-9-]+\.pdf\z~', $url)) { return ''; }
+    if (!is_string($url)) { return ''; }
+    $row = media_row($url);
+    if ($row) { return $row['mime'] === 'application/pdf' ? media_url($row) : ''; }
+    if (!preg_match('~\Aassets/files/[a-z0-9-]+\.pdf\z~', $url)) { return ''; }
     return is_file(__DIR__ . '/../' . $url) ? $url : '';
 }
-// Human-readable size of a local file, e.g. "590 KB" or "1.2 MB".
+// Human-readable size of a local file or a file.php address, e.g. "590 KB" or "1.2 MB".
 function file_size_label($path) {
-    $bytes = is_file(__DIR__ . '/../' . $path) ? filesize(__DIR__ . '/../' . $path) : 0;
+    require_once __DIR__ . '/media-store.php';
+    $row = media_row_from_url((string) $path);
+    if ($row) { $bytes = (int) $row['bytes']; }
+    else { $bytes = !str_contains((string) $path, '..') && is_file(__DIR__ . '/../' . $path) ? filesize(__DIR__ . '/../' . $path) : 0; }
     if ($bytes <= 0) { return ''; }
     if ($bytes >= 1048576) { return rtrim(rtrim(number_format($bytes / 1048576, 1, '.', ''), '0'), '.') . ' MB'; }
     return max(1, (int) round($bytes / 1024)) . ' KB';
@@ -307,6 +338,11 @@ function icon_arrow(string $dir = 'right'): string
 function thai_breaks(): array
 {
     static $map = null;
+    require_once __DIR__ . '/content-db.php';
+    if ($map === null && content_source() === 'mysql') {
+        // From the thai_breaks table (null until the round 13 migration creates it; then data/thai-breaks.json is read).
+        $map = content_db_thai_breaks();
+    }
     if ($map === null) {
         $map = [];
         $text = @file_get_contents(__DIR__ . '/../data/thai-breaks.json');
