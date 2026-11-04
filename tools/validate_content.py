@@ -68,7 +68,21 @@ for name in ('site', 'research', 'innovations', 'workshops', 'media', 'news', 'e
                 if isinstance(block, str):
                     continue
                 where = f'{record["id"]}: body[{position}]'
-                assert isinstance(block, dict), where + ' must be text or an image block'
+                assert isinstance(block, dict), where + ' must be text, a heading, a table or an image block'
+                if 'heading' in block:
+                    assert set(block) == {'heading', 'text'}, where + ' a heading allows only heading and text'
+                    assert block['heading'] in (1, 2, 3) and isinstance(block['text'], str) and block['text'].strip(), where + ': heading is 1, 2 or 3 and needs text'
+                    continue
+                if 'table' in block:
+                    assert set(block) == {'table'} and isinstance(block['table'], dict), where + ' a table block holds only "table"'
+                    table = block['table']
+                    assert set(table) <= {'head', 'rows', 'caption'}, where + ': table allows only head, rows and caption'
+                    rows = table.get('rows')
+                    assert isinstance(rows, list) and rows and len(rows) <= 100, where + ': table rows must be a list of 1-100 rows'
+                    for row in ([table['head']] if table.get('head') else []) + rows:
+                        assert isinstance(row, list) and 1 <= len(row) <= 12 and all(isinstance(c, str) and len(c) <= 500 for c in row), where + ': a table row is 1-12 cells of text, 500 characters at most'
+                    assert isinstance(table.get('caption', ''), str), where + ': caption must be text'
+                    continue
                 assert set(block) <= {'image', 'alt', 'caption'}, where + ' allows only image, alt and caption'
                 image = block.get('image')
                 assert isinstance(image, str) and re.fullmatch(r'assets/images/[a-zA-Z0-9_/-]+\.(?:png|jpg|jpeg|webp)', image), where + ': image must be assets/images/<name>.png|jpg|jpeg|webp'

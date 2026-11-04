@@ -2,6 +2,7 @@
 // Posts for the admin: load, read the form, validate, save with revisions and an optimistic lock, render the form.
 require_once __DIR__ . '/media-lib.php';
 require_once dirname(__DIR__) . '/visits.php';
+require_once dirname(__DIR__) . '/functions.php';
 
 const POST_COLUMNS = ['kind', 'slug', 'title', 'summary', 'body', 'refs', 'audience', 'subjects', 'features', 'image', 'image_id', 'post_date',
     'author', 'category', 'tool_url', 'tool_label', 'download_id', 'download_label', 'featured', 'is_public', 'sort_order'];
@@ -10,7 +11,7 @@ function admin_post_blank(string $kind): array {
     return ['id' => null, 'kind' => $kind, 'slug' => '', 'title' => '', 'summary' => '', 'post_date' => date('Y-m-d'), 'author' => '', 'category' => '',
         'tool_url' => '', 'tool_label' => '', 'download_id' => null, 'download_label' => '', 'featured' => 0, 'is_public' => 0, 'sort_order' => null,
         'image_choice' => 'none', 'audience_text' => '', 'subjects_text' => '', 'features_text' => '', 'refs_text' => '', 'related' => [],
-        'body' => [], 'content' => '', 'images' => [], 'to_top' => 0, 'was_public' => 0, 'upload_errors' => [], 'loaded_at' => '', 'force' => 0];
+        'body' => [], 'content' => '', 'images' => [], 'tables' => [], 'to_top' => 0, 'was_public' => 0, 'upload_errors' => [], 'loaded_at' => '', 'force' => 0];
 }
 
 function admin_lines_to_list(string $text): array {
@@ -40,6 +41,11 @@ function admin_post_state(array $row, array $links): array {
     foreach (json_decode((string) $row['body'], true) ?: [] as $b) {
         if (is_string($b)) { $blocks[] = ['t' => 'p', 'text' => $b]; continue; }
         if (!is_array($b)) { continue; }
+        if ($h = body_heading($b)) { $blocks[] = ['t' => 'h', 'level' => $h[0], 'text' => $h[1]]; continue; }
+        if ($t = body_table($b)) {
+            $blocks[] = ['t' => 'table', 'head' => $t['head'] !== null, 'rows' => array_merge($t['head'] ? [$t['head']] : [], $t['rows']), 'caption' => $t['caption']];
+            continue;
+        }
         $media = isset($b['media']) ? (int) $b['media'] : 0;
         if (!$media && !empty($b['image']) && is_string($b['image'])) {
             if (preg_match('/\Amedia:(\d+)\z/', $b['image'], $m)) { $media = (int) $m[1]; }
@@ -48,38 +54,109 @@ function admin_post_state(array $row, array $links): array {
         $blocks[] = ['t' => 'img', 'media' => $media ?: null, 'alt' => (string) ($b['alt'] ?? ''), 'caption' => (string) ($b['caption'] ?? '')];
     }
     $p['body'] = $blocks;
-    [$p['content'], $p['images']] = admin_body_to_text($blocks);
+    [$p['content'], $p['images'], $p['tables']] = admin_body_to_text($blocks);
     $p['was_public'] = $p['is_public'];
     return $p;
 }
 
-// Body blocks -> one text (paragraphs separated by a blank line, a picture is the line [รูป N]) and the picture list.
+// Body blocks -> one text, the picture list and the table list. In the text a paragraph is separated from the next by a blank
+// line, a heading is a line that starts with "# ", "## " or "### ", a picture is the line [รูป N] and a table is [ตาราง N].
 function admin_body_to_text(array $blocks): array {
-    $parts = []; $images = []; $n = 0;
+    $parts = []; $images = []; $tables = []; $n = 0; $m = 0;
     foreach ($blocks as $b) {
         if ($b['t'] === 'p') { $parts[] = $b['text']; continue; }
+        if ($b['t'] === 'h') { $parts[] = str_repeat('#', $b['level']) . ' ' . trim(preg_replace('/\s+/u', ' ', $b['text']) ?? ''); continue; }
+        if ($b['t'] === 'table') {
+            $m++;
+            $rows = array_map(static fn (array $r) => implode("\t", array_map(static fn ($c) => trim(preg_replace('/\s+/u', ' ', (string) $c) ?? ''), $r)), $b['rows']);
+            $tables[] = ['n' => $m, 'head' => $b['head'], 'text' => implode("\n", $rows), 'caption' => $b['caption']];
+            $parts[] = '[ตาราง ' . $m . ']'; continue;
+        }
         $n++; $images[] = ['n' => $n, 'media' => $b['media'], 'alt' => $b['alt'], 'caption' => $b['caption']];
         $parts[] = '[รูป ' . $n . ']';
     }
-    return [implode("\n\n", $parts), $images];
+    return [implode("\n\n", $parts), $images, $tables];
 }
 
-// Text + pictures -> body blocks. Pictures the text never mentions go at the end. Returns [blocks, error|null].
-function admin_body_from_text(string $text, array $images): array {
-    $byN = []; foreach ($images as $im) { $byN[$im['n']] = $im; }
-    $blocks = []; $used = [];
-    foreach (preg_split('/\n[ \t]*\n/u', $text) ?: [] as $para) {
-        $para = trim($para);
-        if ($para === '') { continue; }
-        if (preg_match('/\A\[รูป\s*(\d+)\]\z/u', $para, $m)) {
-            $n = (int) $m[1];
-            if (!isset($byN[$n])) { return [[], 'ในเนื้อหามี [รูป ' . $n . '] แต่ไม่มีรูปที่ ' . $n . ' ลบบรรทัดนั้นหรือเพิ่มรูป']; }
-            if (isset($used[$n])) { continue; }
-            $used[$n] = true; $blocks[] = ['t' => 'img'] + $byN[$n]; continue;
+const ADMIN_TABLE_MAX_ROWS = 100;
+const ADMIN_TABLE_MAX_COLS = 12;
+const ADMIN_TABLE_MAX_CELL = 500;
+// One table's text (a row per line; cells separated by Tab, or by | when there is no Tab) -> [rows, error|null].
+// Never cuts anything off silently: too many rows, columns or characters is an error in plain Thai.
+function admin_table_parse(int $n, string $text): array {
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $sep = str_contains($text, "\t") ? "\t" : '|';
+    $rows = [];
+    foreach (explode("\n", $text) as $line) {
+        if (trim($line, " \t|") === '') { continue; }
+        if ($sep === '|') {
+            if (preg_match('/\A[\s|:\-]+\z/', $line)) { continue; }   // the --- | --- line of a Markdown table
+            $line = preg_replace('/\A\s*\|/', '', $line) ?? $line; $line = preg_replace('/\|\s*\z/', '', $line) ?? $line;
         }
-        $blocks[] = ['t' => 'p', 'text' => $para];
+        $rows[] = array_map(static fn ($c) => trim(preg_replace('/\s+/u', ' ', $c) ?? ''), explode($sep, $line));
+    }
+    if (!$rows) { return [[], 'ตารางที่ ' . $n . ' ยังว่างอยู่ พิมพ์ข้อมูลหรือวางตารางที่ก็อปมา หรือติ๊ก “เอาตารางนี้ออก”'];}
+    if (count($rows) > ADMIN_TABLE_MAX_ROWS) { return [[], 'ตารางที่ ' . $n . ' มี ' . count($rows) . ' แถว ใส่ได้ไม่เกิน ' . ADMIN_TABLE_MAX_ROWS . ' แถว ลองแบ่งเป็นหลายตาราง']; }
+    $cols = max(array_map('count', $rows));
+    if ($cols > ADMIN_TABLE_MAX_COLS) { return [[], 'ตารางที่ ' . $n . ' มี ' . $cols . ' คอลัมน์ ใส่ได้ไม่เกิน ' . ADMIN_TABLE_MAX_COLS . ' คอลัมน์']; }
+    foreach ($rows as $r => $row) {
+        foreach ($row as $c => $cell) {
+            if (mb_strlen($cell) > ADMIN_TABLE_MAX_CELL) { return [[], 'ตารางที่ ' . $n . ' แถวที่ ' . ($r + 1) . ' ช่องที่ ' . ($c + 1) . ' ยาว ' . mb_strlen($cell) . ' ตัวอักษร ช่องหนึ่งใส่ได้ไม่เกิน ' . ADMIN_TABLE_MAX_CELL . ' ตัวอักษร']; }
+        }
+        $rows[$r] = array_pad($row, $cols, '');
+    }
+    return [$rows, null];
+}
+
+// Text + pictures + tables -> body blocks. Pictures and tables the text never mentions go at the end. Returns [blocks, error|null].
+// A label is found anywhere in the text, not only on a line of its own, and is forgiving about how it was typed:
+// [รูป 1], [รูป1], [ รูป 1 ], [รูปที่ 1], Thai digits [รูป ๑], full-width brackets, and the same for [ตาราง N]. Text around a label
+// stays as paragraphs before and after it, so "[รูป 1] [รูป 2]" on one line gives two pictures in a row.
+// A line that starts with "# ", "## " or "### " is a heading of its own (levels 1-3); "####" or "#word" is ordinary text.
+const ADMIN_LABEL = '/[\[［]\s*(รูป|ตาราง)(?:ที่)?\s*([0-9๐-๙]+)\s*[\]］]/u';
+function admin_body_from_text(string $text, array $images, array $tables = []): array {
+    $byN = []; foreach ($images as $im) { $byN[$im['n']] = $im; }
+    $byT = [];
+    foreach ($tables as $t) {
+        if (isset($byT[$t['n']]) || trim((string) $t['text']) === '') { continue; }
+        [$rows, $err] = admin_table_parse((int) $t['n'], (string) $t['text']);
+        if ($err !== null) { return [[], $err]; }
+        $head = !empty($t['head']) ? array_shift($rows) : null;
+        $byT[$t['n']] = ['t' => 'table', 'head' => $head !== null, 'rows' => $head !== null ? array_merge([$head], $rows) : $rows, 'caption' => (string) ($t['caption'] ?? '')];
+    }
+    $blocks = []; $used = []; $usedT = [];
+    foreach (preg_split('/\n[ \t]*\n/u', $text) ?: [] as $para) {
+        $lines = preg_split('/^(#{1,3})[ \t]+(\S.*)$/mu', $para, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$para];
+        $segments = [];   // [kind, value]: text | heading
+        foreach ($lines as $i => $piece) {
+            if ($i % 3 === 0) { $segments[] = ['text', $piece]; }
+            elseif ($i % 3 === 1) { $level = strlen($piece); }
+            else { $segments[] = ['h', [$level, trim(preg_replace('/\s+/u', ' ', $piece) ?? '')]]; }
+        }
+        foreach ($segments as [$kind, $value]) {
+            if ($kind === 'h') { $blocks[] = ['t' => 'h', 'level' => $value[0], 'text' => mb_substr($value[1], 0, 300)]; continue; }
+            $pieces = preg_split(ADMIN_LABEL, $value, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$value];
+            for ($i = 0; $i < count($pieces); $i += 3) {
+                $piece = trim($pieces[$i]);
+                if ($piece !== '') { $blocks[] = ['t' => 'p', 'text' => $piece]; }
+                if (!isset($pieces[$i + 2])) { break; }
+                $isTable = $pieces[$i + 1] === 'ตาราง';
+                $n = (int) strtr($pieces[$i + 2], ['๐' => '0', '๑' => '1', '๒' => '2', '๓' => '3', '๔' => '4', '๕' => '5', '๖' => '6', '๗' => '7', '๘' => '8', '๙' => '9']);
+                if ($isTable) {
+                    if (!isset($byT[$n])) { return [[], 'ในเนื้อหามี [ตาราง ' . $n . '] แต่โพสต์นี้ยังไม่มีตารางที่ ' . $n . ' ใส่ข้อมูลตารางในส่วน “ตารางในเนื้อหา” ใต้ช่องเนื้อหา แล้วกดบันทึกอีกครั้ง (หรือลบป้ายนั้นออก)']; }
+                    if (!isset($usedT[$n])) { $usedT[$n] = true; $blocks[] = $byT[$n]; }
+                    continue;
+                }
+                if (!isset($byN[$n])) {
+                    return [[], 'ในเนื้อหามี [รูป ' . $n . '] แต่โพสต์นี้ยังไม่มีรูปที่ ' . $n . ' ให้เลือกไฟล์ที่ช่อง "รูปใหม่" ใต้ช่องเนื้อหา แล้วกดบันทึกอีกครั้ง (หรือลบป้ายนั้นออก)'];
+                }
+                if (isset($used[$n])) { continue; }
+                $used[$n] = true; $blocks[] = ['t' => 'img'] + $byN[$n];
+            }
+        }
     }
     foreach ($byN as $n => $im) { if (!isset($used[$n])) { $blocks[] = ['t' => 'img'] + $im; } }
+    foreach ($byT as $n => $t) { if (!isset($usedT[$n])) { $blocks[] = $t; } }
     return [$blocks, null];
 }
 
@@ -169,7 +246,14 @@ function admin_post_from_input(bool $upload = true): array {
         }
     }
     $p['images'] = $images;
-    [$p['body'], $p['body_error']] = admin_body_from_text($p['content'], $images);
+    $tables = [];
+    foreach ((array) ($_POST['tbl'] ?? []) as $t) {
+        if (!is_array($t) || !isset($t['n']) || (int) $t['n'] < 1 || !empty($t['drop']) || !is_string($t['text'] ?? null) || trim($t['text']) === '') { continue; }
+        $tables[] = ['n' => (int) $t['n'], 'head' => !empty($t['head']), 'text' => isset($t['text']) && is_string($t['text']) ? mb_substr($t['text'], 0, 100000) : '',
+            'caption' => isset($t['caption']) && is_string($t['caption']) ? mb_substr(trim(preg_replace('/\s+/u', ' ', $t['caption']) ?? ''), 0, 400) : ''];
+    }
+    $p['tables'] = $tables;
+    [$p['body'], $p['body_error']] = admin_body_from_text($p['content'], $images, $tables);
     return $p;
 }
 
@@ -200,6 +284,11 @@ function admin_post_prepare(array $p, ?int $id): array {
     $body = [];
     foreach ($p['body'] as $i => $b) {
         if ($b['t'] === 'p') { if ($b['text'] !== '') { $body[] = $b['text']; } continue; }
+        if ($b['t'] === 'h') { if ($b['text'] !== '') { $body[] = ['heading' => $b['level'], 'text' => $b['text']]; } continue; }
+        if ($b['t'] === 'table') {
+            $rows = $b['rows']; $head = $b['head'] ? array_shift($rows) : null;
+            $body[] = ['table' => ['head' => $head, 'rows' => $rows, 'caption' => $b['caption']]]; continue;
+        }
         if (!$b['media']) { $errors['content'] = 'มีรูปที่ยังไม่ได้เลือกไฟล์'; continue; }
         $existsMedia->execute([$b['media']]);
         if (strpos((string) $existsMedia->fetchColumn(), 'image/') !== 0) { $errors['content'] = 'มีรูปที่ไม่อยู่ในคลังรูป'; continue; }
@@ -336,4 +425,26 @@ function admin_post_record(array $p): array {
     if ($v['download_id']) { $rec['download_url'] = 'media:' . (int) $v['download_id']; }
     if ($v['download_label'] !== null) { $rec['download_label'] = $v['download_label']; }
     return $rec;
+}
+
+
+// ---- Form pieces shared by the page and the <template>s the script clones ($i and $n may be the placeholders __I__ and __N__) ----
+function admin_pic_row($i, $n, string $thumb, string $alt = '', string $caption = '', $media = ''): string {
+    $i = e((string) $i); $n = e((string) $n);
+    return '<div class="pic" data-pic><div>' . $thumb . '</div><div><strong>[รูป ' . $n . ']</strong> <button type="button" class="btn btn--small btn--ghost" data-insert="[รูป ' . $n . ']" hidden>แทรกตรงเคอร์เซอร์</button>'
+        . '<input type="hidden" name="img[' . $i . '][n]" value="' . $n . '"><input type="hidden" name="img[' . $i . '][media]" value="' . e((string) $media) . '">'
+        . '<label>คำอธิบายรูป <small>บอกว่าในรูปมีอะไร สำหรับผู้ใช้โปรแกรมอ่านหน้าจอ ถ้าเว้นว่าง รูปจะไม่แสดงบนเว็บ</small><input name="img[' . $i . '][alt]" value="' . e($alt) . '" maxlength="400" data-alt></label>'
+        . '<label>คำบรรยายใต้รูป (ไม่บังคับ)<input name="img[' . $i . '][caption]" value="' . e($caption) . '" maxlength="400"></label>'
+        . '<label class="check"><input type="checkbox" name="img[' . $i . '][drop]" value="1"> เอารูปนี้ออกจากโพสต์</label></div></div>';
+}
+function admin_table_box($i, $n, string $text = '', bool $head = true, string $caption = ''): string {
+    $i = e((string) $i); $n = e((string) $n);
+    return '<div class="tblbox" data-table><strong>[ตาราง ' . $n . ']</strong> <button type="button" class="btn btn--small btn--ghost" data-insert="[ตาราง ' . $n . ']" hidden>แทรกตรงเคอร์เซอร์</button>'
+        . '<input type="hidden" name="tbl[' . $i . '][n]" value="' . $n . '">'
+        . '<label>ข้อมูลตาราง <small>หนึ่งแถวต่อหนึ่งบรรทัด คั่นช่องด้วยปุ่ม Tab หรือเครื่องหมาย | ก็อปจาก Excel หรือ Google Sheets มาวางได้เลย</small>'
+        . '<textarea name="tbl[' . $i . '][text]" rows="5" wrap="off" class="tblbox__text" data-table-text>' . e($text) . '</textarea></label>'
+        . '<div class="tblprev" data-table-preview aria-live="polite"></div>'
+        . '<label class="check"><input type="checkbox" name="tbl[' . $i . '][head]" value="1"' . ($head ? ' checked' : '') . ' data-table-head> แถวแรกเป็นหัวตาราง</label>'
+        . '<label>คำบรรยายใต้ตาราง (ไม่บังคับ)<input name="tbl[' . $i . '][caption]" value="' . e($caption) . '" maxlength="400"></label>'
+        . '<label class="check"><input type="checkbox" name="tbl[' . $i . '][drop]" value="1"> เอาตารางนี้ออกจากโพสต์</label></div>';
 }

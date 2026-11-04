@@ -84,23 +84,38 @@ if ($errors && !$lock): ?><div class="notice notice--error" role="alert"><p><str
 
 <div class="field"><label for="summary">สรุปสั้น 1-2 ประโยค</label><textarea id="summary" name="summary" maxlength="4000"><?= e($p['summary']) ?></textarea></div>
 
-<div class="field"><label for="content">เนื้อหา <small>เว้นบรรทัดว่างหนึ่งบรรทัดเพื่อขึ้นย่อหน้าใหม่ ถ้าจะแทรกรูป ให้พิมพ์ป้ายรูป เช่น [รูป 1] ไว้ในบรรทัดของตัวเองตรงที่อยากให้รูปอยู่</small></label>
-<textarea id="content" name="content" class="tall<?= $bad('content') ?>"><?= e($p['content']) ?></textarea><?= $err('content') ?></div>
+<div class="field"><label for="content">เนื้อหา <small>เว้นบรรทัดว่างหนึ่งบรรทัดเพื่อขึ้นย่อหน้าใหม่ · หัวข้อ: เริ่มบรรทัดด้วย “# ” “## ” หรือ “### ” · รูปและตาราง: พิมพ์ [รูป 1] หรือ [ตาราง 1] ในบรรทัดของตัวเอง หรือ ลากรูปมาวาง / วางตารางที่ก็อปมาในช่องนี้ได้เลย</small></label>
+<div class="editbar" role="toolbar" aria-label="จัดรูปแบบเนื้อหา" data-js hidden>
+<button type="button" class="btn btn--small btn--ghost" data-heading="1">หัวข้อใหญ่</button><button type="button" class="btn btn--small btn--ghost" data-heading="2">หัวข้อรอง</button><button type="button" class="btn btn--small btn--ghost" data-heading="3">หัวข้อย่อย</button>
+<span class="muted">กดปุ่มที่บรรทัดของเคอร์เซอร์ กดซ้ำเพื่อเอาออก</span></div>
+<div class="drop" id="drop" data-drop-text="วางรูปหรือตารางตรงนี้">
+<textarea id="content" name="content" class="tall<?= $bad('content') ?>"><?= e($p['content']) ?></textarea></div>
+<div id="upload-status" class="pending" role="status" aria-live="polite" hidden></div>
+<?= $err('content') ?></div>
 
 <h2>รูปในเนื้อหา</h2>
-<?php foreach (array_values($p['images']) as $i => $im): ?><div class="pic"><div><?= $thumb($im['media']) ?></div><div>
-<strong>[รูป <?= (int) $im['n'] ?>]</strong> <button type="button" class="btn btn--small btn--ghost" data-insert="[รูป <?= (int) $im['n'] ?>]" hidden>แทรกตรงเคอร์เซอร์</button>
-<input type="hidden" name="img[<?= $i ?>][n]" value="<?= (int) $im['n'] ?>"><input type="hidden" name="img[<?= $i ?>][media]" value="<?= (int) $im['media'] ?>">
-<label>คำอธิบายรูป <small>บอกว่าในรูปมีอะไร สำหรับผู้ใช้โปรแกรมอ่านหน้าจอ</small><input name="img[<?= $i ?>][alt]" value="<?= e($im['alt']) ?>" maxlength="400"></label>
-<label>คำบรรยายใต้รูป (ไม่บังคับ)<input name="img[<?= $i ?>][caption]" value="<?= e($im['caption']) ?>" maxlength="400"></label>
-<label class="check"><input type="checkbox" name="img[<?= $i ?>][drop]" value="1"> เอารูปนี้ออกจากโพสต์</label></div></div><?php endforeach; ?>
+<div id="pics" data-next-index="<?= count($p['images']) ?>" data-next-n="<?= max(array_merge([0], array_column($p['images'], 'n'))) + 1 ?>">
+<?php foreach (array_values($p['images']) as $i => $im) { echo admin_pic_row($i, (int) $im['n'], $thumb($im['media']), $im['alt'], $im['caption'], (int) $im['media']); } ?>
+</div>
+<template id="pic-template"><?= admin_pic_row('__I__', '__N__', '<img class="thumb" src="" alt="" data-thumb>') ?></template>
 <?php $nextN = max(array_merge([0], array_column($p['images'], 'n'))); ?>
 <details<?= $p['images'] ? '' : ' open' ?>><summary>เพิ่มรูปในเนื้อหา (สูงสุด 3 รูปต่อครั้ง)</summary><div>
+<p class="hint">ลากรูปมาวางในช่องเนื้อหา หรือกดวาง (Ctrl+V) รูปที่คัดลอกไว้ ก็เพิ่มรูปได้ทันที ช่องด้านล่างนี้ไว้ใช้เมื่อเปิดเบราว์เซอร์โดยไม่มี JavaScript</p>
 <?php foreach ([1, 2, 3] as $slot): ?><div class="field"><label for="newimg<?= $slot ?>">รูปใหม่ <?= $slot ?> <small>จะได้ป้าย [รูป <?= $nextN + $slot ?>] ถ้าไม่ใส่ป้ายในเนื้อหา รูปจะต่อท้ายเนื้อหา</small></label>
 <input id="newimg<?= $slot ?>" type="file" name="newimg[<?= $slot ?>]" accept="image/*" data-preview="newprev<?= $slot ?>"><div id="newprev<?= $slot ?>" class="pending" hidden></div>
 <input name="newalt[<?= $slot ?>]" placeholder="คำอธิบายรูป: ในรูปมีอะไร" maxlength="400" aria-label="คำอธิบายรูปใหม่ <?= $slot ?>"><input name="newcap[<?= $slot ?>]" placeholder="คำบรรยายใต้รูป (ไม่บังคับ)" maxlength="400" aria-label="คำบรรยายใต้รูปใหม่ <?= $slot ?>"></div><?php endforeach; ?>
 <p class="hint">ต้องใส่รูปมากกว่า 3 รูป? บันทึกก่อนแล้วกลับมาเพิ่มได้อีกครั้ง</p></div></details>
 <?= isset($errors['upload']) ? '<p class="notice notice--error" role="alert">' . e($errors['upload']) . '</p>' : '' ?>
+
+<h2>ตารางในเนื้อหา</h2>
+<?php $tblN = max(array_merge([0], array_column($p['tables'], 'n'))); $tblKeep = array_values($p['tables']); ?>
+<div id="tables" data-next-index="<?= count($tblKeep) + 1 ?>" data-next-n="<?= $tblN + 2 ?>">
+<?php foreach ($tblKeep as $i => $t) { echo admin_table_box($i, (int) $t['n'], (string) $t['text'], !empty($t['head']), (string) $t['caption']); }
+echo admin_table_box(count($tblKeep), $tblN + 1); ?>
+</div>
+<template id="table-template"><?= admin_table_box('__I__', '__N__') ?></template>
+<p><button type="button" class="btn btn--small btn--ghost" id="add-table" data-js hidden>เพิ่มตารางอีกอัน</button></p>
+<p class="hint">ใส่ป้าย [ตาราง N] ในเนื้อหาตรงที่อยากให้ตารางอยู่ ถ้าไม่ใส่ป้าย ตารางจะต่อท้ายเนื้อหา · ไม่เกิน 100 แถว 12 คอลัมน์ ช่องละไม่เกิน 500 ตัวอักษร</p>
 
 <details<?= $moreErr ? ' open' : '' ?>><summary>ตัวเลือกเพิ่มเติม (ไม่จำเป็น)</summary><div>
 <div class="field"><label for="author">ผู้เขียน (ไม่บังคับ)</label><input id="author" name="author" value="<?= e($p['author']) ?>" maxlength="255"></div>

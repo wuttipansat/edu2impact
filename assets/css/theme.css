@@ -300,36 +300,38 @@ html{scroll-padding-top:84px}
 .lib-meta span:first-child{color:var(--accent-on-light)}
 .lib-meta span+span::before{content:none}
 
-.lib-top{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:24px;margin:0}
-/* Featured study: photo with the text set on a dark fade, like the hero. */
-.lib-feature{position:relative;display:flex;flex-direction:column;justify-content:flex-end;min-height:480px;overflow:hidden;border:0;border-radius:var(--radius-sm);background:var(--surface-dark);box-shadow:none;isolation:isolate;transform:none}
-.lib-feature__media{position:absolute;inset:0;z-index:-2;min-height:0}
-.lib-feature__media img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
-.lib-feature::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(43,15,53,.97) 0%,rgba(43,15,53,.92) 50%,rgba(43,15,53,.55) 72%,rgba(43,15,53,.05) 96%)}
-.lib-feature__body{display:flex;flex-direction:column;gap:12px;padding:32px}
+.lib-top{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;margin:0}
+.lib-top:not(:has(.lib-picks)){grid-template-columns:minmax(0,1fr)}
+/* Featured study: photo on the left, text on the dark panel beside it, so the picture never decides the height. */
+.lib-feature{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);min-height:340px;overflow:hidden;border:0;border-radius:var(--radius-sm);background:var(--surface-dark);box-shadow:none;isolation:isolate;transform:none}
+.lib-feature__media{position:relative;display:block;min-height:0;overflow:hidden}
+.lib-feature__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
+.lib-feature__body{display:flex;flex-direction:column;justify-content:center;gap:10px;padding:28px 32px}
 .lib-feature .lib-meta,.lib-feature .lib-meta span:first-child{color:var(--accent-on-dark)}
-.lib-feature__body h3{margin:0;font-family:var(--font-thai);font-size:clamp(20px,1.7vw,24px);font-weight:600;line-height:1.4;text-shadow:none}
+.lib-feature__body h3{margin:0;font-family:var(--font-thai);font-size:clamp(19px,1.6vw,22px);font-weight:600;line-height:1.45;text-shadow:none}
 .lib-feature__body h3 a,.lib-feature__body h3 a:hover{color:#fff;text-decoration:none}
-.lib-feature__summary{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0;color:var(--on-dark-muted);line-height:1.7}
+.lib-feature__summary{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0;color:var(--on-dark-muted);line-height:1.7}
 .lib-cta{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;text-decoration:none}
-.lib-feature .lib-cta{position:relative;z-index:2;margin-top:8px;padding:8px 18px;border:1px solid rgba(255,255,255,.4);border-radius:var(--radius-pill);background:transparent;color:#fff;font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600}
+.lib-feature .lib-cta{position:relative;z-index:2;margin-top:6px;padding:8px 18px;border:1px solid rgba(255,255,255,.4);border-radius:var(--radius-pill);background:transparent;color:#fff;font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600}
 .lib-feature .lib-cta:hover{border-color:var(--purple-200);background:var(--purple-200);color:var(--purple-900);text-decoration:none}
 .lib-feature:hover .lib-feature__media img{transform:scale(1.03)}
 .lib-feature a:focus-visible,.lib-feature .lib-stretch:focus-visible::after{outline-color:var(--purple-200)}
 
-.lib-picks{display:grid;grid-auto-rows:auto;align-content:start;gap:24px}
-.lib-pick{position:relative;display:flex;flex-direction:column;justify-content:flex-start;gap:0;padding:0;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;transform:none}
+/* Picks share the feature's height: two picks are rows with a small thumbnail, a lone pick is one card with a 16:9 picture. */
+.lib-picks{display:grid;grid-auto-rows:1fr;align-content:stretch;gap:24px}
+.lib-pick{position:relative;display:flex;flex-direction:row;align-items:center;gap:16px;padding:0;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;transform:none}
 .lib-pick:hover{background:transparent;box-shadow:none;transform:none}
-.lib-pick__media{width:100%;aspect-ratio:16/10;overflow:hidden;border-radius:var(--radius-sm);background:var(--purple-100)}
+.lib-pick__media{flex:0 0 clamp(120px,36%,168px);aspect-ratio:3/2;overflow:hidden;border-radius:var(--radius-sm);background:var(--purple-100)}
 .lib-pick__media img{width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
 .lib-pick:hover .lib-pick__media img{transform:scale(1.03)}
-.lib-pick__body{padding:16px 0 0}
-.lib-pick h3{margin:6px 0 8px;font-family:var(--font-thai);font-size:var(--fs-lg);font-weight:600;line-height:1.5}
+.lib-pick__body{min-width:0;padding:0}
+.lib-pick h3{margin:4px 0 0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5}
 .lib-pick h3 a{color:var(--ink);text-decoration:none}
 .lib-pick:hover h3 a{color:var(--purple-700)}
-/* A lone pick stretches its image to the feature's height. */
-.lib-pick:only-child{height:100%}
-.lib-pick:only-child .lib-pick__media{flex:1;aspect-ratio:auto;min-height:240px}
+.lib-pick:only-child{flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0}
+.lib-pick:only-child .lib-pick__media{flex:none;width:100%;aspect-ratio:16/9}
+.lib-pick:only-child .lib-pick__body{padding:14px 0 0}
+.lib-pick:only-child h3{margin:6px 0 0;font-size:var(--fs-lg)}
 
 /* Full list: hairline rows; a circled arrow appears on hover. */
 .lib-list{border-top:0}
@@ -347,15 +349,22 @@ html{scroll-padding-top:84px}
 .lib-row:hover h3 a{color:var(--purple-700)}
 .lib-row__summary{max-width:72ch;margin:0 0 10px;color:var(--ink-muted);line-height:1.7}
 
-@media(max-width:960px){.lib-top{grid-template-columns:1fr}.lib-picks{grid-template-columns:repeat(2,minmax(0,1fr))}.lib-pick:only-child{grid-column:1/-1}.lib-feature{min-height:420px}}
+@media(max-width:960px){
+  .lib-top{grid-template-columns:1fr}
+  .lib-picks{grid-auto-rows:auto}
+  .lib-pick:only-child{flex-direction:row;align-items:center;gap:16px}
+  .lib-pick:only-child .lib-pick__media{flex:0 0 clamp(120px,36%,168px);width:auto;aspect-ratio:3/2}
+  .lib-pick:only-child .lib-pick__body{padding:0}
+  .lib-pick:only-child h3{margin:4px 0 0;font-size:var(--fs-base)}
+}
 @media(max-width:640px){
-  .lib-feature{min-height:0}
-  .lib-feature::before{content:none}
-  .lib-feature__media{position:relative;inset:auto;z-index:0;aspect-ratio:16/10}
-  .lib-feature__body{padding:22px 20px 24px}
-  .lib-picks{grid-template-columns:1fr}
+  .lib-feature{grid-template-columns:1fr;min-height:0}
+  .lib-feature__media{aspect-ratio:16/9;max-height:200px;width:100%}
+  .lib-feature__body{padding:20px 20px 24px}
+  .lib-pick__media,.lib-pick:only-child .lib-pick__media{flex-basis:112px}
   .lib-row{padding:22px 0}
   .lib-row::before,.lib-row::after{display:none}
+}
 }
 
 /* ===================================================================== 8. Innovation: gallery */

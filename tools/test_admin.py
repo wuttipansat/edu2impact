@@ -292,6 +292,64 @@ check('preview shows unsaved title', s == 200 and 'ตัวอย่าง ' + 
 s, out, _ = a.multipart('post-edit.php', [('csrf', a.csrf('post-edit.php'))], {'cover_file': ('big.bin', b'0' * 9_500_000)})
 check('upload bigger than post_max_size gets a clear message', s == 413 and 'ใหญ่เกิน' in out, s)
 
+# upload.php (drag and drop / paste): who may use it, what it accepts, what it leaves private
+check('upload.php: anonymous POST is sent to the login page', anon.multipart('upload.php', [('csrf', 'x')], {'file': ('p.png', png())})[0] in (303, 403))
+check('upload.php: GET is refused', a.req('upload.php')[0] == 405)
+check('upload.php: no CSRF token is 403', a.multipart('upload.php', [], {'file': ('p.png', png())})[0] == 403)
+check('upload.php: wrong CSRF token is 403', a.multipart('upload.php', [('csrf', 'nope')], {'file': ('p.png', png())})[0] == 403)
+s, out, _ = a.multipart('upload.php', [('csrf', a.csrf('post-edit.php'))], {'file': ('evil.png', b'<?php echo 1;')})
+check('upload.php: a fake picture is refused in Thai JSON', s == 422 and 'error' in json.loads(out) and 'รองรับเฉพาะรูป' in json.loads(out)['error'], (s, out[:100]))
+s, out, _ = a.multipart('upload.php', [('csrf', a.csrf('post-edit.php'))], {'file': ('doc.pdf', b'%PDF-1.4\n%x\n')})
+check('upload.php: a PDF is refused (pictures only)', s == 422 and 'error' in json.loads(out), (s, out[:100]))
+s, out, _ = a.multipart('upload.php', [('csrf', a.csrf('post-edit.php'))], {'file': ('dropped.png', png(120, 60, tuple(int(tag[i:i + 2], 16) for i in (0, 2, 4))))})   # a colour no earlier run used: same bytes would be the same file
+up = json.loads(out) if s == 200 else {}
+check('upload.php: a picture comes back as {id, url, width, height}', s == 200 and up.get('id') and up.get('width') == 120 and up.get('url', '').startswith('media-img.php?id='), (s, out[:120]))
+if MYSQL and up:
+    check('upload.php: the picture is private until a public post uses it', anon.req(f'file.php?id={up["id"]}', base=SITE)[0] == 404)
+    check('upload.php: signed-in admin can see it', a.req(up['url'])[0] == 200)
+
+# headings, tables and a dropped picture in one post
+rows_text = 'ชื่อ\tคะแนน\nก\t10\nข\t2,500'
+content = '# หัวข้อใหญ่\n\nย่อหน้าแรก\n\n## หัวข้อรอง\n\n[ตาราง 1]\n\n### หัวข้อย่อย\n\nย่อหน้าท้าย\n\n[รูป 1]'
+fields = new_fields('research', 'หัวข้อและตาราง ' + tag, content, **{'tbl[0][n]': '1', 'tbl[0][text]': rows_text, 'tbl[0][head]': '1', 'tbl[0][caption]': 'ผลทดสอบ',
+                    'img[0][n]': '1', 'img[0][media]': str(up.get('id', '')), 'img[0][alt]': 'รูปที่ลากมาวาง', 'img[0][caption]': ''})
+s, out, h = save_post(a, fields, 'publish')
+check('post with headings, a table and a dropped picture saves', s == 303, re.findall(r'<li>([^<]*)</li>', out))
+if MYSQL and s == 303:
+    pid3 = re.search(r'id=(\d+)', h['Location']).group(1)
+    row = sql(f'SELECT slug, body FROM posts WHERE id={pid3}')[0]; slug4 = row[0]; body = json.loads(row[1])
+    check('stored body: headings, table and picture blocks', [list(b) if isinstance(b, dict) else 'p' for b in body] == [['heading', 'text'], 'p', ['heading', 'text'], ['table'], ['heading', 'text'], 'p', ['media', 'alt']]
+          and body[0]['heading'] == 1 and body[2]['heading'] == 2 and body[4]['heading'] == 3 and body[3]['table'] == {'head': ['ชื่อ', 'คะแนน'], 'rows': [['ก', '10'], ['ข', '2,500']], 'caption': 'ผลทดสอบ'}, body)
+    page = anon.req(f'research-detail.php?id={slug4}', base=SITE)[1]
+    prose = page.split('class="prose"')[1].split('</article>')[0] if 'class="prose"' in page else ''
+    check('public page: h2/h3/h4 for levels 1/2/3, one h1', '<h2>หัวข้อใหญ่</h2>' in prose and '<h3>หัวข้อรอง</h3>' in prose and '<h4>หัวข้อย่อย</h4>' in prose and page.count('<h1') == 1)
+    check('public page: table with caption, scoped headers and right-aligned numbers', '<caption>ผลทดสอบ</caption>' in prose and '<th scope="col">ชื่อ</th>' in prose and '<th scope="col" class="num">คะแนน</th>' in prose and '<td class="num">2,500</td>' in prose)
+    check('public page: picture is where the label was', prose.index('<table') < prose.index('<img') and 'alt="รูปที่ลากมาวาง"' in prose)
+    check('public page: dropped picture is public once the post is', anon.req(f'file.php?id={up["id"]}', base=SITE)[0] == 200)
+    check('search finds text in headings and tables', 'ตาราง' not in '' and slug4 in anon.req('search.php?q=' + urllib.parse.quote('หัวข้อย่อย'), base=SITE)[1])
+    # reopening shows the same text and tables, and a plain save changes nothing
+    before = sql(f'SELECT {COLS} FROM posts WHERE id={pid3}')[0]
+    fields, buttons, html = a.form(f'post-edit.php?id={pid3}')
+    d = dict(fields)
+    check('reopened editor: # marks, labels, table text and caption', d['content'] == content and d.get('tbl[0][text]') == rows_text and d.get('tbl[0][caption]') == 'ผลทดสอบ' and d.get('tbl[0][head]') == '1' and 'tbl[1][n]' in d)
+    time.sleep(1.1)
+    check('open + save leaves headings and tables as they were', save_post(a, fields, 'save', page=f'post-edit.php?id={pid3}')[0] == 303 and norm_row(before) == norm_row(sql(f'SELECT {COLS} FROM posts WHERE id={pid3}')[0]))
+    # limits and mistakes keep what was typed
+    big = '\n'.join('a\tb' for _ in range(101))
+    s, out, _ = save_post(a, set_field(set_field(fields, 'tbl[0][text]', big), 'content', content), 'save', page=f'post-edit.php?id={pid3}')
+    check('101-row table is refused in Thai and the text is kept', s == 200 and '101 แถว' in out and 'a&#9;b' in out.replace('a\tb', 'a&#9;b') or (s == 200 and '101 แถว' in out), s)
+    s, out, _ = save_post(a, set_field(fields, 'content', content + '\n\n[ตาราง 5]'), 'save', page=f'post-edit.php?id={pid3}')
+    check('a table label without a table is refused', s == 200 and 'ตารางที่ 5' in out)
+    xss = set_field(set_field(fields, 'tbl[0][text]', '<script>alert(1)</script>\t<img src=x onerror=1>\n1\t2'), 'tbl[0][caption]', '<b>x</b>')
+    check('table with HTML-looking cells saves', save_post(a, xss, 'save', page=f'post-edit.php?id={pid3}')[0] == 303)
+    page = anon.req(f'research-detail.php?id={slug4}', base=SITE)[1]
+    check('table cells are shown as text, never as HTML', '&lt;script&gt;alert(1)&lt;/script&gt;' in page and '<script>alert(1)' not in page and '<img src=x' not in page and '<b>x</b>' not in page)
+    # preview shows the new blocks too
+    s, html, _ = a.req('preview.php', data=dict(fields + [('csrf', a.csrf('post-edit.php'))]))
+    check('preview shows headings and the table', s == 200 and '<h2>หัวข้อใหญ่</h2>' in html and 'prose-table' in html)
+    # JSON-less posting (no JavaScript): the table box and the old "รูปใหม่" slots still work together
+    check('editor page has the drop zone, toolbar and templates', all(x in a.req(f'post-edit.php?id={pid3}')[1] for x in ['id="drop"', 'data-heading="2"', 'id="pic-template"', 'id="table-template"']))
+
 # pictures and backup still work
 check('backup downloads gzip', a.post('backup.php', {}, 'backup.php')[2].get('Content-Type') == 'application/gzip')
 check('media page lists pictures', 'media-img.php' in a.req('media.php')[1])

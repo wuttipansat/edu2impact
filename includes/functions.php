@@ -107,12 +107,62 @@ function body_image_alt($block): string {
     }
     return $alt;
 }
-// Paragraphs and image captions of a body as text (for search); image paths and alt text are left out.
+// A heading block is {"heading": 1|2|3, "text": "…"}; the page already has an h1 (the title), so levels 1/2/3 are shown as h2/h3/h4.
+// Returns [level, text] or null.
+function body_heading($block): ?array {
+    if (!is_array($block) || !isset($block['heading']) || !is_string($block['text'] ?? null)) { return null; }
+    $level = (int) $block['heading']; $text = trim($block['text']);
+    return $level >= 1 && $level <= 3 && $text !== '' ? [$level, $text] : null;
+}
+// A table block is {"table": {"head": ["…"]|null, "rows": [["…"], …], "caption": "…"}}. Returns the cleaned table
+// ['head' => list|null, 'rows' => list of lists, 'caption' => string, 'cols' => int] or null when it is not a usable table.
+function body_table($block): ?array {
+    $t = is_array($block) ? ($block['table'] ?? null) : null;
+    if (!is_array($t) || !is_array($t['rows'] ?? null)) { return null; }
+    $clean = static fn ($row) => is_array($row) ? array_map(static fn ($c) => is_scalar($c) ? trim((string) $c) : '', array_values($row)) : [];
+    $head = isset($t['head']) && is_array($t['head']) ? $clean($t['head']) : null;
+    $rows = array_values(array_filter(array_map($clean, $t['rows']), static fn ($r) => $r !== []));
+    $cols = max(array_map('count', array_merge($head ? [$head] : [], $rows ?: [[]])));
+    if ($cols < 1 || (!$rows && !$head)) { return null; }
+    return ['head' => $head, 'rows' => $rows, 'caption' => is_string($t['caption'] ?? null) ? trim($t['caption']) : '', 'cols' => $cols];
+}
+// Table HTML: scrolls sideways inside its own box on narrow screens; a column of only numbers is right-aligned.
+function render_body_table(array $t): string {
+    $cols = $t['cols']; $num = [];
+    for ($c = 0; $c < $cols; $c++) {
+        $num[$c] = false; $seen = 0;
+        foreach ($t['rows'] as $row) {
+            $v = trim((string) ($row[$c] ?? '')); if ($v === '') { continue; }
+            $seen++; if (!preg_match('/\A[-+−(]?[0-9๐-๙][0-9๐-๙,.\s]*\)?\s*%?\z/u', $v)) { $seen = -1; break; }
+        }
+        $num[$c] = $seen > 0;
+    }
+    $html = '<figure class="prose-table"><div class="prose-table__scroll" role="region" tabindex="0" aria-label="' . e($t['caption'] !== '' ? $t['caption'] : 'ตาราง') . '"><table>';
+    if ($t['caption'] !== '') { $html .= '<caption>' . e($t['caption']) . '</caption>'; }
+    if ($t['head']) {
+        $html .= '<thead><tr>';
+        for ($c = 0; $c < $cols; $c++) { $html .= '<th scope="col"' . ($num[$c] ? ' class="num"' : '') . '>' . e($t['head'][$c] ?? '') . '</th>'; }
+        $html .= '</tr></thead>';
+    }
+    $html .= '<tbody>';
+    foreach ($t['rows'] as $row) {
+        $html .= '<tr>';
+        for ($c = 0; $c < $cols; $c++) { $html .= '<td' . ($num[$c] ? ' class="num"' : '') . '>' . e($row[$c] ?? '') . '</td>'; }
+        $html .= '</tr>';
+    }
+    return $html . '</tbody></table></div></figure>';
+}
+// Paragraphs, headings, table text and image captions of a body as text (for search); image paths and alt text are left out.
 function body_text($body) {
     if (!is_array($body)) { return is_string($body) ? [$body] : []; }
     $text = [];
     foreach ($body as $block) {
         if (is_string($block)) { $text[] = $block; }
+        elseif ($h = body_heading($block)) { $text[] = $h[1]; }
+        elseif ($t = body_table($block)) {
+            foreach (array_merge($t['head'] ? [$t['head']] : [], $t['rows']) as $row) { $text[] = implode(' ', array_filter($row, static fn ($c) => $c !== '')); }
+            if ($t['caption'] !== '') { $text[] = $t['caption']; }
+        }
         elseif (is_array($block) && is_string($block['caption'] ?? null)) { $text[] = $block['caption']; }
     }
     return $text;
@@ -279,8 +329,9 @@ function thai_date($iso) {
 function reading_time($body) {
     if (!is_array($body)) { return 0; }
     $chars = 0;
-    foreach ($body as $paragraph) {
-        if (is_string($paragraph)) { $chars += mb_strlen(preg_replace('/\s+/u', '', $paragraph)); }
+    foreach ($body as $block) {   // paragraphs, headings and tables count; picture captions do not
+        $parts = is_string($block) ? [$block] : (body_heading($block) || body_table($block) ? body_text([$block]) : []);
+        foreach ($parts as $part) { $chars += mb_strlen(preg_replace('/\s+/u', '', $part)); }
     }
     return $chars > 0 ? max(1, (int) ceil($chars / 500)) : 0;
 }
@@ -301,9 +352,12 @@ function author_people($line): array {
     foreach ($parts as $part) {
         $part = trim($part);
         if ($part === '') { continue; }
-        $title = '';
-        if (preg_match('/^((?:(?:รศ|ผศ|ศ|ดร|Prof|Dr|Assoc|Asst)\.\s*)+)(.+)$/u', $part, $m)) { $title = trim($m[1]); $part = trim($m[2]); }
-        $people[] = ['title' => $title, 'name' => $part];
+        $title = ''; $sep = '';
+        // Academic titles written before the name: รศ. ดร. ศ.ดร. อ. อาจารย์ Assoc. Prof. Dr. ... ($sep keeps the writer's own spacing).
+        if (preg_match('/^((?:(?:รองศาสตราจารย์|ผู้ช่วยศาสตราจารย์|ศาสตราจารย์|อาจารย์)\s*|(?:รศ|ผศ|ศ|ดร|อ|นพ|พญ|ทพ|ทญ|ภก|ภญ|Prof|Dr|Assoc|Asst)\.\s*)+)(.+)$/u', $part, $m)) {
+            $title = rtrim($m[1]); $sep = substr($m[1], strlen($title)); $part = trim($m[2]);
+        }
+        $people[] = ['title' => $title, 'sep' => $sep, 'name' => $part];
     }
     return $people;
 }

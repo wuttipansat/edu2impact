@@ -90,3 +90,19 @@ details.edit{margin-top:.75rem}
 .narrow{max-width:26rem}
 .more-details{margin-top:2rem}
 .top .link,.top__user a{display:inline-flex;align-items:center;min-height:44px}
+/* content box: heading buttons, drop zone, tables */
+.editbar{display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:center;margin:.25rem 0}
+.editbar .muted{font-weight:400}
+.drop{position:relative}
+.drop.dropping textarea{border-color:#1a56c4;border-style:dashed;background:#e8f0fc}
+.drop.dropping::after{content:attr(data-drop-text);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:rgba(232,240,252,.9);color:#14305f;font-size:1.2rem;font-weight:700;pointer-events:none}
+#upload-status div+div{margin-top:.25rem}
+.tblbox{margin:0 0 1rem;padding:.75rem;border:1px solid #c9c9c9;border-radius:6px}
+.tblbox label{margin:.5rem 0 0}
+.tblbox__text{min-height:7rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;line-height:1.5;white-space:pre;overflow:auto}
+.tblprev{margin:.5rem 0 0}
+.tblprev__scroll{max-width:100%;overflow-x:auto;border:1px solid #c9c9c9;border-radius:4px}
+.tblprev table{border-collapse:collapse;font-size:.85rem;min-width:100%}
+.tblprev th,.tblprev td{padding:.25rem .5rem;border:1px solid #c9c9c9;text-align:left;vertical-align:top;white-space:nowrap}
+.tblprev th{background:#f3f3f3;font-weight:700}
+

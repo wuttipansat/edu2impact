@@ -33,13 +33,27 @@
 /* Thai words from thai_text() (includes/functions.php): lines break between words, never inside one. */
 .tw{white-space:nowrap}
 
-/* Round 12: the team section sits right above "อ้างอิง" with the same heading size and top rule. One line per person:
-   the academic title in a narrow right-aligned column, the name after it, so names line up on one edge however long
-   the titles are. Two columns of people on wide screens, one on phones. */
+/* The team section sits right above "อ้างอิง" with the same heading size and top rule. One line per person: the academic
+   title is part of the name (same font, size, weight and colour). Two columns of people on wide screens, one on phones. */
 .record-team{margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}
 .record-team h2{margin:0 0 12px;color:var(--minimal-ink);font-family:var(--font-thai);font-size:var(--fs-lg);font-weight:600}
 .record-team ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:40px;margin:0;padding:0;list-style:none}
-.record-team li{display:grid;grid-template-columns:4.75rem minmax(0,1fr);align-items:baseline;column-gap:12px;padding-block:5px;font-size:var(--fs-sm);line-height:1.5}
-.record-team__role{color:var(--minimal-muted);font-size:var(--fs-xs);text-align:right;white-space:nowrap}
-.record-team__name{color:var(--minimal-ink);font-weight:600}
+.record-team li{padding-block:5px;color:var(--minimal-ink);font-size:var(--fs-sm);font-weight:600;line-height:1.5}
 @media(max-width:640px){.record-team ul{grid-template-columns:minmax(0,1fr)}}
+
+/* Headings and tables written in the admin (posts.body blocks {"heading": 1|2|3} and {"table": …}); levels 1/2/3 are h2/h3/h4 here
+   because the page title is the h1. Same tokens as the rest of the article. */
+.article-content .prose h2,.article-content .prose h3,.article-content .prose h4{max-width:var(--post-measure);margin:2em 0 .5em;color:var(--ink);font-family:var(--font-thai);font-weight:600;line-height:1.4;text-wrap:balance}
+.article-content .prose h2{font-size:clamp(1.375rem,1.2rem + .7vw,1.625rem)}
+.article-content .prose h3{font-size:clamp(1.1875rem,1.1rem + .4vw,1.3125rem)}
+.article-content .prose h4{color:var(--purple-700);font-size:var(--fs-base)}
+.article-content .prose>:is(h2,h3,h4):first-child{margin-top:0}
+.prose-table{width:100%;max-width:var(--post-measure);margin:32px 0}
+.prose-table__scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised,#fff)}
+.prose-table__scroll:focus-visible{outline:2px solid var(--purple-600);outline-offset:2px}
+.prose-table table{width:100%;min-width:max-content;border-collapse:collapse;font-size:var(--fs-sm);line-height:1.6}
+.prose-table caption{caption-side:bottom;padding:10px 14px 12px;color:var(--ink-muted);font-size:var(--fs-sm);text-align:left}
+.prose-table th,.prose-table td{padding:9px 14px;border-bottom:1px solid var(--line);color:var(--ink);text-align:left;vertical-align:top}
+.prose-table thead th{border-bottom:2px solid var(--purple-300);background:var(--purple-50);font-weight:600;white-space:nowrap}
+.prose-table tbody tr:last-child td{border-bottom:0}
+.prose-table .num{text-align:right;font-variant-numeric:tabular-nums}
