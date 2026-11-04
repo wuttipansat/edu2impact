@@ -136,6 +136,7 @@ require __DIR__ . '/includes/header.php';
         <li class="latest-item">
           <p class="latest-meta"><span class="latest-kind"><?= e(post_kind_label($item['kind'])) ?></span><?php if ($item['dated']): ?><time datetime="<?= e($r['date']) ?>"><?= e(thai_date($r['date'])) ?></time><?php endif; ?></p>
           <h3 class="latest-item__title"><a href="<?= e(detail_url($item['kind'], $r['id'])) ?>"><?= e($r['title']) ?></a></h3>
+          <span class="latest-item__thumb"><img src="<?= e(image_path($r) ?: 'assets/images/content-placeholder.png') ?>" alt="" loading="lazy"></span>
         </li>
 <?php endforeach; ?>
       </ol>
