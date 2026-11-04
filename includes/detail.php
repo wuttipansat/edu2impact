@@ -2,6 +2,12 @@
 // The hidden admin's preview page sets $GLOBALS['admin_preview_record'] (an unsaved post). Nothing public ever sets it.
 $record = $GLOBALS['admin_preview_record'] ?? find_record(load_data($kind), query_string('id'));
 $currentPage = $kind;
+if (!$record && !isset($GLOBALS['admin_preview_record']) && in_array($kind, ['research', 'innovations'], true)) {
+    // A post switched between research and innovations in the admin: the old link goes to the new address.
+    $other = $kind === 'research' ? 'innovations' : 'research';
+    $moved = find_record(load_data($other), query_string('id'));
+    if ($moved) { header('Location: ' . detail_url($other, $moved['id']), true, 301); exit; }
+}
 if (!$record) {
     http_response_code(404);
     $pageTitle = 'ไม่พบรายการ | ' . $site['name'];

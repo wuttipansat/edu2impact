@@ -19,12 +19,19 @@ if ($isPost && in_str('op') === 'restore' && $id) {
     if ($id) {
         $cur = $db->prepare('SELECT kind FROM posts WHERE id = ?'); $cur->execute([$id]); $k = $cur->fetchColumn();
         if (!$k) { admin_fail('ไม่พบโพสต์นี้', 404); }
-        $p['kind'] = $k;
+        if (!(in_array($p['kind'], ADMIN_KINDS_SWITCHABLE, true) && in_array($k, ADMIN_KINDS_SWITCHABLE, true))) { $p['kind'] = $k; }
+        $oldKind = $k;
     }
     if ($p['upload_errors']) { $errors = ['upload' => implode(' / ', $p['upload_errors'])]; }
     else {
         [$savedId, $errors] = admin_post_save($p, $id);
-        if (!$errors) { admin_go('post-edit.php?id=' . $savedId . '&saved=1'); }
+        if (!$errors) {
+            if (isset($oldKind) && $oldKind !== $p['kind']) {
+                $now = $db->prepare('SELECT kind, slug FROM posts WHERE id = ?'); $now->execute([$savedId]); $now = $now->fetch();
+                admin_flash('ย้ายโพสต์ไปเป็น' . ADMIN_KINDS[$now['kind']] . 'แล้ว ลิงก์ใหม่คือ ' . detail_url($now['kind'], $now['slug']) . ' (ลิงก์เก่าพาไปที่ลิงก์ใหม่ให้เอง)');
+            }
+            admin_go('post-edit.php?id=' . $savedId . '&saved=1');
+        }
         if (isset($errors['LOCK'])) {
             $lock = $errors['LOCK']; $errors = [];
             $fresh = $db->prepare('SELECT COALESCE(updated_at, created_at) FROM posts WHERE id = ?'); $fresh->execute([$id]); $p['loaded_at'] = (string) $fresh->fetchColumn();
@@ -53,7 +60,14 @@ if ($ids) {
 }
 $thumb = fn(?int $mid, string $cls = 'thumb') => $mid && isset($info[$mid]) ? '<img class="' . $cls . '" src="media-img.php?id=' . $mid . '&amp;v=' . e($info[$mid]['v']) . '" alt="">' : '';
 
-admin_head($isNew ? 'สร้างโพสต์ใหม่' : 'แก้ไขโพสต์', '');
+$blocksData = [];
+foreach ($p['body'] as $b) {
+    if ($b['t'] === 'img') { $mid = (int) $b['media']; $blocksData[] = ['t' => 'img', 'media' => $mid, 'url' => isset($info[$mid]) ? 'media-img.php?id=' . $mid . '&v=' . $info[$mid]['v'] : '', 'alt' => $b['alt'], 'caption' => $b['caption']]; }
+    else { $blocksData[] = $b; }
+}
+$switchable = in_array($kind, ADMIN_KINDS_SWITCHABLE, true) && !$isNew;
+$hasCategory = in_array($kind, ADMIN_KINDS_WITH_CATEGORY, true) || $isNew;
+admin_head($isNew ? 'สร้างโพสต์ใหม่' : 'แก้ไขโพสต์', '', ['wide' => true, 'editor' => true]);
 if (get_str('saved') === '1' && !$isPost) {
     echo '<p class="notice notice--ok" role="status">บันทึกแล้ว' . ($p['is_public'] ? ' · <a href="../' . e(detail_url($kind, $p['slug'])) . '" target="_blank" rel="noopener">ดูบนเว็บ →</a>' : ' · ยังเป็นร่าง ยังไม่แสดงบนเว็บ') . '</p>';
 }
@@ -61,90 +75,117 @@ if ($lock): ?><div class="notice notice--error" role="alert"><p><strong><?= $loc
 <p><button class="btn btn--small" type="submit" form="editform" name="op" value="<?= e($lastOp) ?>" id="force-btn">ใช้ของฉันแทน</button> <a href="post-edit.php?id=<?= (int) $id ?>">ดูของเขา (ของฉันจะหาย)</a></p></div><?php endif;
 if ($errors && !$lock): ?><div class="notice notice--error" role="alert"><p><strong>ยังบันทึกไม่ได้ ตรวจสิ่งต่อไปนี้</strong></p><ul><?php foreach ($errors as $m) { echo '<li>' . e(is_array($m) ? '' : $m) . '</li>'; } ?></ul></div><?php endif;
 ?>
-<form id="editform" method="post" action="post-edit.php" enctype="multipart/form-data" data-dirty-guard>
+<form id="editform" method="post" action="post-edit.php" enctype="multipart/form-data" data-dirty-guard data-draft-key="<?= $isNew ? 'new' : (int) $id ?>" data-kind-from="<?= e($isNew ? '' : $kind) ?>" data-loaded="<?= e($p['loaded_at']) ?>">
 <?php auth_csrf_field(); ?>
 <input type="hidden" name="id" value="<?= (int) $id ?>"><input type="hidden" name="loaded_at" value="<?= e($p['loaded_at']) ?>"><input type="hidden" name="was_public" value="<?= (int) $p['was_public'] ?>">
 <?php if ($lock): ?><input type="hidden" name="force" value="1"><?php endif; ?>
-<?php if ($isNew): ?>
-<fieldset class="types"><legend>โพสต์นี้เป็นประเภทไหน</legend>
+<div class="ed">
+<div class="ed__main">
+<div class="ed__titlebox"><label for="title" class="visually-hidden">หัวข้อโพสต์ (H1)</label><input id="title" name="title" value="<?= e($p['title']) ?>" maxlength="400" required placeholder="ใส่หัวข้อโพสต์" class="ed__title<?= $bad('title') ?>" data-slug-from><?= $err('title') ?></div>
+<div id="draft-banner" class="notice" role="status" hidden></div>
+
+<div id="legacy">
+<div class="field"><label for="content">เนื้อหา <small>เว้นบรรทัดว่างหนึ่งบรรทัดเพื่อขึ้นย่อหน้าใหม่ · หัวข้อ: เริ่มบรรทัดด้วย “# ” “## ” หรือ “### ” (ตรงกับ H2 H3 H4) · รูปและตาราง: พิมพ์ [รูป 1] หรือ [ตาราง 1] ในบรรทัดของตัวเอง</small></label>
+<textarea id="content" name="content" class="tall<?= $bad('content') ?>"><?= e($p['content']) ?></textarea></div>
+<h2>รูปในเนื้อหา</h2>
+<div id="pics">
+<?php foreach (array_values($p['images']) as $i => $im) { echo admin_pic_row($i, (int) $im['n'], $thumb($im['media']), $im['alt'], $im['caption'], (int) $im['media']); } ?>
+</div>
+<?php $nextN = max(array_merge([0], array_column($p['images'], 'n'))); ?>
+<details<?= $p['images'] ? '' : ' open' ?>><summary>เพิ่มรูปในเนื้อหา (สูงสุด 3 รูปต่อครั้ง)</summary><div>
+<?php foreach ([1, 2, 3] as $slot): ?><div class="field"><label for="newimg<?= $slot ?>">รูปใหม่ <?= $slot ?> <small>จะได้ป้าย [รูป <?= $nextN + $slot ?>] ถ้าไม่ใส่ป้ายในเนื้อหา รูปจะต่อท้ายเนื้อหา</small></label>
+<input id="newimg<?= $slot ?>" type="file" name="newimg[<?= $slot ?>]" accept="image/*" data-preview="newprev<?= $slot ?>"><div id="newprev<?= $slot ?>" class="pending" hidden></div>
+<input name="newalt[<?= $slot ?>]" placeholder="คำอธิบายรูป: ในรูปมีอะไร" maxlength="400" aria-label="คำอธิบายรูปใหม่ <?= $slot ?>"><input name="newcap[<?= $slot ?>]" placeholder="คำบรรยายใต้รูป (ไม่บังคับ)" maxlength="400" aria-label="คำบรรยายใต้รูปใหม่ <?= $slot ?>"></div><?php endforeach; ?>
+<p class="hint">ต้องใส่รูปมากกว่า 3 รูป? บันทึกก่อนแล้วกลับมาเพิ่มได้อีกครั้ง (หรือเปิดหน้านี้ในเบราว์เซอร์ที่เปิด JavaScript จะเพิ่มได้ไม่จำกัด)</p></div></details>
+<h2>ตารางในเนื้อหา</h2>
+<?php $tblN = max(array_merge([0], array_column($p['tables'], 'n'))); $tblKeep = array_values($p['tables']); ?>
+<div id="tables">
+<?php foreach ($tblKeep as $i => $t) { echo admin_table_box($i, (int) $t['n'], (string) $t['text'], !empty($t['head']), (string) $t['caption']); }
+echo admin_table_box(count($tblKeep), $tblN + 1); ?>
+</div>
+<p class="hint">ใส่ป้าย [ตาราง N] ในเนื้อหาตรงที่อยากให้ตารางอยู่ ถ้าไม่ใส่ป้าย ตารางจะต่อท้ายเนื้อหา · ไม่เกิน 100 แถว 12 คอลัมน์ ช่องละไม่เกิน 500 ตัวอักษร</p>
+</div>
+
+<div id="blocks-app" data-blocks="<?= e(json_encode($blocksData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE)) ?>" hidden>
+<div class="ed__tools" role="toolbar" aria-label="เพิ่มบล็อกในเนื้อหา">
+<button type="button" class="btn btn--small btn--ghost" data-add="p">+ ย่อหน้า</button>
+<button type="button" class="btn btn--small btn--ghost" data-add="h1" title="หัวข้อ H2">+ H2</button>
+<button type="button" class="btn btn--small btn--ghost" data-add="h2" title="หัวข้อ H3">+ H3</button>
+<button type="button" class="btn btn--small btn--ghost" data-add="h3" title="หัวข้อ H4">+ H4</button>
+<button type="button" class="btn btn--small btn--ghost" data-add="img">+ รูปภาพ</button>
+<button type="button" class="btn btn--small btn--ghost" data-add="table">+ ตาราง</button>
+<input type="file" id="pick-images" accept="image/*" multiple hidden>
+<span class="muted ed__tip">ลากรูปมาวาง หรือกด Ctrl+V วางรูป/ตารางจาก Excel ได้เลย</span></div>
+<div id="blocks" class="ed__blocks"></div>
+<div id="upload-status" class="pending" role="status" aria-live="polite" hidden></div>
+<input type="hidden" name="body_json" id="body_json" disabled>
+</div>
+<?= $err('content') ?>
+<?= isset($errors['upload']) ? '<p class="notice notice--error" role="alert">' . e($errors['upload']) . '</p>' : '' ?>
+</div>
+
+<aside class="ed__side" aria-label="ตั้งค่าโพสต์">
+<section class="box box--publish"><h2>เผยแพร่</h2>
+<p class="muted"><?= $isNew ? 'โพสต์ใหม่ ยังไม่ได้บันทึก' : ($p['was_public'] ? 'สถานะ: <strong>เผยแพร่อยู่</strong>' : 'สถานะ: <strong>ร่าง</strong> ยังไม่แสดงบนเว็บ') ?></p>
+<div class="box__btns">
+<?php if ($isNew || !$p['was_public']): ?><button class="btn" type="submit" name="op" value="publish">เผยแพร่</button><button class="btn btn--ghost" type="submit" name="op" value="draft"><?= $isNew ? 'เก็บเป็นร่าง' : 'บันทึกเป็นร่าง' ?></button>
+<?php else: ?><button class="btn" type="submit" name="op" value="save">บันทึกการแก้ไข</button><?php if (!$isNew): ?><button class="btn btn--danger" type="submit" form="hideform">ซ่อนจากเว็บ</button><?php endif; ?><?php endif; ?>
+<button class="btn btn--ghost" type="submit" name="op" value="preview" formaction="preview.php" formtarget="_blank" formnovalidate>ดูตัวอย่าง</button>
+</div></section>
+
+<section class="box"><h2>ประเภทโพสต์</h2>
+<?php if ($isNew): ?><fieldset class="types types--col"><legend class="visually-hidden">โพสต์นี้เป็นประเภทไหน</legend>
 <?php foreach (ADMIN_KINDS as $k => $label): ?><label><input type="radio" name="kind" value="<?= e($k) ?>"<?= $kind === $k ? ' checked' : '' ?> required><span><?= e($label) ?></span></label><?php endforeach; ?></fieldset><?= $err('kind') ?>
-<?php else: ?><p class="muted">ประเภท: <strong><?= e(ADMIN_KINDS[$kind]) ?></strong><input type="hidden" name="kind" value="<?= e($kind) ?>"></p><?php endif; ?>
+<?php elseif ($switchable): ?><fieldset class="types types--col"><legend class="visually-hidden">ประเภทโพสต์</legend>
+<?php foreach (ADMIN_KINDS_SWITCHABLE as $k): ?><label><input type="radio" name="kind" value="<?= e($k) ?>"<?= $kind === $k ? ' checked' : '' ?>><span><?= e(ADMIN_KINDS[$k]) ?></span></label><?php endforeach; ?></fieldset>
+<p class="hint">เปลี่ยนระหว่างงานวิจัยกับนวัตกรรมได้ ลิงก์เก่าจะพาไปที่ลิงก์ใหม่ให้เอง</p>
+<?php else: ?><p><strong><?= e(ADMIN_KINDS[$kind]) ?></strong><input type="hidden" name="kind" value="<?= e($kind) ?>"></p><?php endif; ?></section>
 
-<div class="field"><label for="title">หัวข้อ</label><input id="title" name="title" value="<?= e($p['title']) ?>" maxlength="400" required class="<?= trim($bad('title')) ?>" data-slug-from><?= $err('title') ?></div>
+<?php if ($hasCategory): ?><section class="box" id="category-box"><h2>หมวด</h2>
+<label class="visually-hidden" for="category">หมวด</label><select id="category" name="category"><option value="">— ไม่ระบุ —</option><?php foreach ($cats as $c): ?><option<?= $c === $p['category'] ? ' selected' : '' ?>><?= e($c) ?></option><?php endforeach; ?></select><?= $err('category') ?>
+<p class="hint">งานวิจัยและนวัตกรรมใช้หมวดชุดเดียวกัน งานวิจัยไม่แสดงในเมนูนวัตกรรม</p></section><?php endif; ?>
 
-<div class="field"><label for="cover_file">รูปปก (ไม่บังคับ)</label>
+<section class="box"><h2>รูปปก</h2>
 <?php $curCover = ctype_digit((string) $p['image_choice']) ? (int) $p['image_choice'] : 0; $legacy = $p['image_choice'] === 'keep'; ?>
 <?php if ($curCover || $legacy): ?><label class="check"><input type="radio" name="cover" value="<?= $legacy ? 'keep' : $curCover ?>" checked> ใช้รูปปกนี้ต่อ<?= $legacy ? ' (รูปเดิมของเว็บ)' : $thumb($curCover) ?></label>
 <label class="check"><input type="radio" name="cover" value="none"> ไม่ใช้รูปปก</label>
 <?php else: ?><input type="hidden" name="cover" value="none"><?php endif; ?>
-<label class="check" for="cover_file">เลือกรูปใหม่จากเครื่อง (<?= ($curCover || $legacy) ? 'แทนรูปเดิม' : 'จะเป็นรูปปก' ?>)</label>
+<label class="check" for="cover_file">เลือกรูปใหม่จากเครื่อง</label>
 <input id="cover_file" type="file" name="cover_file" accept="image/*" data-preview="cover-prev"><div id="cover-prev" class="pending" hidden></div>
-<label class="check">คำอธิบายรูปปก (ไม่บังคับ) <small>บอกว่าในรูปมีอะไร สำหรับผู้ใช้โปรแกรมอ่านหน้าจอ</small><input name="cover_alt" maxlength="400"></label>
-<details><summary>หรือเลือกจากรูปที่อัปโหลดไว้แล้ว</summary><div><?php admin_media_pics('cover', $curCover ?: null, 'image', $curCover ? [$curCover] : []); ?></div></details><?= $err('cover') ?></div>
+<label class="check">คำอธิบายรูปปก (ไม่บังคับ)<input name="cover_alt" maxlength="400"></label>
+<details><summary>หรือเลือกจากรูปที่อัปโหลดไว้แล้ว</summary><div><?php admin_media_pics('cover', $curCover ?: null, 'image', $curCover ? [$curCover] : []); ?></div></details><?= $err('cover') ?></section>
 
-<div class="field"><label for="summary">สรุปสั้น 1-2 ประโยค</label><textarea id="summary" name="summary" maxlength="4000"><?= e($p['summary']) ?></textarea></div>
+<section class="box"><h2>สรุปสั้น</h2><label class="visually-hidden" for="summary">สรุปสั้น 1-2 ประโยค</label><textarea id="summary" name="summary" maxlength="4000" rows="4"><?= e($p['summary']) ?></textarea><p class="hint">1-2 ประโยค แสดงใต้หัวข้อและในหน้ารายการ</p></section>
 
-<div class="field"><label for="content">เนื้อหา <small>เว้นบรรทัดว่างหนึ่งบรรทัดเพื่อขึ้นย่อหน้าใหม่ · หัวข้อ: เริ่มบรรทัดด้วย “# ” “## ” หรือ “### ” · รูปและตาราง: พิมพ์ [รูป 1] หรือ [ตาราง 1] ในบรรทัดของตัวเอง หรือ ลากรูปมาวาง / วางตารางที่ก็อปมาในช่องนี้ได้เลย</small></label>
-<div class="editbar" role="toolbar" aria-label="จัดรูปแบบเนื้อหา" data-js hidden>
-<button type="button" class="btn btn--small btn--ghost" data-heading="1">หัวข้อใหญ่</button><button type="button" class="btn btn--small btn--ghost" data-heading="2">หัวข้อรอง</button><button type="button" class="btn btn--small btn--ghost" data-heading="3">หัวข้อย่อย</button>
-<span class="muted">กดปุ่มที่บรรทัดของเคอร์เซอร์ กดซ้ำเพื่อเอาออก</span></div>
-<div class="drop" id="drop" data-drop-text="วางรูปหรือตารางตรงนี้">
-<textarea id="content" name="content" class="tall<?= $bad('content') ?>"><?= e($p['content']) ?></textarea></div>
-<div id="upload-status" class="pending" role="status" aria-live="polite" hidden></div>
-<?= $err('content') ?></div>
+<section class="box"><h2>ผู้เขียนและวันที่</h2>
+<div class="field"><label for="author">ผู้เขียน</label><input id="author" name="author" value="<?= e($p['author']) ?>" maxlength="255"></div>
+<div class="field"><label for="post_date">วันที่เผยแพร่</label><input id="post_date" type="date" name="post_date" value="<?= e($p['post_date'] ?: ($isNew ? date('Y-m-d') : '')) ?>" class="<?= trim($bad('post_date')) ?>"><?= $err('post_date') ?></div></section>
 
-<h2>รูปในเนื้อหา</h2>
-<div id="pics" data-next-index="<?= count($p['images']) ?>" data-next-n="<?= max(array_merge([0], array_column($p['images'], 'n'))) + 1 ?>">
-<?php foreach (array_values($p['images']) as $i => $im) { echo admin_pic_row($i, (int) $im['n'], $thumb($im['media']), $im['alt'], $im['caption'], (int) $im['media']); } ?>
-</div>
-<template id="pic-template"><?= admin_pic_row('__I__', '__N__', '<img class="thumb" src="" alt="" data-thumb>') ?></template>
-<?php $nextN = max(array_merge([0], array_column($p['images'], 'n'))); ?>
-<details<?= $p['images'] ? '' : ' open' ?>><summary>เพิ่มรูปในเนื้อหา (สูงสุด 3 รูปต่อครั้ง)</summary><div>
-<p class="hint">ลากรูปมาวางในช่องเนื้อหา หรือกดวาง (Ctrl+V) รูปที่คัดลอกไว้ ก็เพิ่มรูปได้ทันที ช่องด้านล่างนี้ไว้ใช้เมื่อเปิดเบราว์เซอร์โดยไม่มี JavaScript</p>
-<?php foreach ([1, 2, 3] as $slot): ?><div class="field"><label for="newimg<?= $slot ?>">รูปใหม่ <?= $slot ?> <small>จะได้ป้าย [รูป <?= $nextN + $slot ?>] ถ้าไม่ใส่ป้ายในเนื้อหา รูปจะต่อท้ายเนื้อหา</small></label>
-<input id="newimg<?= $slot ?>" type="file" name="newimg[<?= $slot ?>]" accept="image/*" data-preview="newprev<?= $slot ?>"><div id="newprev<?= $slot ?>" class="pending" hidden></div>
-<input name="newalt[<?= $slot ?>]" placeholder="คำอธิบายรูป: ในรูปมีอะไร" maxlength="400" aria-label="คำอธิบายรูปใหม่ <?= $slot ?>"><input name="newcap[<?= $slot ?>]" placeholder="คำบรรยายใต้รูป (ไม่บังคับ)" maxlength="400" aria-label="คำบรรยายใต้รูปใหม่ <?= $slot ?>"></div><?php endforeach; ?>
-<p class="hint">ต้องใส่รูปมากกว่า 3 รูป? บันทึกก่อนแล้วกลับมาเพิ่มได้อีกครั้ง</p></div></details>
-<?= isset($errors['upload']) ? '<p class="notice notice--error" role="alert">' . e($errors['upload']) . '</p>' : '' ?>
-
-<h2>ตารางในเนื้อหา</h2>
-<?php $tblN = max(array_merge([0], array_column($p['tables'], 'n'))); $tblKeep = array_values($p['tables']); ?>
-<div id="tables" data-next-index="<?= count($tblKeep) + 1 ?>" data-next-n="<?= $tblN + 2 ?>">
-<?php foreach ($tblKeep as $i => $t) { echo admin_table_box($i, (int) $t['n'], (string) $t['text'], !empty($t['head']), (string) $t['caption']); }
-echo admin_table_box(count($tblKeep), $tblN + 1); ?>
-</div>
-<template id="table-template"><?= admin_table_box('__I__', '__N__') ?></template>
-<p><button type="button" class="btn btn--small btn--ghost" id="add-table" data-js hidden>เพิ่มตารางอีกอัน</button></p>
-<p class="hint">ใส่ป้าย [ตาราง N] ในเนื้อหาตรงที่อยากให้ตารางอยู่ ถ้าไม่ใส่ป้าย ตารางจะต่อท้ายเนื้อหา · ไม่เกิน 100 แถว 12 คอลัมน์ ช่องละไม่เกิน 500 ตัวอักษร</p>
-
-<details<?= $moreErr ? ' open' : '' ?>><summary>ตัวเลือกเพิ่มเติม (ไม่จำเป็น)</summary><div>
-<div class="field"><label for="author">ผู้เขียน (ไม่บังคับ)</label><input id="author" name="author" value="<?= e($p['author']) ?>" maxlength="255"></div>
-<div class="field"><label for="post_date">วันที่เผยแพร่ (ไม่บังคับ)</label><input id="post_date" type="date" name="post_date" value="<?= e($p['post_date'] ?: ($isNew ? date('Y-m-d') : '')) ?>" class="<?= trim($bad('post_date')) ?>"><?= $err('post_date') ?></div>
-<?php if ($kind !== 'innovations' && $p['category'] !== ''): ?><input type="hidden" name="category" value="<?= e($p['category']) ?>"><?php endif; ?>
-<?php if ($kind === 'innovations' || $isNew): ?><div class="field"><label for="category">หมวด (เฉพาะนวัตกรรม)</label><select id="category" name="category"><option value="">— ไม่ระบุ —</option><?php foreach ($cats as $c): ?><option<?= $c === $p['category'] ? ' selected' : '' ?>><?= e($c) ?></option><?php endforeach; ?></select><?= $err('category') ?></div><?php endif; ?>
-<div class="field"><label for="audience">กลุ่มเป้าหมาย (ไม่บังคับ) <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="audience" name="audience"><?= e($p['audience_text']) ?></textarea></div>
-<div class="field"><label for="subjects">วิชาหรือสาระที่เกี่ยวข้อง (ไม่บังคับ) <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="subjects" name="subjects"><?= e($p['subjects_text']) ?></textarea></div>
-<div class="field"><label for="features">จุดเด่น (ไม่บังคับ) <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="features" name="features"><?= e($p['features_text']) ?></textarea></div>
-<div class="field"><label for="refs">แหล่งอ้างอิง (ไม่บังคับ) <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="refs" name="refs"><?= e($p['refs_text']) ?></textarea></div>
-<div class="field"><label for="tool_url">ลิงก์เครื่องมือหรือเว็บที่เกี่ยวข้อง (ไม่บังคับ) <small>ขึ้นต้นด้วย https:// หรือชื่อโฟลเดอร์ในเว็บนี้ เช่น apps/my-tool/</small></label><input id="tool_url" name="tool_url" value="<?= e($p['tool_url']) ?>" maxlength="500" class="<?= trim($bad('tool_url')) ?>"><?= $err('tool_url') ?></div>
-<div class="field"><label for="tool_label">ข้อความบนปุ่มลิงก์ (ไม่บังคับ)</label><input id="tool_label" name="tool_label" value="<?= e($p['tool_label']) ?>" maxlength="150"></div>
-<div class="field"><label for="pdf_file">ไฟล์ PDF ให้ดาวน์โหลด (ไม่บังคับ)</label>
+<details class="box"<?= $moreErr ? ' open' : '' ?>><summary>ตัวเลือกเพิ่มเติม</summary><div>
+<div class="field"><label for="audience">กลุ่มเป้าหมาย <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="audience" name="audience" rows="3"><?= e($p['audience_text']) ?></textarea></div>
+<div class="field"><label for="subjects">วิชาหรือสาระที่เกี่ยวข้อง <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="subjects" name="subjects" rows="3"><?= e($p['subjects_text']) ?></textarea></div>
+<div class="field"><label for="features">จุดเด่น <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="features" name="features" rows="3"><?= e($p['features_text']) ?></textarea></div>
+<div class="field"><label for="refs">แหล่งอ้างอิง <small>หนึ่งรายการต่อบรรทัด</small></label><textarea id="refs" name="refs" rows="3"><?= e($p['refs_text']) ?></textarea></div>
+<div class="field"><label for="tool_url">ลิงก์เครื่องมือหรือเว็บที่เกี่ยวข้อง <small>ขึ้นต้นด้วย https:// หรือชื่อโฟลเดอร์ในเว็บนี้ เช่น apps/my-tool/</small></label><input id="tool_url" name="tool_url" value="<?= e($p['tool_url']) ?>" maxlength="500" class="<?= trim($bad('tool_url')) ?>"><?= $err('tool_url') ?></div>
+<div class="field"><label for="tool_label">ข้อความบนปุ่มลิงก์</label><input id="tool_label" name="tool_label" value="<?= e($p['tool_label']) ?>" maxlength="150"></div>
+<div class="field"><label for="pdf_file">ไฟล์ PDF ให้ดาวน์โหลด</label>
 <?php if ($p['download_id'] && isset($info[(int) $p['download_id']])): ?><p class="muted">ตอนนี้: <?= e(basename($info[(int) $p['download_id']]['filename'])) ?></p><label class="check"><input type="checkbox" name="download_id" value="<?= (int) $p['download_id'] ?>" checked> ใช้ไฟล์นี้ต่อ</label><?php endif; ?>
 <input id="pdf_file" type="file" name="pdf_file" accept="application/pdf"><?= $err('download') ?></div>
-<div class="field"><label for="download_label">ข้อความบนปุ่มดาวน์โหลด (ไม่บังคับ)</label><input id="download_label" name="download_label" value="<?= e($p['download_label']) ?>" maxlength="150"></div>
+<div class="field"><label for="download_label">ข้อความบนปุ่มดาวน์โหลด</label><input id="download_label" name="download_label" value="<?= e($p['download_label']) ?>" maxlength="150"></div>
 <?php $others = $db->prepare('SELECT kind, slug, title FROM posts WHERE NOT (kind = ? AND slug = ?) ORDER BY title'); $others->execute([$kind, $p['slug']]); $others = $others->fetchAll(); if ($others): ?>
-<div class="field"><label for="relsearch">โพสต์ที่เกี่ยวข้อง (ไม่บังคับ) <small>ติ๊กโพสต์ที่อยากให้แสดงเป็นลิงก์ท้ายโพสต์นี้</small></label><input id="relsearch" type="search" data-filter="rel" placeholder="ค้นหาหัวข้อ"><div class="picks" data-filter-list="rel">
+<div class="field"><label for="relsearch">โพสต์ที่เกี่ยวข้อง <small>ติ๊กโพสต์ที่อยากให้แสดงเป็นลิงก์ท้ายโพสต์นี้</small></label><input id="relsearch" type="search" data-filter="rel" placeholder="ค้นหาหัวข้อ"><div class="picks" data-filter-list="rel">
 <?php foreach ($others as $o): $v = $o['kind'] . '/' . $o['slug']; ?><label data-filter-text="<?= e(mb_strtolower($o['title'])) ?>"><input type="checkbox" name="related[]" value="<?= e($v) ?>"<?= in_array($v, $p['related'], true) ? ' checked' : '' ?>><?= e($o['title']) ?> <span class="muted">(<?= e(ADMIN_KINDS[$o['kind']]) ?>)</span></label><?php endforeach; ?></div></div><?php endif; ?>
 <label class="check"><input type="checkbox" name="featured" value="1"<?= $p['featured'] ? ' checked' : '' ?>> เป็นโพสต์แนะนำ</label>
 <label class="check"><input type="checkbox" name="to_top" value="1"<?= $p['to_top'] ? ' checked' : '' ?>> ย้ายมาไว้บนสุดของประเภทนี้<?= $isNew ? ' <small>โพสต์ใหม่อยู่บนสุดอยู่แล้ว</small>' : '' ?></label>
 <div class="field"><label for="slug">ที่อยู่ลิงก์ของโพสต์ <small><?= $isNew ? 'ปล่อยว่างไว้ ระบบตั้งให้เอง' : 'เปลี่ยนแล้วลิงก์เก่าที่แชร์ไปแล้วจะใช้ไม่ได้' ?> ใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข และ -</small></label>
 <input id="slug" name="slug" value="<?= e($p['slug']) ?>" maxlength="120" class="<?= trim($bad('slug')) ?>"><?= $err('slug') ?></div>
 </div></details>
-
-<div class="bar">
-<?php if ($isNew || !$p['was_public']): ?><button class="btn btn--big" type="submit" name="op" value="publish">เผยแพร่</button><button class="btn btn--ghost btn--big" type="submit" name="op" value="draft"><?= $isNew ? 'เก็บเป็นร่าง' : 'บันทึกเป็นร่าง' ?></button>
-<?php else: ?><button class="btn btn--big" type="submit" name="op" value="save">บันทึกการแก้ไข</button><button class="btn btn--danger btn--big" type="submit" form="hideform">ซ่อนจากเว็บ</button><?php endif; ?>
-<button class="btn btn--ghost btn--big" type="submit" name="op" value="preview" formaction="preview.php" formtarget="_blank" formnovalidate>ดูตัวอย่าง</button>
+</aside>
+</div>
+<div class="bar bar--narrow">
+<?php if ($isNew || !$p['was_public']): ?><button class="btn" type="submit" name="op" value="publish">เผยแพร่</button><button class="btn btn--ghost" type="submit" name="op" value="draft">เก็บเป็นร่าง</button>
+<?php else: ?><button class="btn" type="submit" name="op" value="save">บันทึกการแก้ไข</button><?php endif; ?>
+<button class="btn btn--ghost" type="submit" name="op" value="preview" formaction="preview.php" formtarget="_blank" formnovalidate>ดูตัวอย่าง</button>
 </div>
 </form>
 <?php if (!$isNew): ?>
@@ -154,4 +195,5 @@ echo admin_table_box(count($tblKeep), $tblN + 1); ?>
 <?php foreach ($revs as $r): ?><form class="row inline" method="post" action="post-edit.php" data-confirm="ใช้ฉบับนี้แทนฉบับปัจจุบัน?"><?php auth_csrf_field(); ?><input type="hidden" name="id" value="<?= (int) $id ?>"><input type="hidden" name="rev" value="<?= (int) $r['id'] ?>">
 <span><?= e(admin_time($r['created_at'])) ?> · <?= e((string) $r['user_name']) ?></span> <button class="btn btn--small btn--ghost" name="op" value="restore">ใช้ฉบับนี้</button></form><?php endforeach; ?></div></details>
 <?php endif; endif;
+echo '<script src="../assets/js/editor.js" defer></script>';
 admin_foot();

@@ -346,9 +346,60 @@ if MYSQL and s == 303:
     check('table cells are shown as text, never as HTML', '&lt;script&gt;alert(1)&lt;/script&gt;' in page and '<script>alert(1)' not in page and '<img src=x' not in page and '<b>x</b>' not in page)
     # preview shows the new blocks too
     s, html, _ = a.req('preview.php', data=dict(fields + [('csrf', a.csrf('post-edit.php'))]))
-    check('preview shows headings and the table', s == 200 and '<h2>หัวข้อใหญ่</h2>' in html and 'prose-table' in html)
+    check('preview shows headings and the table', s == 200 and '<h2>หัวข้อใหญ่</h2>' in html and 'prose-table' in html, (s, re.findall(r'<h[1-4][^>]*>[^<]*', html)[:8], 'prose-table' in html))
     # JSON-less posting (no JavaScript): the table box and the old "รูปใหม่" slots still work together
-    check('editor page has the drop zone, toolbar and templates', all(x in a.req(f'post-edit.php?id={pid3}')[1] for x in ['id="drop"', 'data-heading="2"', 'id="pic-template"', 'id="table-template"']))
+    check('editor page has the block editor, side column and the text form for no-JS', all(x in a.req(f'post-edit.php?id={pid3}')[1] for x in ['id="blocks-app"', 'data-add="table"', 'name="body_json"', 'id="legacy"', 'class="ed__side"', 'assets/js/editor.js']))
+    # the block editor (JavaScript) sends the body as JSON in body_json; the text-form fields are not sent then
+    js_fields = [(k, v) for k, v in fields if not (k == 'content' or k.startswith('img[') or k.startswith('tbl[') or k.startswith('newimg') or k.startswith('newalt') or k.startswith('newcap'))] + [('force', '1')]   # force: the earlier saves moved the edit time on
+    def with_json(blocks, f=None):
+        return set_field(f if f is not None else js_fields, 'body_json', json.dumps(blocks, ensure_ascii=False))
+    good = [{'t': 'h', 'level': 1, 'text': 'หัวข้อจากตัวแก้ไข'}, {'t': 'p', 'text': 'ย่อหน้า <b>ไม่ใช่ HTML</b>'}, {'t': 'h', 'level': 9, 'text': 'ระดับเกิน'},
+            {'t': 'img', 'media': up.get('id'), 'alt': 'รูปในบล็อก', 'caption': 'บรรยาย'}, {'t': 'table', 'head': True, 'rows': [['ก', 'ข'], ['1', '2']], 'caption': 'ตารางบล็อก'},
+            {'t': 'p', 'text': ''}, {'t': 'script', 'text': 'x'}]
+    s, out, _ = save_post(a, with_json(good), 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: saved', s == 303, re.findall(r'<li>([^<]*)</li>', out))
+    stored = json.loads(sql(f'SELECT body FROM posts WHERE id={pid3}')[0][0])
+    check('body_json: stored as headings, text, picture and table (unknown and empty blocks dropped, level clamped to 3)',
+          stored == [{'heading': 1, 'text': 'หัวข้อจากตัวแก้ไข'}, 'ย่อหน้า <b>ไม่ใช่ HTML</b>', {'heading': 3, 'text': 'ระดับเกิน'}, {'media': up.get('id'), 'alt': 'รูปในบล็อก', 'caption': 'บรรยาย'},
+                   {'table': {'head': ['ก', 'ข'], 'rows': [['1', '2']], 'caption': 'ตารางบล็อก'}}], stored)
+    page = anon.req(f'research-detail.php?id={slug4}', base=SITE)[1]
+    check('body_json: text is shown as text, never as HTML', '&lt;b&gt;ไม่ใช่ HTML&lt;/b&gt;' in page and '<b>ไม่ใช่ HTML' not in page)
+    fresh = dict(a.form(f'post-edit.php?id={pid3}')[0])
+    s, out, _ = save_post(a, with_json([{'t': 'p', 'text': 'x'}], js_fields), 'save', page=f'post-edit.php?id={pid3}')   # a second save keeps working
+    check('body_json: saving again works', s == 303, s)
+    bad_json = set_field(js_fields, 'body_json', '{not json')
+    s, out, _ = save_post(a, bad_json, 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: broken JSON is refused in Thai', s == 200 and 'อ่านเนื้อหาจากตัวแก้ไขไม่ได้' in out, s)
+    s, out, _ = save_post(a, with_json([{'t': 'table', 'head': True, 'rows': [[str(i) for i in range(13)]]}]), 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: 13-column table is refused in Thai', s == 200 and '13 คอลัมน์' in out, s)
+    s, out, _ = save_post(a, with_json([{'t': 'table', 'head': False, 'rows': [['x' * 501]]}]), 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: a 501-character cell is refused in Thai', s == 200 and '501' in out, s)
+    s, out, _ = save_post(a, with_json([{'t': 'img', 'media': 99999999, 'alt': 'a', 'caption': ''}]), 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: a picture that is not in the library is refused', s == 200 and 'ไม่อยู่ในคลังรูป' in out, s)
+    s, out, _ = save_post(a, with_json([{'t': 'p', 'text': 'p'}] * 1501), 'save', page=f'post-edit.php?id={pid3}')
+    check('body_json: more than 1500 blocks is refused in Thai', s == 200 and '1500' in out, s)
+    # research <-> innovations: kind switch, categories, links
+    cats = [c for c in open('config/innovation-categories.php', encoding='utf-8').read().split("'") if c and any('฀' <= ch <= '๿' for ch in c)]
+    fields_k = set_field(set_field(js_fields, 'category', 'Learning'), 'body_json', json.dumps([{'t': 'p', 'text': 'ทดสอบสลับประเภท'}]))
+    save_post(a, fields_k, 'save', page=f'post-edit.php?id={pid3}')
+    check('research: an old category such as Learning is dropped on save', sql(f'SELECT category IS NULL FROM posts WHERE id={pid3}')[0][0] == '1')
+    save_post(a, set_field(fields_k, 'category', cats[0]), 'save', page=f'post-edit.php?id={pid3}')
+    check('research: one of the innovation categories is kept', sql(f'SELECT category FROM posts WHERE id={pid3}')[0][0] == cats[0], cats[:2])
+    rl = anon.req('research.php', base=SITE)[1]
+    check('research list never shows Learning or Assessment', 'Learning' not in rl and 'Assessment' not in rl)
+    inn_page = anon.req('innovations.php?category=' + urllib.parse.quote(cats[0]), base=SITE)[1]
+    check('research post is not listed under the innovation category page', slug4 not in inn_page)
+    sw = save_post(a, set_field(fields_k, 'kind', 'innovations') if False else set_field(set_field(fields_k, 'category', cats[0]), 'kind', 'innovations'), 'save', page=f'post-edit.php?id={pid3}')
+    check('switch research -> innovations saves', sw[0] == 303, re.findall(r'<li>([^<]*)</li>', sw[1]))
+    now = sql(f'SELECT kind, slug, category FROM posts WHERE id={pid3}')[0]
+    check('switched post is an innovation with its category and a slug', now[0] == 'innovations' and now[2] == cats[0] and now[1] != '', now)
+    check('innovation page opens and the old research link redirects there', anon.req(f'innovation-detail.php?id={now[1]}', base=SITE)[0] == 200 and anon.req(f'research-detail.php?id={slug4}', base=SITE)[0] in (301, 302, 200))
+    inn_page = anon.req('innovations.php?category=' + urllib.parse.quote(cats[0]), base=SITE)[1]
+    check('after the switch it is listed under that innovation category', now[1] in inn_page)
+    back = save_post(a, set_field(set_field(fields_k, 'category', cats[0]), 'kind', 'research'), 'save', page=f'post-edit.php?id={pid3}')
+    check('switch back to research works and the category is kept', back[0] == 303 and sql(f'SELECT kind, category FROM posts WHERE id={pid3}')[0] == ['research', cats[0]])
+    s, out, _ = save_post(a, set_field(fields_k, 'kind', 'shop'), 'save', page=f'post-edit.php?id={pid3}')
+    check('a research post cannot be switched to another kind (stays research)', sql(f'SELECT kind FROM posts WHERE id={pid3}')[0][0] == 'research')
 
 # pictures and backup still work
 check('backup downloads gzip', a.post('backup.php', {}, 'backup.php')[2].get('Content-Type') == 'application/gzip')

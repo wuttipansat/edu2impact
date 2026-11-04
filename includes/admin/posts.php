@@ -4,6 +4,9 @@ require_once __DIR__ . '/media-lib.php';
 require_once dirname(__DIR__) . '/visits.php';
 require_once dirname(__DIR__) . '/functions.php';
 
+// Kinds that can be switched into each other, and the kinds that have a category.
+const ADMIN_KINDS_SWITCHABLE = ['research', 'innovations'];
+const ADMIN_KINDS_WITH_CATEGORY = ['research', 'innovations'];
 const POST_COLUMNS = ['kind', 'slug', 'title', 'summary', 'body', 'refs', 'audience', 'subjects', 'features', 'image', 'image_id', 'post_date',
     'author', 'category', 'tool_url', 'tool_label', 'download_id', 'download_label', 'featured', 'is_public', 'sort_order'];
 
@@ -106,6 +109,46 @@ function admin_table_parse(int $n, string $text): array {
         $rows[$r] = array_pad($row, $cols, '');
     }
     return [$rows, null];
+}
+
+// The block editor (JavaScript) sends the whole body as JSON: a list of
+//   {"t":"p","text"} | {"t":"h","level":1-3,"text"} | {"t":"img","media":id,"alt","caption"} | {"t":"table","head":bool,"rows":[[…]],"caption"}
+// Nothing is trusted: sizes, levels and table limits are checked here (in plain Thai), media ids are checked later by admin_post_prepare.
+// Returns [blocks, error|null] in the same shape as admin_body_from_text().
+const ADMIN_BODY_MAX_BLOCKS = 1500;
+function admin_body_from_json(string $json): array {
+    $list = json_decode($json, true);
+    if (!is_array($list) || !array_is_list($list)) { return [[], 'อ่านเนื้อหาจากตัวแก้ไขไม่ได้ ลองโหลดหน้านี้ใหม่ (ข้อความที่พิมพ์ไว้อาจยังอยู่ในฉบับร่างของเบราว์เซอร์)']; }
+    if (count($list) > ADMIN_BODY_MAX_BLOCKS) { return [[], 'เนื้อหายาวเกินไป (เกิน ' . ADMIN_BODY_MAX_BLOCKS . ' บล็อก) ลองแบ่งเป็นหลายโพสต์']; }
+    $line = static fn ($v, int $max): string => is_string($v) ? mb_substr(trim(preg_replace('/\s+/u', ' ', $v) ?? ''), 0, $max) : '';
+    $blocks = []; $tableNo = 0;
+    foreach ($list as $b) {
+        if (!is_array($b)) { continue; }
+        $t = $b['t'] ?? '';
+        if ($t === 'p') {
+            $text = is_string($b['text'] ?? null) ? trim(str_replace(["\r\n", "\r"], "\n", $b['text'])) : '';
+            if ($text !== '') { $blocks[] = ['t' => 'p', 'text' => mb_substr($text, 0, 20000)]; }
+        } elseif ($t === 'h') {
+            $text = $line($b['text'] ?? '', 300); $level = (int) ($b['level'] ?? 1);
+            if ($text !== '') { $blocks[] = ['t' => 'h', 'level' => min(3, max(1, $level)), 'text' => $text]; }
+        } elseif ($t === 'img') {
+            $media = filter_var($b['media'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
+            if ($media) { $blocks[] = ['t' => 'img', 'media' => $media, 'alt' => $line($b['alt'] ?? '', 400), 'caption' => $line($b['caption'] ?? '', 400)]; }
+        } elseif ($t === 'table') {
+            $tableNo++;
+            $text = '';
+            foreach ((array) ($b['rows'] ?? []) as $row) {
+                if (!is_array($row)) { continue; }
+                $cells = array_map(static fn ($c) => is_scalar($c) ? str_replace(["\t", "\r", "\n"], ' ', (string) $c) : '', array_values($row));
+                $text .= implode("\t", $cells) . "\n";
+            }
+            if (trim(str_replace("\t", '', $text)) === '') { continue; }   // an empty table is dropped
+            [$rows, $err] = admin_table_parse($tableNo, $text);
+            if ($err !== null) { return [[], $err]; }
+            $blocks[] = ['t' => 'table', 'head' => !empty($b['head']), 'rows' => $rows, 'caption' => $line($b['caption'] ?? '', 400)];
+        }
+    }
+    return [$blocks, null];
 }
 
 // Text + pictures + tables -> body blocks. Pictures and tables the text never mentions go at the end. Returns [blocks, error|null].
@@ -253,6 +296,13 @@ function admin_post_from_input(bool $upload = true): array {
             'caption' => isset($t['caption']) && is_string($t['caption']) ? mb_substr(trim(preg_replace('/\s+/u', ' ', $t['caption']) ?? ''), 0, 400) : ''];
     }
     $p['tables'] = $tables;
+    $json = in_str('body_json', 3000000);
+    if ($json !== '') {   // the block editor
+        [$p['body'], $p['body_error']] = admin_body_from_json($json);
+        [$p['content'], $p['images'], $p['tables']] = admin_body_to_text($p['body']);
+        $p['block_editor'] = 1;
+        return $p;
+    }
     [$p['body'], $p['body_error']] = admin_body_from_text($p['content'], $images, $tables);
     return $p;
 }
@@ -269,9 +319,14 @@ function admin_post_prepare(array $p, ?int $id): array {
     if ($slug === '' && $p['slug'] !== '') { $errors['slug'] = 'ที่อยู่ลิงก์ใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข และ -'; }
     if ($p['post_date'] !== '') { $d = DateTime::createFromFormat('Y-m-d', $p['post_date']); if (!$d || $d->format('Y-m-d') !== $p['post_date']) { $errors['post_date'] = 'วันที่ไม่ถูกต้อง'; } }
     foreach (['tool_url' => 'ลิงก์เครื่องมือ'] as $k => $label) { if (clean_url($p[$k]) === null) { $errors['tool_url'] = "$label ต้องขึ้นต้นด้วย https://"; } }
-    if ($p['kind'] === 'innovations' && $p['category'] !== '') {
+    $withCategory = in_array($p['kind'], ADMIN_KINDS_WITH_CATEGORY, true);   // research and innovations share one list of categories
+    $category = $withCategory ? $p['category'] : '';
+    if ($category !== '') {
         $cats = require admin_root() . '/config/innovation-categories.php';
-        if (!in_array($p['category'], $cats, true)) { $errors['category'] = 'เลือกหมวดจากรายการ'; }
+        if (!in_array($category, $cats, true)) {
+            if ($p['kind'] === 'innovations') { $errors['category'] = 'เลือกหมวดจากรายการ'; }
+            else { $category = ''; }   // old text such as "Learning" is dropped when a research post is saved
+        }
     }
     $existsMedia = $db->prepare('SELECT mime FROM media WHERE id = ? AND og_of IS NULL');
     $imageId = null; $keepImage = false;
@@ -303,7 +358,7 @@ function admin_post_prepare(array $p, ?int $id): array {
         'body' => json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'refs' => $json(admin_lines_to_list($p['refs_text'])),
         'audience' => $json(admin_lines_to_list($p['audience_text'])), 'subjects' => $json(admin_lines_to_list($p['subjects_text'])),
         'features' => $json(admin_lines_to_list($p['features_text'])), 'post_date' => $p['post_date'] !== '' ? $p['post_date'] : null,
-        'author' => $p['author'] !== '' ? $p['author'] : null, 'category' => $p['category'] !== '' ? $p['category'] : null,
+        'author' => $p['author'] !== '' ? $p['author'] : null, 'category' => $category !== '' ? $category : null,
         'tool_url' => $p['tool_url'] !== '' ? $p['tool_url'] : null, 'tool_label' => $p['tool_label'] !== '' ? $p['tool_label'] : null,
         'download_id' => $p['download_id'], 'download_label' => $p['download_label'] !== '' ? $p['download_label'] : null,
         'featured' => $p['featured'], 'is_public' => $p['is_public'], 'sort_order' => $p['sort_order'],
@@ -360,20 +415,23 @@ function admin_post_save(array $p, ?int $id, string $action = ''): array {
             $who = $cur['updated_by'] ? ($db->query('SELECT full_name FROM users WHERE id = ' . (int) $cur['updated_by'])->fetchColumn() ?: '') : '';
             return [$id, ['LOCK' => ['when' => date('H:i', strtotime((string) $cur['loaded_at'])), 'who' => (string) $who]]];
         }
-        $v['kind'] = $cur['kind'];  // the kind never changes after creation
-        if (!empty($p['to_top'])) { $m = $db->prepare('SELECT COALESCE(MIN(sort_order), 1) - 1 FROM posts WHERE kind = ? AND id <> ?'); $m->execute([$cur['kind'], $id]); $v['sort_order'] = (int) $m->fetchColumn(); }
+        // Only research and innovations can be switched into each other; every other kind stays as it is.
+        $switch = $v['kind'] !== $cur['kind'] && in_array($v['kind'], ADMIN_KINDS_SWITCHABLE, true) && in_array($cur['kind'], ADMIN_KINDS_SWITCHABLE, true);
+        if (!$switch) { $v['kind'] = $cur['kind']; }
+        else { $v['slug'] = admin_unique_slug($v['kind'], $v['slug'], $id); $p['to_top'] = 1; }   // a taken link name gets -2, -3; the post goes first in its new kind
+        if (!empty($p['to_top'])) { $m = $db->prepare('SELECT COALESCE(MIN(sort_order), 1) - 1 FROM posts WHERE kind = ? AND id <> ?'); $m->execute([$v['kind'], $id]); $v['sort_order'] = (int) $m->fetchColumn(); }
         elseif ($v['sort_order'] === null) { $v['sort_order'] = (int) $cur['sort_order']; }   // leave the position alone
         admin_revision_add($id, $cur['kind'], $cur['slug'], $action ?: 'update', $cur, admin_post_links($cur['kind'], $cur['slug']));
         $sets = []; foreach (array_keys($v) as $c) { $sets[] = "$c = ?"; }
         $db->prepare('UPDATE posts SET ' . implode(', ', $sets) . ', updated_by = ? WHERE id = ?')->execute([...array_values($v), $user['id'], $id]);
-        if ($v['slug'] !== $cur['slug']) {   // keep links in both directions pointing at the renamed post
+        if ($v['slug'] !== $cur['slug'] || $v['kind'] !== $cur['kind']) {   // keep links and view counts with the post when it is renamed or switched
             $db->prepare('DELETE FROM post_links WHERE from_kind = ? AND from_slug = ?')->execute([$cur['kind'], $cur['slug']]);
-            $db->prepare('UPDATE IGNORE post_links SET to_slug = ? WHERE to_kind = ? AND to_slug = ?')->execute([$v['slug'], $cur['kind'], $cur['slug']]);
-            admin_views_move($cur['kind'] . '/' . $cur['slug'], $cur['kind'] . '/' . $v['slug']);
+            $db->prepare('UPDATE IGNORE post_links SET to_kind = ?, to_slug = ? WHERE to_kind = ? AND to_slug = ?')->execute([$v['kind'], $v['slug'], $cur['kind'], $cur['slug']]);
+            admin_views_move($cur['kind'] . '/' . $cur['slug'], $v['kind'] . '/' . $v['slug']);
         }
-        admin_post_set_links($cur['kind'], $v['slug'], $links);
+        admin_post_set_links($v['kind'], $v['slug'], $links);
         $db->commit();
-        admin_log('post.update', 'posts#' . $id, $cur['kind'] . '/' . $v['slug'] . ($v['slug'] !== $cur['slug'] ? ' (เดิม ' . $cur['slug'] . ')' : ''));
+        admin_log('post.update', 'posts#' . $id, $v['kind'] . '/' . $v['slug'] . ($v['slug'] !== $cur['slug'] ? ' (เดิม ' . $cur['slug'] . ')' : ''));
         return [$id, []];
     } catch (PDOException $e) {
         if ($db->inTransaction()) { $db->rollBack(); }
@@ -431,7 +489,7 @@ function admin_post_record(array $p): array {
 // ---- Form pieces shared by the page and the <template>s the script clones ($i and $n may be the placeholders __I__ and __N__) ----
 function admin_pic_row($i, $n, string $thumb, string $alt = '', string $caption = '', $media = ''): string {
     $i = e((string) $i); $n = e((string) $n);
-    return '<div class="pic" data-pic><div>' . $thumb . '</div><div><strong>[รูป ' . $n . ']</strong> <button type="button" class="btn btn--small btn--ghost" data-insert="[รูป ' . $n . ']" hidden>แทรกตรงเคอร์เซอร์</button>'
+    return '<div class="pic" data-pic><div>' . $thumb . '</div><div><strong>[รูป ' . $n . ']</strong>'
         . '<input type="hidden" name="img[' . $i . '][n]" value="' . $n . '"><input type="hidden" name="img[' . $i . '][media]" value="' . e((string) $media) . '">'
         . '<label>คำอธิบายรูป <small>บอกว่าในรูปมีอะไร สำหรับผู้ใช้โปรแกรมอ่านหน้าจอ ถ้าเว้นว่าง รูปจะไม่แสดงบนเว็บ</small><input name="img[' . $i . '][alt]" value="' . e($alt) . '" maxlength="400" data-alt></label>'
         . '<label>คำบรรยายใต้รูป (ไม่บังคับ)<input name="img[' . $i . '][caption]" value="' . e($caption) . '" maxlength="400"></label>'
@@ -439,7 +497,7 @@ function admin_pic_row($i, $n, string $thumb, string $alt = '', string $caption 
 }
 function admin_table_box($i, $n, string $text = '', bool $head = true, string $caption = ''): string {
     $i = e((string) $i); $n = e((string) $n);
-    return '<div class="tblbox" data-table><strong>[ตาราง ' . $n . ']</strong> <button type="button" class="btn btn--small btn--ghost" data-insert="[ตาราง ' . $n . ']" hidden>แทรกตรงเคอร์เซอร์</button>'
+    return '<div class="tblbox" data-table><strong>[ตาราง ' . $n . ']</strong> '
         . '<input type="hidden" name="tbl[' . $i . '][n]" value="' . $n . '">'
         . '<label>ข้อมูลตาราง <small>หนึ่งแถวต่อหนึ่งบรรทัด คั่นช่องด้วยปุ่ม Tab หรือเครื่องหมาย | ก็อปจาก Excel หรือ Google Sheets มาวางได้เลย</small>'
         . '<textarea name="tbl[' . $i . '][text]" rows="5" wrap="off" class="tblbox__text" data-table-text>' . e($text) . '</textarea></label>'

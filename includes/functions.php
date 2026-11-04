@@ -12,7 +12,7 @@ function load_data($name) {
     require_once __DIR__ . '/content-db.php';
     if (content_source() === 'mysql') {
         try { $fromDatabase = content_db_load($name); } catch (ContentUnavailable $exception) { content_unavailable(); }
-        if ($fromDatabase !== null) { return $fromDatabase; }
+        if ($fromDatabase !== null) { return research_categories_only($name, $fromDatabase); }
     }
     // "ประชาสัมพันธ์" and "Scoop" rows live in config/home.php while content comes from JSON.
     if ($name === 'promos' || $name === 'videos') {
@@ -30,7 +30,17 @@ function load_data($name) {
     if ($name !== 'site') {
         $data = array_values(array_filter($data, static fn ($record): bool => !is_array($record) || ($record['public'] ?? true) !== false));
     }
-    return $data;
+    return research_categories_only($name, $data);
+}
+// A research post shows a category only when it is one of the innovation categories (config/innovation-categories.php); any other
+// text left in the data, such as the old "Learning", is not shown. Other datasets are returned as they are.
+function research_categories_only($name, array $records): array {
+    if ($name !== 'research') { return $records; }
+    $allowed = array_values(require __DIR__ . '/../config/innovation-categories.php');
+    foreach ($records as $i => $record) {
+        if (is_array($record) && isset($record['category']) && !in_array($record['category'], $allowed, true)) { unset($records[$i]['category']); }
+    }
+    return $records;
 }
 // Price for display: a number becomes "฿1,200"; text such as "ราคา 1,200 บาท" is shown as written; empty gives ''.
 function shop_price($value) {

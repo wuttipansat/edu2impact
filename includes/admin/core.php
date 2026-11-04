@@ -133,7 +133,7 @@ function admin_head(string $title, string $active = '', array $opts = []): void 
 <header class="top"><a class="top__name" href="index.php">หลังบ้าน KUEDU2IMPACT</a>
 <?php if ($user): ?><span class="top__user"><a href="account.php"><?= e($user['full_name']) ?></a>
 <form method="post" action="logout.php"><?php auth_csrf_field(); ?><button class="link" type="submit">ออกจากระบบ</button></form></span><?php endif; ?></header>
-<main id="main" class="page<?= !empty($opts['wide']) ? ' page--wide' : '' ?>">
+<main id="main" class="page<?= !empty($opts['wide']) ? ' page--wide' : '' ?><?= !empty($opts['editor']) ? ' page--editor' : '' ?>">
 <?php if ($active !== 'home' && $user): ?><p class="back"><a href="index.php">← กลับหน้ารายการโพสต์</a></p><?php endif; ?>
 <h1><?= e($title) ?></h1>
 <?php foreach ($flash as [$type, $message]): ?><p class="notice notice--<?= $type === 'ok' ? 'ok' : 'error' ?>" role="<?= $type === 'ok' ? 'status' : 'alert' ?>"><?= e($message) ?></p><?php endforeach;

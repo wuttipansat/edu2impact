@@ -2,6 +2,7 @@
 import datetime
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -54,12 +55,15 @@ for name in ('site', 'research', 'innovations', 'workshops', 'media', 'news', 'e
         seen = set()
         for index, record in enumerate(data):
             assert isinstance(record, dict), 'record must be an object'
-            # Workshops have no category; elsewhere it is required. When present it must be text.
-            required = ('id', 'title', 'summary') if name == 'workshops' else ('id', 'title', 'category', 'summary')
+            # Workshops and research have no required category (research uses the innovation categories when it has one); innovations require it.
+            required = ('id', 'title', 'summary') if name in ('workshops', 'research') else ('id', 'title', 'category', 'summary')
             for key in required:
                 assert isinstance(record.get(key), str) and record[key].strip(), f'item {index}: {key} is required'
             if 'category' in record:
                 assert isinstance(record['category'], str), f'item {index}: category must be text'
+                if name == 'research':
+                    allowed = re.findall(r"'([^']+)'", open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'innovation-categories.php'), encoding='utf-8').read().split('return', 1)[1])
+                    assert record['category'] in allowed, f'item {index}: research category must be one of the innovation categories'
             assert re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', record['id']), 'invalid id'
             assert record['id'] not in seen, 'duplicate id ' + record['id']
             seen.add(record['id'])

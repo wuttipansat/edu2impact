@@ -1,5 +1,5 @@
 <?php
-// One picture sent by the post editor's drag-and-drop / paste (assets/js/admin.js). POST only, signed-in admins and editors,
+// One picture sent by the post editor's drag-and-drop / paste (assets/js/editor.js). POST only, signed-in admins and editors,
 // CSRF token required (admin_boot). The file goes through the same checks as the pictures page (type by content, 8 MB, resized
 // to WebP, EXIF removed, share image). Answers JSON: {id, url, width, height} or {error} in Thai.
 require_once dirname(__DIR__) . '/includes/admin/media-lib.php';
