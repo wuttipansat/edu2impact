@@ -2,7 +2,7 @@
 -- Import this file into database e2imedu with phpMyAdmin (Import tab). Importing it again replaces everything in these four tables with the content of data/*.json.
 -- FIRST INSTALL ONLY. After content is edited in phpMyAdmin, never import this file again: it drops posts, post_links, events
 -- and site_settings (the media, home_items, shop_items and thai_breaks tables are not touched).
--- After it, import every file in database/updates/ in name order (2026-10-24-01 … 2026-10-27-03).
+-- After it, import every file in database/updates/ in name order (2026-10-24-01 … 2026-11-06-01; the last one adds network_partners and community_projects for the เครือข่าย menu).
 SET NAMES utf8mb4;
 SET time_zone = '+07:00';
 

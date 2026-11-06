@@ -144,6 +144,41 @@ for name in ('site', 'research', 'innovations', 'workshops', 'media', 'news', 'e
         records_by_kind[name] = seen
     except (ValueError, AssertionError, OSError) as error:
         errors.append(f'{name}.json: {error}')
+# Network maps (round 14): data/network.json (world map) and data/community.json (map of Thailand). Both may be empty.
+# Records name an area by code (config/countries.php, config/thai-provinces.php); several records may share one area.
+def config_codes(name):
+    text = (base / 'config' / name).read_text(encoding='utf-8')
+    return set(re.findall(r"^ '([A-Z0-9-]+)' =>", text, re.M))
+
+MAP_DATASETS = {
+    # file: (code key, valid codes, required text keys, optional text keys, allowed related kinds)
+    'network': ('country_code', config_codes('countries.php'), ('institution',), ('institution_th', 'description', 'url'), ('research', 'innovations')),
+    'community': ('province_code', config_codes('thai-provinces.php'), ('title',), ('community', 'summary', 'image'), ('innovations', 'workshops')),
+}
+for name, (code_key, valid_codes, required_keys, optional_keys, related_kinds) in MAP_DATASETS.items():
+    try:
+        data = json.loads((base / 'data' / (name + '.json')).read_text(encoding='utf-8'))
+        assert isinstance(data, list), 'must be an array'
+        assert valid_codes, f'config codes for {name} could not be read'
+        for index, record in enumerate(data):
+            where = f'record {index}'
+            assert isinstance(record, dict), f'{where}: must be an object'
+            assert record.get(code_key) in valid_codes, f'{where}: {code_key} {record.get(code_key)!r} is not a code in the map'
+            for key in required_keys:
+                assert isinstance(record.get(key), str) and record[key].strip(), f'{where}: {key} is required'
+            for key in optional_keys:
+                assert key not in record or isinstance(record[key], str), f'{where}: {key} must be text'
+            if record.get('url'):
+                assert re.fullmatch(r'https?://\S+', record['url']), f'{where}: url must start with https://'
+            if 'year' in record:
+                assert isinstance(record['year'], int) and 2500 <= record['year'] <= 2700, f'{where}: year must be a Buddhist-era year (2500-2700)'
+            if 'public' in record:
+                assert isinstance(record['public'], bool), f'{where}: public must be true or false'
+            for position, link in enumerate(record.get('related', [])):
+                assert isinstance(link, dict) and link.get('kind') in related_kinds and isinstance(link.get('id'), str), f'{where}: related[{position}] needs kind ({" or ".join(related_kinds)}) and id'
+                links.append((name, f'record {index}', position, link['kind'], link['id']))
+    except (ValueError, AssertionError, OSError) as error:
+        errors.append(f'{name}.json: {error}')
 # Every link must point at a record that exists (checked after all files are loaded).
 for source, record_id, position, kind, target in links:
     if kind not in records_by_kind:

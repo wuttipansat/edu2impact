@@ -76,11 +76,14 @@ function content_db_load(string $name): ?array {
             'events' => content_db_events($pdo),
             'promos', 'videos' => content_db_home_items($pdo, $name === 'promos' ? 'promo' : 'video'),
             'shop' => content_db_shop($pdo),
+            'network' => content_db_network($pdo),
+            'community' => content_db_community($pdo),
             default => content_db_posts($pdo, $name),
         };
     } catch (Throwable $exception) {
         if (content_db_missing_table($exception)) {
-            error_log('edu2impact: table for ' . $name . ' not found, reading its file instead. Import database/updates/2026-10-27-01-structure.sql (' . $exception->getMessage() . ')');
+            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : '2026-10-27-01-structure.sql';
+            error_log('edu2impact: table for ' . $name . ' not found, reading its file instead. Import database/updates/' . $migration . ' (' . $exception->getMessage() . ')');
             return $cache[$name] = null;
         }
         error_log('edu2impact: cannot read ' . $name . ' from MySQL (' . $exception->getMessage() . ')');
@@ -208,6 +211,39 @@ function content_db_shop(PDO $pdo): array {
         $items[] = $item;
     }
     return $items;
+}
+
+// เครือข่ายวิจัยนานาชาติ (network_partners) in the shape of data/network.json. Keys are the column names.
+function content_db_network(PDO $pdo): array {
+    $records = [];
+    foreach ($pdo->query('SELECT * FROM network_partners WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+        $record = ['country_code' => (string) $row['country_code'], 'institution' => (string) $row['institution']];
+        foreach (['institution_th', 'description', 'url'] as $key) {
+            if ($row[$key] !== null && $row[$key] !== '') { $record[$key] = (string) $row[$key]; }
+        }
+        $related = content_db_json($row['related'] ?? null);
+        if ($related) { $record['related'] = $related; }
+        $records[] = $record;
+    }
+    return $records;
+}
+
+// นวัตกรรมสู่ชุมชน (community_projects) in the shape of data/community.json. project_year is the "year" key.
+function content_db_community(PDO $pdo): array {
+    $records = [];
+    foreach ($pdo->query('SELECT * FROM community_projects WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+        $record = ['province_code' => (string) $row['province_code'], 'title' => (string) $row['title']];
+        foreach (['community', 'summary'] as $key) {
+            if ($row[$key] !== null && $row[$key] !== '') { $record[$key] = (string) $row[$key]; }
+        }
+        if ($row['project_year'] !== null) { $record['year'] = (int) $row['project_year']; }
+        $image = content_db_image_ref($row);
+        if ($image !== '') { $record['image'] = $image; }
+        $related = content_db_json($row['related'] ?? null);
+        if ($related) { $record['related'] = $related; }
+        $records[] = $record;
+    }
+    return $records;
 }
 
 // Word boundaries for thai_text() (tools/segment_thai.py writes them). Null when the table is missing; [] on other errors,

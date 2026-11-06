@@ -150,6 +150,9 @@ function admin_media_usage(): array {
     }
     foreach ($db->query('SELECT title, image_id, type FROM home_items') as $r) { $add($r['image_id'], 'หน้าแรก: ' . $r['title']); }
     foreach ($db->query('SELECT title, image_id FROM shop_items') as $r) { $add($r['image_id'], 'ร้านค้า: ' . $r['title']); }
+    try {
+        foreach ($db->query('SELECT title, image_id FROM community_projects') as $r) { $add($r['image_id'], 'นวัตกรรมสู่ชุมชน: ' . $r['title']); }
+    } catch (PDOException $e) { /* table not created yet: database/updates/2026-11-06-01-network.sql */ }
     return $use;
 }
 

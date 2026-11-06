@@ -12,6 +12,7 @@ function search_groups() {
         'media' => ['label' => 'สื่อและคู่มือ', 'page' => 'media.php', 'page_name' => 'สื่อและคู่มือ'],
         'innovations' => ['label' => 'นวัตกรรมการศึกษา', 'page' => 'innovations.php', 'page_name' => 'นวัตกรรมการศึกษา'],
         'workshops' => ['label' => 'อบรมและเวิร์กช็อป', 'page' => 'workshops.php', 'page_name' => 'อบรมและเวิร์กช็อป'],
+        'network' => ['label' => 'เครือข่าย', 'page' => '', 'page_name' => ''],
         'events' => ['label' => 'กิจกรรม', 'page' => '', 'page_name' => ''],
         'pages' => ['label' => 'หน้าเว็บไซต์', 'page' => '', 'page_name' => ''],
     ];
@@ -60,6 +61,31 @@ function search_index() {
                 'date' => (string) ($record['date'] ?? ''),
                 'category' => (string) ($record['category'] ?? ''),
             ];
+        }
+    }
+    // เครือข่าย: one entry per institution (network_partners) and per project (community_projects), linked to its area on the map.
+    require_once __DIR__ . '/network.php';
+    foreach (['world', 'thailand'] as $mode) {
+        $cfg = network_config($mode);
+        foreach (network_areas($mode) as $code => $area) {
+            $english = $mode === 'world' ? ((require __DIR__ . '/../config/countries.php')[$code][1] ?? '') : '';
+            foreach ($area['items'] as $item) {
+                $title = (string) ($mode === 'world' ? $item['institution'] : $item['title']);
+                $summary = (string) ($mode === 'world' ? ($item['description'] ?? '') : ($item['summary'] ?? ''));
+                $more = $mode === 'world' ? [$item['institution_th'] ?? ''] : [$item['community'] ?? '', isset($item['year']) ? 'พ.ศ. ' . $item['year'] : ''];
+                $linked = array_map(static fn (array $card): string => $card['title'], network_related($item));
+                $index[] = [
+                    'type' => 'network',
+                    'title' => $title,
+                    'summary' => $summary,
+                    'keywords' => search_join([$area['name'], $english, $more, $linked]),
+                    'text' => search_join([$title, $summary, $area['name'], $english, $more, $linked]),
+                    'body' => '',
+                    'url' => $cfg['page'] . '#' . $code,
+                    'date' => '',
+                    'category' => $area['name'],
+                ];
+            }
         }
     }
     foreach (load_data('events') as $event) {

@@ -10,9 +10,10 @@ The current build is a public content site. Authenticated account workflows are 
 | คลังความรู้ → งานวิจัยและบทความ, สื่อและคู่มือ | research.php, media.php | research, media |
 | นวัตกรรม → สะเต็มศึกษา, เทคโนโลยีดิจิทัล, พัฒนาครู, ปฐมวัยบูรณาการ, สุขภาวะและพลศึกษา, ศึกษาอาชีวะ | innovations.php?category=… | innovations-stem, innovations-digital, innovations-teacher, innovations-early-childhood, innovations-health-pe, innovations-vocational |
 | บริการของเรา → อบรมและเวิร์กช็อป, ร้านค้า | workshops.php, shop.php | workshops, shop |
+| เครือข่าย → เครือข่ายวิจัยนานาชาติ, นวัตกรรมสู่ชุมชน | network-international.php, network-community.php | network-international, network-community |
 | เกี่ยวกับเรา → เกี่ยวกับเรา, ติดต่อเรา | about.php, contact.php | about, contact |
 
-Menu items are defined in config/navigation.php: five top-level items, four of them dropdown groups. The six innovation children are built from config/innovation-categories.php (slug => name), the one list that the menu, the listing filter and the badges read. A page whose menu entry differs from `$currentPage` sets `$navKey` (innovations.php?category=… and innovation detail pages do); a group can also list `also` pages that keep it active. Each child has `label`, `file` and `key`; dropdowns show titles only. A child `key` must equal the page's `$currentPage`; for research, innovations, workshops, media and news it is also the dataset name, because includes/detail.php sets `$currentPage = $kind`. The group holding the current page, and the current page itself, are shown in bold on a soft pill (no underline). Dropdowns open on click, Enter or Space, close with Esc or an outside click, and become a full-screen accordion at 1100px and below (assets/js/main.js). The header has a search button and a "ติดต่อเรา" button. At the very top of a page it has no bar: on pages with a hero (`.home-hero` or `.page-hero`) it sits transparent over the hero, which pads its top by `--header-h`; on pages without one (detail pages, 404) it uses dark text on the light page. Once the page scrolls, `.header--scrolled` fades in the floating purple bar (theme.css "Round 5: header"; all of it sits inside `:has()`, so an old browser keeps the solid bar). The mobile menu and open dropdowns always have solid backgrounds.
+Menu items are defined in config/navigation.php: six top-level items, five of them dropdown groups (the "เครือข่าย" group sits between "บริการของเรา" and "เกี่ยวกับเรา"). The six innovation children are built from config/innovation-categories.php (slug => name), the one list that the menu, the listing filter and the badges read. A page whose menu entry differs from `$currentPage` sets `$navKey` (innovations.php?category=… and innovation detail pages do); a group can also list `also` pages that keep it active. Each child has `label`, `file` and `key`; dropdowns show titles only. A child `key` must equal the page's `$currentPage`; for research, innovations, workshops, media and news it is also the dataset name, because includes/detail.php sets `$currentPage = $kind`. The group holding the current page, and the current page itself, are shown in bold on a soft pill (no underline). Dropdowns open on click, Enter or Space, close with Esc or an outside click, and become a full-screen accordion at 1100px and below (assets/js/main.js). The header has a search button and a "ติดต่อเรา" button. At the very top of a page it has no bar: on pages with a hero (`.home-hero` or `.page-hero`) it sits transparent over the hero, which pads its top by `--header-h`; on pages without one (detail pages, 404) it uses dark text on the light page. Once the page scrolls, `.header--scrolled` fades in the floating purple bar (theme.css "Round 5: header"; all of it sits inside `:has()`, so an old browser keeps the solid bar). The mobile menu and open dropdowns always have solid backgrounds.
 
 partners.php was removed: it now answers 301 and sends old links to about.php. config/partner-groups.php was deleted with it.
 
@@ -40,6 +41,8 @@ The closing contact call above the footer (includes/footer.php) takes its title 
 | About | about.php | What KUEDU2IMPACT is, content counts taken from the data files, and a three-step guide |
 | Contact | contact.php | Phone, email and address from data/site.json only (the ones filled in); a short note shows while all three are empty |
 | Search | search.php (`?q=…`) | Site-wide search results; not in the nav, opened from the header icon |
+| International research network | network-international.php | Interactive world map of partner countries (see "Network maps") |
+| Innovation to community | network-community.php | Interactive map of Thailand's provinces with community innovation projects (see "Network maps") |
 
 Hero text (eyebrow, title, highlighted words, one-line intro) for every page and for the home slider lives in config/heroes.php; edit it there and both places stay in sync. Upload config/ with the PHP files.
 
@@ -62,6 +65,21 @@ Each workshop is one that schools, communities and organisations can ask KUEDU2I
 Listing pages have no search, category or sort controls and ignore `category` and `sort`. A non-empty `?q=` on research.php, innovations.php or workshops.php redirects (302) to `search.php?q=…`, so old links keep working. Layout styles are in assets/css/listing.css, loaded only on these pages.
 
 To add another listing page, add its JSON file, its key to `load_data()`, `detail_url()` and tools/validate_content.py, a two-line detail page, a navigation item, and a layout partial (or reuse one). Add the dataset to `search_index()` in includes/search.php to make it searchable.
+
+## Network maps (เครือข่าย)
+
+Two pages show where the work reaches: network-international.php ("เครือข่ายวิจัยนานาชาติ", world map, countries that have partner institutions) and network-community.php ("นวัตกรรมสู่ชุมชน", map of Thailand's 77 provinces, provinces that have community projects). Both are `render_network_page('world' | 'thailand')` in includes/network.php after the usual hero; the page files only set `$currentPage`, `$pageTitle` and `$networkAssets = true`, which makes includes/header.php load assets/css/network.css and assets/js/network-map.js on these two pages and nowhere else.
+
+| Part | File | What it does |
+| --- | --- | --- |
+| Maps | assets/maps/world.svg, assets/maps/thailand.svg | Natural Earth (public domain), simplified. Each area is a `<path>` with `data-code` (ISO 3166-1 alpha-2 / ISO 3166-2:TH), `data-name`, `data-region`; tiny countries also carry `data-small`, `data-cx`, `data-cy`. No `style`, no `<script>`: the site's CSP forbids both. Source, licence and rebuild steps: assets/maps/README.md and tools/build_maps.mjs. The SVG files are committed because the host has no build step |
+| Names | config/countries.php, config/thai-provinces.php, config/network-regions.php | Code => Thai name and region (world: nine groups of countries; Thailand: the six regions). Names are looked up here, so the admin drop-downs and the page always agree with the map |
+| Data | `network_partners`, `community_projects` (MySQL) or data/network.json, data/community.json | One record per institution or project; several per country or province. Both start empty. Keys: network = `country_code`, `institution`, `institution_th`, `description`, `url`, `related`; community = `province_code`, `title`, `community`, `summary`, `year` (พ.ศ.), `image`, `related`. `related` is a list of `{"kind", "id"}` pointing at research/innovations (network) or innovations/workshops (community); links to missing or hidden posts are skipped. Records with an unknown code are ignored. Loaded with `load_data('network')` and `load_data('community')` |
+| Page | includes/network.php | Counts, the inline SVG (areas that have records get `is-active is-l1…l4`, the level being the number of records, 4 = four or more), region buttons, legend, the detail panel and the full text list |
+| Behaviour | assets/js/network-map.js | Tooltip, detail panel (a copy of the list entry), zoom and drag (world), region buttons (world: only regions that have data; Thailand: all six), rings for tiny countries, keyboard (Tab, Enter/Space, Esc). `#CODE` in the address opens an area, so search results can link to `network-community.php#TH-50`; the list entries keep those ids without JavaScript and are renamed `list-CODE` when the script runs |
+| Back office | admin/network.php, admin/community.php | Same list editor as the shop (includes/admin/entities.php). Country and province are `<select>` lists from the config files, the Thai name column is filled in on save, `related` is a checklist of posts, `year` accepts 2500–2700 |
+
+Without JavaScript the map is still coloured and the list under it holds everything. With no records at all, the map stays grey and a note says "กำลังรวบรวมข้อมูลเครือข่าย". Search indexes every institution and project (group "เครือข่าย") and links to the area on the map. Tables are created by database/updates/2026-11-06-01-network.sql; database/content-schema.sql only names it in its header, because (like `media`, `home_items` and `shop_items`) these tables come from the updates folder. `admin/backup.php`, the media usage list and the private-image check in includes/media-store.php know about the two tables.
 
 ## Site search
 
@@ -245,6 +263,7 @@ Content can be read from the MySQL database `e2imedu` instead of the files. `loa
 | Cover images, images between paragraphs, 1200×630 share images, PDFs | assets/images/, assets/images/og/, assets/files/ | `media` |
 | "ประชาสัมพันธ์" banners and "Scoop" videos | config/home.php `promos`, `videos` | `home_items` (`type` promo / video) |
 | Shop | data/shop.json | `shop_items` |
+| Network partners and community projects (round 14) | data/network.json, data/community.json | `network_partners`, `community_projects` |
 | Events, site settings | data/events.json, data/site.json | `events`, `site_settings` |
 | Thai line breaks | data/thai-breaks.json | `thai_breaks` |
 
@@ -256,9 +275,11 @@ Design images stay as files and are not in the database: header-logo, favicon, a
 | database/updates/2026-10-27-01-structure.sql | Round 13 structure: tables `media`, `home_items`, `shop_items`, `thai_breaks`, the new `posts` and `events` columns, foreign keys, Thai column comments, the views `v_posts` and `v_media` |
 | database/updates/2026-10-27-02-media-NN.sql | Round 13 images: every file that content uses plus its share twin, one INSERT per file (hex literal), split so no file is over ~1.5 MB |
 | database/updates/2026-10-27-03-content.sql | Round 13 data: links posts to their cover rows, fills the new post columns, copies promos/videos, shop, event extras and Thai breaks |
+| database/updates/2026-11-06-01-network.sql | Round 14: tables `network_partners` and `community_projects` (empty), for the เครือข่าย menu. Idempotent; needs `media` first. Add SELECT/INSERT/UPDATE/DELETE on both to the admin database user if one is used |
 | database/thai-breaks.sql | Written by `tools/segment_thai.py --sql` or `--phpmyadmin-json`; import after adding or editing paragraphs |
 | tools/content_to_sql.py | Rebuilds the round 13 media and content files from the repo (`--max-kb` for smaller files) |
 | tools/json_to_sql.py | Rebuilds database/content-schema.sql from data/*.json |
+| tools/build_maps.mjs | Rebuilds assets/maps/*.svg and config/countries.php from Natural Earth (Node, `d3-geo`, `mapshaper`; steps in the file header). Not needed on the server |
 | includes/content-db.php | Reads the tables and returns records in the same shape as the files; the 503 page |
 | includes/media-store.php | Resolves image and PDF references to addresses, sizes and share images |
 | file.php | Sends one file from `media` (see below) |
@@ -295,7 +316,7 @@ Everything it saves goes to MySQL (`content_source` must be `mysql`); the public
 
 - **Pages**: folder `admin/`.
   `login.php` `setup.php` (first admin only) `logout.php` `account.php` `index.php` (the post list, with the one "+ สร้างโพสต์ใหม่" button) `post-edit.php` (one page for new and existing posts) `preview.php` `media.php` `media-img.php`
-  `home.php` (promo banners and Scoop videos together) `shop.php` `settings.php` `users.php` `backup.php`; `posts.php` only redirects to `index.php`. `events.php` still works if its address is typed, but is not in the menu (the home page does not list events). The activity-log page (`log.php`) was removed. CSS `assets/css/admin.css` (+ `admin-preview.css` for the preview banner), JS `assets/js/admin.js` (optional extras only; every page works without JavaScript).
+  `home.php` (promo banners and Scoop videos together) `shop.php` `network.php` `community.php` (the two network lists, see "Network maps") `settings.php` `users.php` `backup.php`; `posts.php` only redirects to `index.php`. `events.php` still works if its address is typed, but is not in the menu (the home page does not list events). The activity-log page (`log.php`) was removed. CSS `assets/css/admin.css` (+ `admin-preview.css` for the preview banner), JS `assets/js/admin.js` (optional extras only; every page works without JavaScript).
 - **Code**: `includes/admin/` (closed to the web by `includes/.htaccess`). `core.php` boot, headers, layout, input helpers; `posts.php` load/validate/save/revisions/lock; `media-lib.php` upload and GD processing; `entities.php` the small list editor used by home, shop and events (up/down/top buttons, picture upload or pick, errors keep typed text).
 - **Login**: `includes/auth.php` (session cookie, CSRF token, 15-minute throttle in `auth_rate_limits`, sessions end after 30 minutes idle or 8 hours). Roles in `users.role`: `admin` (everything) and `editor` (posts, media, home, events, shop). Passwords 12-72 characters, `password_hash`. Changing a password ends the user's other sessions. The last active admin cannot be demoted or suspended.
 - **First admin**: put a `setup_token` (24+ characters) in `private/database.php`, open `/admin/setup.php`, then delete the token. `setup.php` answers 404 once an admin exists.

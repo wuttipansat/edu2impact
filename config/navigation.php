@@ -22,6 +22,10 @@ return [
   ['label' => 'อบรมและเวิร์กช็อป', 'file' => 'workshops.php', 'key' => 'workshops'],
   ['label' => 'ร้านค้า', 'file' => 'shop.php', 'key' => 'shop'],
  ]],
+ ['label' => 'เครือข่าย', 'key' => 'group-network', 'children' => [
+  ['label' => 'เครือข่ายวิจัยนานาชาติ', 'file' => 'network-international.php', 'key' => 'network-international'],
+  ['label' => 'นวัตกรรมสู่ชุมชน', 'file' => 'network-community.php', 'key' => 'network-community'],
+ ]],
  ['label' => 'เกี่ยวกับเรา', 'key' => 'group-about', 'children' => [
   ['label' => 'เกี่ยวกับเรา', 'file' => 'about.php', 'key' => 'about'],
   ['label' => 'ติดต่อเรา', 'file' => 'contact.php', 'key' => 'contact'],

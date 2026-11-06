@@ -3,7 +3,7 @@
 require_once dirname(__DIR__) . '/includes/admin/core.php';
 $user = admin_boot(['admin']);
 $db = admin_db();
-const BACKUP_TABLES = ['media', 'posts', 'post_links', 'home_items', 'shop_items', 'events', 'site_settings', 'thai_breaks', 'post_revisions', 'admin_meta'];
+const BACKUP_TABLES = ['media', 'posts', 'post_links', 'home_items', 'shop_items', 'network_partners', 'community_projects', 'events', 'site_settings', 'thai_breaks', 'post_revisions', 'admin_meta'];
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     session_write_close();
     @set_time_limit(0);

@@ -1,0 +1,97 @@
+/* เมนู "เครือข่าย": network-international.php (แผนที่โลก) และ network-community.php (แผนที่ประเทศไทย)
+   โหลดเฉพาะสองหน้านี้ ต่อจาก main.css และก่อน theme.css (includes/header.php) ใช้ token สีและฟอนต์จาก theme.css
+   ไม่ใช้ !important และไม่ใส่ letter-spacing ติดลบกับข้อความไทย
+   พื้นที่บนแผนที่เปลี่ยนสีตามจำนวนรายการ: ระดับ 1–4 (4 = สี่รายการขึ้นไป) */
+.page-shell--network{--land:#e5e0e8;--l1:#9c5fb8;--l2:var(--purple-600);--l3:var(--purple-700);--l4:var(--purple-900)}
+
+/* ---- Counts ---- */
+.netintro{padding-block:clamp(28px,3.5vw,44px) 0}
+.netstats{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px clamp(20px,3vw,40px);margin:0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-lg)}
+.netintro__empty{margin:0;padding:18px 20px;border:1px dashed var(--purple-300);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--ink);font-size:var(--fs-lg);text-align:center}
+
+/* ---- Map and panel ---- */
+.netmap{padding-block:clamp(20px,2.4vw,32px) clamp(32px,4vw,56px)}
+.netmap__layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:clamp(16px,2.4vw,32px);align-items:start}
+.netmap__stage{min-width:0}
+.netmap__tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:14px}
+.netmap__regions{display:flex;flex-wrap:wrap;gap:8px}
+.netmap__chip{min-height:40px;padding:6px 16px;border:1px solid var(--purple-300);border-radius:var(--radius-pill);background:var(--surface-raised);color:var(--purple-800);font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;cursor:pointer;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.netmap__chip:hover{border-color:var(--purple-600);background:var(--purple-100)}
+.netmap__chip.is-on{border-color:var(--purple-800);background:var(--purple-800);color:#fff}
+.netmap__zoom{display:flex;gap:6px}
+.netmap__btn{display:grid;place-items:center;min-width:40px;min-height:40px;padding:0 12px;border:1px solid var(--purple-300);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--purple-800);font-family:var(--font-ui);font-size:20px;line-height:1;cursor:pointer}
+.netmap__btn--text{font-family:var(--font-thai);font-size:var(--fs-sm)}
+.netmap__btn:hover{border-color:var(--purple-600);background:var(--purple-100)}
+
+.netmap__canvas{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
+.netmap[data-netmap=thailand] .netmap__canvas{max-width:560px;margin-inline:auto}
+.netmap__svg{display:block;width:100%;height:auto;max-height:80vh}
+.netmap__svg path{fill:var(--land);stroke:#fff;stroke-width:.6px;vector-effect:non-scaling-stroke;transition:opacity .2s ease}
+.netmap__svg path.is-active{cursor:pointer}
+.netmap__svg path.is-l1,.netmap__svg circle.is-l1{fill:var(--l1)}
+.netmap__svg path.is-l2,.netmap__svg circle.is-l2{fill:var(--l2)}
+.netmap__svg path.is-l3,.netmap__svg circle.is-l3{fill:var(--l3)}
+.netmap__svg path.is-l4,.netmap__svg circle.is-l4{fill:var(--l4)}
+.netmap__svg path.is-active:hover{stroke:var(--accent-warm);stroke-width:1.6px}
+.netmap__svg path.is-dimmed{opacity:.3}
+.netmap__svg path.is-dimmed.is-active{pointer-events:none}
+.netmap__svg [tabindex]:focus,.netmap__svg [tabindex]:focus-visible{outline:none}
+/* Rings for countries too small to click at world scale (Singapore, Hong Kong, the Maldives…) */
+.netmap__marker{stroke:#fff;cursor:pointer;vector-effect:non-scaling-stroke}
+.netmap__marker:hover{stroke:var(--accent-warm)}
+.netmap__outline,.netmap__svg .netmap__outline{fill:none;stroke:var(--accent-warm);stroke-width:3px;pointer-events:none;vector-effect:non-scaling-stroke}
+.netmap__svg .netmap__focusring{fill:none;stroke:#fff;stroke-width:5px;pointer-events:none;vector-effect:non-scaling-stroke;paint-order:stroke}
+.netmap__svg .netmap__focusring--ink{stroke:var(--purple-900);stroke-width:2.5px}
+.netmap__canvas.is-zoomed{cursor:grab;touch-action:none}
+.netmap__canvas.is-dragging{cursor:grabbing}
+.netmap__canvas.is-dragging .netmap__svg path{pointer-events:none}
+
+.netmap__tip{position:absolute;z-index:3;transform:translate(-50%,-135%);padding:4px 12px;border-radius:var(--radius-sm);background:var(--purple-900);color:#fff;font-family:var(--font-thai);font-size:var(--fs-xs);line-height:1.6;white-space:nowrap;pointer-events:none}
+.netmap__legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;color:var(--ink-muted);font-size:var(--fs-xs)}
+.netmap__legend li{display:flex;align-items:center;gap:8px}
+.netmap__swatch{width:18px;height:18px;border:1px solid var(--line);border-radius:4px;background:var(--land)}
+.netmap__swatch.is-l1{background:var(--l1)}.netmap__swatch.is-l2{background:var(--l2)}.netmap__swatch.is-l3{background:var(--l3)}.netmap__swatch.is-l4{background:var(--l4)}
+
+.netmap__panel{position:sticky;top:calc(var(--header-h) + 16px);max-height:calc(100vh - var(--header-h) - 32px);overflow:auto;padding:22px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
+.netmap__panel:focus{outline:none}
+.netmap__panel:focus-visible{outline:3px solid var(--purple-600);outline-offset:3px}
+.netmap:not(.is-ready) .netmap__panel{display:none}
+.netmap__hint{margin:0;color:var(--ink-muted)}
+.netmap.has-selection .netmap__hint{display:none}
+.netmap__close{position:absolute;top:10px;right:10px;display:none;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--purple-100);color:var(--purple-900);font-size:26px;line-height:1;cursor:pointer}
+.netmap__close:hover{background:var(--purple-200)}
+.netmap__panel.is-open .netmap__close{display:grid}
+.netmap__panel.is-open .netarea__title{padding-right:44px}
+
+/* Phones and narrow windows: the panel is a sheet that slides up from the bottom; the list under the map stays the main way to read everything */
+@media(max-width:900px){
+  .netmap__layout{grid-template-columns:minmax(0,1fr)}
+  .netmap__panel{position:fixed;z-index:60;inset:auto 0 0 0;max-height:72vh;border-width:1px 0 0;border-radius:16px 16px 0 0;box-shadow:0 -12px 32px rgba(43,15,53,.22);visibility:hidden;transform:translateY(105%);transition:transform .25s ease,visibility .25s}
+  .netmap__panel.is-open{visibility:visible;transform:none}
+  .netmap__hint{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .netmap__panel,.netmap__chip,.netmap__svg path{transition:none}
+}
+
+/* ---- Text list (works without JavaScript) ---- */
+.netlist{padding-block:clamp(8px,1vw,16px) clamp(48px,6vw,88px)}
+.netlist h2{margin:0 0 clamp(18px,2vw,28px)}
+.netlist__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:clamp(14px,1.6vw,22px)}
+.netarea{padding:20px 22px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
+.netarea__title{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 12px;font-size:var(--fs-h3)}
+.netarea__count{color:var(--ink-muted);font-size:var(--fs-xs);font-weight:400}
+.netarea__items{display:grid;gap:16px;margin:0;padding:0;list-style:none}
+.netitem{padding-top:14px;border-top:1px solid var(--line)}
+.netitem:first-child{padding-top:0;border-top:0}
+.netitem__img{width:100%;height:auto;margin-bottom:10px;border-radius:var(--radius-sm)}
+.netitem__title{margin:0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5}
+.netitem__sub{margin:2px 0 0;font-size:var(--fs-xs)}
+.netitem__text{margin:8px 0 0;font-size:var(--fs-sm);line-height:1.75}
+.netitem__link{margin:8px 0 0;font-size:var(--fs-sm)}
+.netitem__link a{display:inline-flex;align-items:center;gap:6px}
+.netitem__related{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none}
+.netitem__related a{display:inline-block;padding:4px 12px;border:1px solid var(--purple-200);border-radius:var(--radius-pill);background:var(--purple-50);color:var(--purple-800);font-size:var(--fs-xs);line-height:1.6;text-decoration:none}
+.netitem__related a:hover{border-color:var(--purple-600);background:var(--purple-100)}
+.netitem__kind{color:var(--ink-muted)}
+.netmap__panel .netarea{padding:0;border:0}

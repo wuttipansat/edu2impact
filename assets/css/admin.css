@@ -146,3 +146,6 @@ details.box{padding:0}
 .tblbox label{margin:.5rem 0 0}
 .tblbox__text{min-height:7rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;line-height:1.5;white-space:pre;overflow:auto}
 #upload-status div+div{margin-top:.25rem}
+/* เลือกโพสต์ที่เกี่ยวข้อง (ช่อง posts ใน includes/admin/entities.php) */
+.checklist{max-height:15rem;overflow:auto;padding:.4rem .75rem;border:1px solid #c9c9c9;border-radius:6px;background:#fff}
+.checklist .check{display:block;margin:.35rem 0}

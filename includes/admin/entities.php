@@ -1,8 +1,22 @@
 <?php
 // Small list editor shared by the home banner and shop pages (and the unlinked events page).
-// A $spec maps column => field: type text|textarea|date|url|youtube|slug|flag|image|fixed, label, max, required, hint, value (fixed), default.
+// A $spec maps column => field: type text|textarea|date|url|youtube|slug|flag|image|fixed|select|int|posts, label, max, required, hint, value (fixed), default.
+// select: 'options' => [value => label]. int: 'min', 'max'. posts: 'kinds' => [post kinds]; stores [{"kind","id"}] as JSON (the network pages' `related`).
 require_once __DIR__ . '/media-lib.php';
 require_once __DIR__ . '/posts.php';
+
+// "kind/slug" => [kind, slug, title] for the posts of these kinds, in list order (used by the `posts` field).
+function admin_entity_post_choices(array $kinds): array {
+    static $cache = [];
+    $key = implode(',', $kinds);
+    if (isset($cache[$key]) || !$kinds) { return $cache[$key] ?? []; }
+    $in = implode(',', array_fill(0, count($kinds), '?'));
+    $stmt = admin_db()->prepare("SELECT kind, slug, title FROM posts WHERE kind IN ($in) ORDER BY FIELD(kind, $in), sort_order, id");
+    $stmt->execute([...$kinds, ...$kinds]);
+    $out = [];
+    foreach ($stmt as $r) { $out[$r['kind'] . '/' . $r['slug']] = [$r['kind'], $r['slug'], $r['title']]; }
+    return $cache[$key] = $out;
+}
 
 function admin_entity_values(array $spec, ?array $current): array {
     $errors = []; $v = [];
@@ -25,6 +39,22 @@ function admin_entity_values(array $spec, ?array $current): array {
                 $has = isset($v['image_id']) ? (bool) $v['image_id'] : (!empty($current['image_id']) || !empty($current['image']));
                 if (!empty($f['required']) && !$has) { $errors[] = "$label: ต้องเลือกรูป"; }
                 break;
+            case 'select':
+                $x = in_str($col);
+                if ($x !== '' && !isset($f['options'][$x])) { $errors[] = "$label ไม่ถูกต้อง"; $x = ''; }
+                $v[$col] = $x === '' ? null : $x; break;
+            case 'int':
+                $x = in_str($col);
+                if ($x === '') { $v[$col] = null; break; }
+                $n = filter_var($x, FILTER_VALIDATE_INT);
+                if ($n === false || $n < ($f['min'] ?? 0) || $n > ($f['max'] ?? PHP_INT_MAX)) { $errors[] = "$label ต้องเป็นตัวเลข " . ($f['min'] ?? 0) . '–' . ($f['max'] ?? ''); $n = null; }
+                $v[$col] = $n; break;
+            case 'posts':
+                $known = admin_entity_post_choices($f['kinds'] ?? []); $picked = [];
+                foreach ((isset($_POST[$col]) && is_array($_POST[$col]) ? $_POST[$col] : []) as $ref) {
+                    if (is_string($ref) && isset($known[$ref])) { [$k, $id] = explode('/', $ref, 2); $picked[$ref] = ['kind' => $k, 'id' => $id]; }
+                }
+                $v[$col] = $picked ? json_encode(array_values($picked), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null; break;
             case 'textarea': $x = in_str($col, $f['max'] ?? 4000); $v[$col] = $x === '' ? null : $x; break;
             default: $x = in_line($col, $f['max'] ?? 255); $v[$col] = $x === '' ? null : $x;
         }
@@ -49,9 +79,10 @@ function admin_entity_move(string $table, int $id, string $op, string $where = '
 }
 
 // Handles POST ops save/delete/show/hide/up/down/top. Returns an error list (empty = done and flashed).
-function admin_entity_post(string $table, array $spec, string $where = '1=1', array $args = []): array {
+// $derive (optional) receives the validated values of a save and returns them with extra columns added.
+function admin_entity_post(string $table, array $spec, string $where = '1=1', array $args = [], ?callable $derive = null): array {
     $db = admin_db(); $op = in_str('op'); $id = in_int('id');
-    if (!in_array($table, ['home_items', 'shop_items', 'events'], true)) { return ['ตารางไม่ถูกต้อง']; }
+    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects'], true)) { return ['ตารางไม่ถูกต้อง']; }
     if ($op === 'delete' && $id) { $db->prepare("DELETE FROM $table WHERE id = ?")->execute([$id]); admin_flash('ลบแล้ว'); return []; }
     if (in_array($op, ['show', 'hide'], true) && $id) {
         $db->prepare("UPDATE $table SET is_public = ? WHERE id = ?")->execute([$op === 'show' ? 1 : 0, $id]); admin_flash($op === 'show' ? 'แสดงบนเว็บแล้ว' : 'ซ่อนจากเว็บแล้ว'); return [];
@@ -62,6 +93,7 @@ function admin_entity_post(string $table, array $spec, string $where = '1=1', ar
     if ($id) { $s = $db->prepare("SELECT * FROM $table WHERE id = ?"); $s->execute([$id]); $cur = $s->fetch() ?: null; if (!$cur) { return ['ไม่พบรายการนี้ (อาจถูกลบไปแล้ว)']; } }
     [$errors, $v] = admin_entity_values($spec, $cur);
     if ($errors) { return $errors; }
+    if ($derive) { $v = $derive($v); } // e.g. the Thai country name that goes with the chosen code
     try {
         if ($cur) { $db->prepare("UPDATE $table SET " . implode(', ', array_map(fn($c) => "$c = ?", array_keys($v))) . ' WHERE id = ?')->execute([...array_values($v), $id]); }
         else {
@@ -92,6 +124,24 @@ function admin_entity_form(string $action, array $spec, ?array $row, array $hidd
         if ($t === 'flag') {
             $on = $posted !== null ? isset($posted[$col]) : (bool) $val;
             echo '<label class="check"><input type="checkbox" name="' . e($col) . '" value="1"' . ($on ? ' checked' : '') . '> ' . e($f['label']) . $hint . '</label>';
+        } elseif ($t === 'select') {
+            echo '<label>' . e($f['label']) . $hint . '<select name="' . e($col) . '"' . $req . '><option value="">— เลือก —</option>';
+            foreach ($f['options'] as $ov => $ol) { echo '<option value="' . e((string) $ov) . '"' . ((string) $val === (string) $ov ? ' selected' : '') . '>' . e($ol) . '</option>'; }
+            echo '</select></label>';
+        } elseif ($t === 'posts') {
+            $choices = admin_entity_post_choices($f['kinds'] ?? []);
+            if ($posted !== null) { $on = array_flip(array_filter((array) ($posted[$col] ?? []), 'is_string')); }
+            else { $on = []; foreach (json_decode((string) ($row[$col] ?? ''), true) ?: [] as $ref) { if (is_array($ref) && isset($ref['kind'], $ref['id'])) { $on[$ref['kind'] . '/' . $ref['id']] = true; } } }
+            echo '<div class="field"><strong>' . e($f['label']) . '</strong>' . $hint;
+            if (!$choices) { echo '<p class="muted">ยังไม่มีโพสต์ให้เลือก</p>'; }
+            else {
+                echo '<details' . ($on ? ' open' : '') . '><summary>' . ($on ? 'เลือกไว้ ' . count($on) . ' โพสต์' : 'เลือกโพสต์') . '</summary><div class="checklist">';
+                foreach ($choices as $ref => [$k, $slug, $title]) {
+                    echo '<label class="check"><input type="checkbox" name="' . e($col) . '[]" value="' . e($ref) . '"' . (isset($on[$ref]) ? ' checked' : '') . '> <span class="muted">' . e(ADMIN_KINDS[$k] ?? $k) . '</span> ' . e($title) . '</label>';
+                }
+                echo '</div></details>';
+            }
+            echo '</div>';
         } elseif ($t === 'textarea') {
             echo '<label>' . e($f['label']) . $hint . '<textarea name="' . e($col) . '">' . e((string) $val) . '</textarea></label>';
         } elseif ($t === 'image') {
@@ -105,7 +155,8 @@ function admin_entity_form(string $action, array $spec, ?array $row, array $hidd
             echo '<details><summary>หรือเลือกจากคลังรูป</summary><div>'; admin_media_pics($col . '_pick', null); echo '</div></details></div>';
         } else {
             $type = $t === 'date' ? 'date' : 'text';
-            echo '<label>' . e($f['label']) . $hint . '<input type="' . $type . '" name="' . e($col) . '" value="' . e((string) $val) . '" maxlength="' . (int) ($f['max'] ?? 500) . '"' . $req . '></label>';
+            $mode = $t === 'int' ? ' inputmode="numeric" pattern="[0-9]*"' : '';
+            echo '<label>' . e($f['label']) . $hint . '<input type="' . $type . '" name="' . e($col) . '" value="' . e((string) $val) . '" maxlength="' . (int) ($f['max'] ?? 500) . '"' . $mode . $req . '></label>';
         }
     }
     echo '<button class="btn" type="submit">' . e($submit) . '</button></form>';

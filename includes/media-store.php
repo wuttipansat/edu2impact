@@ -154,7 +154,7 @@ function media_hidden_ids(): array {
                 if (is_array($block)) { $note($block['media'] ?? ($block['image'] ?? ''), $isPublic); }
             }
         }
-        foreach (['home_items', 'shop_items'] as $table) {
+        foreach (['home_items', 'shop_items', 'community_projects'] as $table) {
             foreach ($pdo->query('SELECT image_id, image, is_public FROM ' . $table) as $item) {
                 $note((int) $item['image_id'], (int) $item['is_public'] === 1);
                 $note((string) $item['image'], (int) $item['is_public'] === 1);

@@ -915,3 +915,11 @@ a.banner:focus-visible{outline:3px solid var(--purple-600);outline-offset:4px}
   .ws-row__media::before{inset:10px -10px -10px 10px}
 }
 @media(prefers-reduced-motion:reduce){.ws-row__cta .icon-arrow{transition:none}.ws-row:hover .ws-row__cta .icon-arrow{transform:none}}
+
+/* ---- Round 14: six menu entries (เครือข่าย added) ----
+   Between 1101px (where the full menu starts) and 1299px the six entries and the buttons need tighter padding to stay on one line. */
+@media(min-width:1101px) and (max-width:1299px){
+  .nav>a,.nav-group summary{padding-inline:10px}
+  .nav-group summary::after{margin-left:7px}
+  .header-cta{padding-inline:16px}
+}

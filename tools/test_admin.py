@@ -163,7 +163,7 @@ a = Client()
 check('wrong password is refused', a.login(admin_email, 'wrong-password-123')[0] == 200)
 check('right password logs in', a.login(admin_email, admin_pass)[0] == 303)
 check('POST without CSRF is 403', a.req('index.php', {'op': 'hide', 'id': '1'})[0] == 403)
-for page in ['index.php', 'index.php?kind=research', 'post-edit.php', 'post-edit.php?kind=innovations', 'media.php', 'home.php', 'shop.php', 'settings.php', 'users.php', 'backup.php', 'account.php']:
+for page in ['index.php', 'index.php?kind=research', 'post-edit.php', 'post-edit.php?kind=innovations', 'media.php', 'home.php', 'shop.php', 'network.php', 'community.php', 'settings.php', 'users.php', 'backup.php', 'account.php']:
     s, html, _ = a.req(page)
     check('page ' + page, s == 200 and not re.search(r'Fatal|Warning:|Notice:|Deprecated', html), s)
 check('old post list address redirects', a.req('posts.php')[0] == 301)
@@ -433,6 +433,69 @@ check('shop: duplicate link name gets a plain message', s == 303 and s2 == 200 a
 if MYSQL:
     sql(f"DELETE FROM shop_items WHERE slug='test-{tagh}'")
     sql("DELETE FROM post_views WHERE page_key LIKE 'research/renamed-%'"); sql("DELETE FROM post_view_days WHERE page_key LIKE 'research/renamed-%'")
+
+# network maps (round 14): institutions on the world map and projects on the map of Thailand: add, edit, hide, related posts, errors, order, delete
+tagn = 'net-' + uuid.uuid4().hex[:6]
+def public(page):
+    return a.req(SITE + '/' + page)[1]
+def net_ids(table, col):
+    return [r[0] for r in sql(f"SELECT id FROM {table} WHERE {col} LIKE '{tagn}%' ORDER BY id")]
+related_slug = sql("SELECT slug FROM posts WHERE kind='research' AND is_public=1 ORDER BY id LIMIT 1")[0][0] if MYSQL else ''
+for t in ('A', 'B'):
+    extra = [('related[]', 'research/' + related_slug), ('related[]', 'media/not-a-post')] if t == 'A' and related_slug else []
+    s, _, _ = entity('network.php', [('op', 'save'), ('country_code', 'JP'), ('institution', f'{tagn} {t}'), ('institution_th', 'ทดสอบ'), ('url', 'https://example.org/'), ('is_public', '1')] + extra)
+    check(f'network: add {t}', s == 303, s)
+s, html, _ = entity('network.php', [('op', 'save'), ('country_code', 'ZZ'), ('institution', f'{tagn} bad'), ('is_public', '1')])
+check('network: unknown country is refused in plain Thai', s == 200 and 'ไม่ถูกต้อง' in html and f'{tagn} bad' in html, s)
+s, html, _ = entity('network.php', [('op', 'save'), ('institution', f'{tagn} nocountry')])
+check('network: country is required', s == 200 and 'ต้องกรอก' in html, s)
+s, html, _ = entity('network.php', [('op', 'save'), ('country_code', 'JP'), ('institution', f'{tagn} badlink'), ('url', 'javascript:alert(1)')])
+check('network: a javascript: link is refused', s == 200 and 'https://' in html, s)
+if MYSQL:
+    ids = net_ids('network_partners', 'institution')
+    check('network: two rows saved, bad ones not', len(ids) == 2, ids)
+    row = sql(f"SELECT country_code, country_name_th, is_public FROM network_partners WHERE id={ids[0]}")[0]
+    check('network: Thai country name is filled in on save', row[:2] == ['JP', 'ญี่ปุ่น'], row)
+    if related_slug:
+        rel = json.loads(sql(f"SELECT related FROM network_partners WHERE id={ids[0]}")[0][0])
+        check('network: related keeps real posts only', rel == [{'kind': 'research', 'id': related_slug}], rel)
+    entity('network.php', [('op', 'save'), ('id', str(ids[0])), ('country_code', 'SG'), ('institution', f'{tagn} A'), ('is_public', '1')])
+    check('network: edit changes country and name', sql(f"SELECT country_code, country_name_th FROM network_partners WHERE id={ids[0]}")[0] == ['SG', 'สิงคโปร์'])
+    check('network: edit with no posts ticked clears related', sql(f"SELECT related IS NULL FROM network_partners WHERE id={ids[0]}")[0][0] == '1')
+    page = public('network-international.php')
+    check('network: public page shows the institution and colours SG', f'{tagn} A' in page and 'data-code="SG"' in page and re.search(r'class="is-active is-l1" data-code="SG"', page) is not None)
+    entity('network.php', [('op', 'hide'), ('id', str(ids[0]))])
+    check('network: hide removes it from the public page', f'{tagn} A' not in public('network-international.php') and f'{tagn} B' in public('network-international.php'))
+    entity('network.php', [('op', 'show'), ('id', str(ids[0]))])
+    check('network: show brings it back', f'{tagn} A' in public('network-international.php'))
+    entity('network.php', [('op', 'top'), ('id', str(ids[1]))])
+    order = [r[0] for r in sql("SELECT id FROM network_partners ORDER BY sort_order, id")]
+    check('network: "top" button moves the row first', order[0] == ids[1])
+    for i in ids: entity('network.php', [('op', 'delete'), ('id', str(i))])
+    check('network: delete removes both', not net_ids('network_partners', 'institution'))
+
+for t in ('A', 'B'):
+    s, _, _ = entity('community.php', [('op', 'save'), ('province_code', 'TH-50'), ('title', f'{tagn} {t}'), ('community', 'ชุมชนทดสอบ'), ('project_year', '2568'), ('is_public', '1'), ('image_id', 'keep')], {'image_id_file': ('x.png', png(80, 40))} if t == 'A' else None)
+    check(f'community: add {t}', s == 303, s)
+s, html, _ = entity('community.php', [('op', 'save'), ('province_code', 'TH-50'), ('title', f'{tagn} year'), ('project_year', '1999')])
+check('community: year outside 2500-2700 is refused', s == 200 and '2500' in html and f'{tagn} year' in html, s)
+s, html, _ = entity('community.php', [('op', 'save'), ('province_code', 'TH-99'), ('title', f'{tagn} nope')])
+check('community: unknown province is refused', s == 200 and 'ไม่ถูกต้อง' in html, s)
+if MYSQL:
+    ids = net_ids('community_projects', 'title')
+    check('community: two rows saved, bad ones not', len(ids) == 2, ids)
+    row = sql(f"SELECT province_name_th, project_year, image_id IS NOT NULL FROM community_projects WHERE id={ids[0]}")[0]
+    check('community: Thai province name, year and picture saved', row == ['เชียงใหม่', '2568', '1'], row)
+    page = public('network-community.php')
+    check('community: public page shows project, year and picture', f'{tagn} A' in page and 'พ.ศ. 2568' in page and 'netitem__img' in page)
+    check('community: a province with a project is coloured', re.search(r'class="is-active is-l2" data-code="TH-50"', page) is not None, re.findall(r'data-code="TH-50"', page))
+    pic = sql(f"SELECT image_id FROM community_projects WHERE id={ids[0]}")[0][0]
+    check('community: the picture page names the project that uses it', 'นวัตกรรมสู่ชุมชน: ' + tagn in a.req(f'media.php?id={pic}')[1])
+    for i in ids: entity('community.php', [('op', 'hide'), ('id', str(i))])
+    check('community: hiding every project greys the province', 'is-active' not in public('network-community.php') and 'กำลังรวบรวมข้อมูลเครือข่าย' in public('network-community.php'))
+    for i in ids: entity('community.php', [('op', 'delete'), ('id', str(i))])
+    sql("DELETE FROM media WHERE original_name='x.png' AND uploaded_by IS NOT NULL AND id NOT IN (SELECT image_id FROM home_items WHERE image_id IS NOT NULL UNION SELECT image_id FROM shop_items WHERE image_id IS NOT NULL)")
+    check('community: delete removes both', not net_ids('community_projects', 'title'))
 
 # editor limits
 if os.environ.get('EDITOR_EMAIL'):
