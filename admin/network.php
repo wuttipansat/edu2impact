@@ -1,5 +1,5 @@
 <?php
-// เครือข่ายวิจัยนานาชาติ: หนึ่งแถวต่อหนึ่งสถาบัน แสดงบน network-international.php (แผนที่โลก)
+// เครือข่ายวิจัยและความร่วมมือนานาชาติ: หนึ่งแถวต่อหนึ่งสถาบัน แสดงบน network-international.php (แผนที่โลก)
 require_once dirname(__DIR__) . '/includes/admin/entities.php';
 $user = admin_boot();
 $countries = require dirname(__DIR__) . '/config/countries.php';
@@ -24,7 +24,7 @@ try {
 } catch (PDOException $e) {
     admin_fail('ยังไม่มีตาราง network_partners ให้นำเข้า database/updates/2026-11-06-01-network.sql ด้วย phpMyAdmin ก่อน');
 }
-admin_head('เครือข่ายวิจัยนานาชาติ', 'network.php');
+admin_head('เครือข่ายวิจัยและความร่วมมือนานาชาติ', 'network.php');
 echo '<p class="muted">แต่ละแถวคือหนึ่งสถาบัน ประเทศหนึ่งเพิ่มได้หลายสถาบัน ประเทศที่มีรายการจะถูกระบายสีบนแผนที่โลก (<a href="../network-international.php" target="_blank" rel="noopener">ดูบนเว็บ</a>)</p>';
 foreach ($errors as $err) { echo '<p class="notice notice--error" role="alert">' . e($err) . '</p>'; }
 $newOpen = $posted !== null && !$postedId;

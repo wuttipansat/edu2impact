@@ -63,7 +63,7 @@ $shareImage = $shareUrl !== '' ? absolute_url(share_image_path($ogImage ?? null)
 <link rel="stylesheet" href="assets/css/search.css?v=<?= (int) @filemtime(__DIR__ . '/../assets/css/search.css') ?>">
 <link rel="stylesheet" href="assets/css/theme.css?v=<?= (int) @filemtime(__DIR__ . '/../assets/css/theme.css') ?>">
 <script src="assets/js/main.js" defer></script>
-<?php if (!empty($networkAssets)): ?><script src="assets/js/network-map.js?v=<?= (int) @filemtime(__DIR__ . '/../assets/js/network-map.js') ?>" defer></script><?php endif; ?>
+<?php if (!empty($networkAssets)): ?><script src="assets/js/network-map.js?v=<?= (int) @filemtime(__DIR__ . '/../assets/js/network-map.js') ?>" defer></script><script src="assets/js/network-info.js?v=<?= (int) @filemtime(__DIR__ . '/../assets/js/network-info.js') ?>" defer></script><?php endif; ?>
 </head>
 <body id="top">
 <a class="skip-link" href="#main">ข้ามไปเนื้อหา</a>

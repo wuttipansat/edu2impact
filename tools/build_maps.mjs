@@ -8,16 +8,16 @@
 //
 // Natural Earth is public domain (https://www.naturalearthdata.com/about/terms-of-use/).
 import { readFileSync, writeFileSync } from 'node:fs';
-import { geoArea, geoEqualEarth, geoMercator, geoPath } from 'd3-geo';
+import { geoArea, geoEqualEarth, geoGraticule10, geoMercator, geoPath } from 'd3-geo';
 import mapshaper from 'mapshaper';
 
 const repo = process.argv[2] || '.';
 const WORLD_KEEP = 0.04;     // share of vertices kept (Visvalingam, keep-shapes so small countries survive)
 const THAI_KEEP = 0.10;
 
-async function simplify(file, keep, filterExpr) {
+async function simplify(file, keep, filterExpr, extra = '') {
   const input = readFileSync(file);
-  const cmd = `-i in.json ${filterExpr ? `-filter '${filterExpr}'` : ''} -simplify visvalingam percentage=${keep} keep-shapes -o out.json format=geojson precision=0.001`;
+  const cmd = `-i in.json ${filterExpr ? `-filter '${filterExpr}'` : ''} ${extra} -simplify visvalingam percentage=${keep} keep-shapes -o out.json format=geojson precision=0.001`;
   const out = await mapshaper.applyCommands(cmd, { 'in.json': input });
   const data = JSON.parse(out['out.json'].toString());
   data.features.forEach(rewind);
@@ -32,6 +32,8 @@ function rewind(feature) {
   if (g.type === 'Polygon') g.coordinates = fix(g.coordinates);
   else if (g.type === 'MultiPolygon') g.coordinates = g.coordinates.map(fix);
 }
+// Kasetsart University, Bangkhen: where the arcs on the world map start and the home marker on the map of Thailand.
+const ORIGIN = [100.5686, 13.8476];
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const num = (n) => Math.round(n * 10) / 10;
 
@@ -81,13 +83,16 @@ const SHORT_TH = { HK: 'ฮ่องกง', MO: 'มาเก๊า', MM: 'เ�
       const [cx, cy] = path.centroid(mainPart(f));
       const small = (x1 - x0) * (y1 - y0) < 90;
       const region = SUBREGION[f.properties.SUBREGION] || '';
-      attrs = ` data-code="${code}" data-name="${esc(f.properties.NAME)}" data-region="${region}"${small ? ` data-small="1" data-cx="${num(cx)}" data-cy="${num(cy)}"` : ''}`;
+      attrs = ` data-code="${code}" data-name="${esc(f.properties.NAME)}" data-region="${region}" data-cx="${num(cx)}" data-cy="${num(cy)}"${small ? ' data-small="1"' : ''}`;
     }
     rows.push(`<path${attrs} d="${d}"/>`);
   }
   const pad = 4;
   const vb = [num(minX - pad), num(minY - pad), num(maxX - minX + 2 * pad), num(maxY - minY + 2 * pad)];
-  const svg = `<svg class="netmap__svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vb.join(' ')}" data-vb="${vb.join(' ')}" focusable="false">\n${rows.join('\n')}\n</svg>\n`;
+  const [ox, oy] = projection(ORIGIN);
+  // Sphere outline and a 10° graticule sit under the countries (classes netmap__sphere / netmap__grid in network.css).
+  const backdrop = `<path class="netmap__sphere" d="${path({ type: 'Sphere' })}"/>\n<path class="netmap__grid" d="${path(geoGraticule10())}"/>`;
+  const svg = `<svg class="netmap__svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vb.join(' ')}" data-vb="${vb.join(' ')}" data-origin="${num(ox)} ${num(oy)}" focusable="false">\n${backdrop}\n<g class="netmap__land">\n${rows.join('\n')}\n</g>\n</svg>\n`;
   writeFileSync(`${repo}/assets/maps/world.svg`, svg);
   console.log('world.svg', svg.length, 'bytes,', rows.length, 'shapes, viewBox', vb.join(' '));
 
@@ -119,11 +124,18 @@ const SHORT_TH = { HK: 'ฮ่องกง', MO: 'มาเก๊า', MM: 'เ�
   const [[x0, y0], [x1, y1]] = path.bounds(col);
   const rows = feats.sort((a, b) => a.properties.iso_3166_2.localeCompare(b.properties.iso_3166_2)).map((f) => {
     const p = f.properties;
-    return `<path data-code="${p.iso_3166_2}" data-name="${esc(p.name)}" d="${path(f)}"/>`;
+    const [cx, cy] = path.centroid(mainPart(f));
+    return `<path data-code="${p.iso_3166_2}" data-name="${esc(p.name)}" data-cx="${num(cx)}" data-cy="${num(cy)}" d="${path(f)}"/>`;
   });
   const pad = 4;
   const vb = [num(x0 - pad), num(y0 - pad), num(x1 - x0 + 2 * pad), num(y1 - y0 + 2 * pad)];
-  const svg = `<svg class="netmap__svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vb.join(' ')}" data-vb="${vb.join(' ')}" focusable="false">\n${rows.join('\n')}\n</svg>\n`;
+  // Neighbouring countries, drawn faintly so Thailand does not float in empty space when the map fills a wide screen.
+  const near = await simplify('ne_50m_admin_0_countries.geojson', 0.25, `["MM","LA","KH","VN","MY","CN","ID"].indexOf(ISO_A2_EH) >= 0`, '-clip bbox=88,-2,114,26');
+  const context = near.features.map((f) => `<path d="${path(f)}"/>`).join('\n');
+  const labels = [['เมียนมา', 96.3, 19.6], ['ลาว', 102.6, 19.9], ['กัมพูชา', 104.9, 12.7], ['เวียดนาม', 107.9, 14.6], ['มาเลเซีย', 101.9, 4.6], ['อ่าวไทย', 101.2, 10.4], ['ทะเลอันดามัน', 96.9, 9.6]]
+    .map(([t, lon, lat]) => { const [x, y] = projection([lon, lat]); return `<text class="netmap__label" x="${num(x)}" y="${num(y)}">${t}</text>`; }).join('\n');
+  const [ox, oy] = projection(ORIGIN);
+  const svg = `<svg class="netmap__svg" xmlns="http://www.w3.org/2000/svg" viewBox="${vb.join(' ')}" data-vb="${vb.join(' ')}" data-origin="${num(ox)} ${num(oy)}" focusable="false">\n<g class="netmap__context">\n${context}\n</g>\n${labels}\n<g class="netmap__land">\n${rows.join('\n')}\n</g>\n</svg>\n`;
   writeFileSync(`${repo}/assets/maps/thailand.svg`, svg);
   console.log('thailand.svg', svg.length, 'bytes,', rows.length, 'provinces, viewBox', vb.join(' '));
 }

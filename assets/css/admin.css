@@ -149,3 +149,5 @@ details.box{padding:0}
 /* เลือกโพสต์ที่เกี่ยวข้อง (ช่อง posts ใน includes/admin/entities.php) */
 .checklist{max-height:15rem;overflow:auto;padding:.4rem .75rem;border:1px solid #c9c9c9;border-radius:6px;background:#fff}
 .checklist .check{display:block;margin:.35rem 0}
+.iconlist{display:flex;flex-wrap:wrap;gap:.5rem 1.25rem;margin:0 0 1rem;padding:0;list-style:none}
+.iconlist li{display:flex;align-items:center;gap:.4rem}

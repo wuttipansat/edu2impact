@@ -1,0 +1,63 @@
+[
+  {
+    "kind": "model",
+    "title_th": "นิเทศวิทยานิพนธ์ร่วมกับต่างประเทศ",
+    "title_en": "International Co-supervision",
+    "icon": "pair-talk"
+  },
+  {
+    "kind": "model",
+    "title_th": "วิจัยร่วม",
+    "title_en": "Collaborative Research",
+    "icon": "magnifier"
+  },
+  {
+    "kind": "model",
+    "title_th": "สนับสนุนการตีพิมพ์",
+    "title_en": "Publication Support",
+    "icon": "document"
+  },
+  {
+    "kind": "model",
+    "title_th": "นักวิชาการรับเชิญและผู้เชี่ยวชาญบรรยาย",
+    "title_en": "Visiting Scholar / Expert Talk",
+    "icon": "podium"
+  },
+  {
+    "kind": "model",
+    "title_th": "สัมมนาและเวทีวิจัยร่วม",
+    "title_en": "Joint Symposium / Research Forum",
+    "icon": "group"
+  },
+  {
+    "kind": "model",
+    "title_th": "เส้นทางสู่การประชุมวิชาการนานาชาติ",
+    "title_en": "International Conference Pathway",
+    "icon": "globe"
+  },
+  {
+    "kind": "value",
+    "title_th": "ยกระดับคุณภาพวิทยานิพนธ์",
+    "icon": "mortarboard"
+  },
+  {
+    "kind": "value",
+    "title_th": "เพิ่มโอกาสการตีพิมพ์ระดับนานาชาติ",
+    "icon": "globe-chart"
+  },
+  {
+    "kind": "value",
+    "title_th": "เปิดมุมมองวิจัยระดับสากล",
+    "icon": "bulb"
+  },
+  {
+    "kind": "value",
+    "title_th": "สร้างเครือข่ายวิชาการหลังสำเร็จการศึกษา",
+    "icon": "network"
+  },
+  {
+    "kind": "value",
+    "title_th": "สนับสนุน PLO2 และ PLO3",
+    "icon": "target"
+  }
+]

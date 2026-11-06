@@ -1,5 +1,5 @@
 <?php
-// นวัตกรรมสู่ชุมชน: หนึ่งแถวต่อหนึ่งโครงการ แสดงบน network-community.php (แผนที่ประเทศไทย)
+// วิจัยและนวัตกรรมเพื่อชุมชนและสังคม: หนึ่งแถวต่อหนึ่งโครงการ แสดงบน network-community.php (แผนที่ประเทศไทย)
 require_once dirname(__DIR__) . '/includes/admin/entities.php';
 $user = admin_boot();
 $provinces = require dirname(__DIR__) . '/config/thai-provinces.php';
@@ -26,7 +26,7 @@ try {
 } catch (PDOException $e) {
     admin_fail('ยังไม่มีตาราง community_projects ให้นำเข้า database/updates/2026-11-06-01-network.sql ด้วย phpMyAdmin ก่อน');
 }
-admin_head('นวัตกรรมสู่ชุมชน', 'community.php');
+admin_head('วิจัยและนวัตกรรมเพื่อชุมชนและสังคม', 'community.php');
 echo '<p class="muted">แต่ละแถวคือหนึ่งโครงการ จังหวัดหนึ่งเพิ่มได้หลายโครงการ จังหวัดที่มีรายการจะถูกระบายสีบนแผนที่ประเทศไทย (<a href="../network-community.php" target="_blank" rel="noopener">ดูบนเว็บ</a>)</p>';
 foreach ($errors as $err) { echo '<p class="notice notice--error" role="alert">' . e($err) . '</p>'; }
 $newOpen = $posted !== null && !$postedId;

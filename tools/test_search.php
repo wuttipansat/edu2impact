@@ -35,6 +35,9 @@ check('STEM finds research, innovations and workshops', $all['groups']['research
 check('empty query returns nothing', search_run('   ')['total'] === 0);
 check('AND logic narrows results', search_run('STEM ครู')['total'] <= min(search_run('STEM')['total'], search_run('ครู')['total']));
 check('event is indexed', (bool) search_run('Research to Practice Forum')['groups']['events']);
+$cosup = search_run('co-supervision')['groups']['network'] ?? [];
+check('network highlights are found by "co-supervision"', (bool) array_filter($cosup, static fn ($r) => strpos((string) ($r['url'] ?? ''), 'network-international.php') === 0));
+check('network highlights are found by Thai text', (bool) (search_run('ตีพิมพ์')['groups']['network'] ?? []));
 check('nonsense finds nothing', search_run('zzzz')['total'] === 0);
 // Optional innovation fields (audience, subjects, features) are searchable.
 $pck = search_run('PCK Canvas')['groups']['innovations'] ?? [];

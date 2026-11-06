@@ -4,7 +4,7 @@ function e($value) {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 function load_data($name) {
-    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events', 'shop', 'promos', 'videos', 'network', 'community'];
+    $allowed = ['site', 'research', 'innovations', 'workshops', 'media', 'news', 'events', 'shop', 'promos', 'videos', 'network', 'community', 'network-highlights'];
     if (!in_array($name, $allowed, true)) { throw new RuntimeException('Invalid dataset'); }
     // Content can live in MySQL (see includes/content-db.php). When it is switched on but cannot be read, the page
     // answers 503 instead of showing the older data/*.json copy. Only a table that a migration has not created yet

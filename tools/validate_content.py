@@ -179,6 +179,22 @@ for name, (code_key, valid_codes, required_keys, optional_keys, related_kinds) i
                 links.append((name, f'record {index}', position, link['kind'], link['id']))
     except (ValueError, AssertionError, OSError) as error:
         errors.append(f'{name}.json: {error}')
+# Network highlights (round 16): the two bands under the world map. kind and icon must be known values.
+try:
+    icons = set(re.findall(r"^        '([a-z-]+)' => \[", (base / 'includes' / 'network-icons.php').read_text(encoding='utf-8'), re.M))
+    assert icons, 'icon keys of includes/network-icons.php could not be read'
+    data = json.loads((base / 'data' / 'network-highlights.json').read_text(encoding='utf-8'))
+    assert isinstance(data, list), 'must be an array'
+    for index, record in enumerate(data):
+        where = f'record {index}'
+        assert isinstance(record, dict), f'{where}: must be an object'
+        assert record.get('kind') in ('model', 'value'), f'{where}: kind must be model or value'
+        assert isinstance(record.get('title_th'), str) and record['title_th'].strip(), f'{where}: title_th is required'
+        assert 'title_en' not in record or isinstance(record['title_en'], str), f'{where}: title_en must be text'
+        assert record.get('icon') in icons, f'{where}: icon {record.get("icon")!r} is not one of {sorted(icons)}'
+        assert 'public' not in record or isinstance(record['public'], bool), f'{where}: public must be true or false'
+except (ValueError, AssertionError, OSError) as error:
+    errors.append(f'network-highlights.json: {error}')
 # Every link must point at a record that exists (checked after all files are loaded).
 for source, record_id, position, kind, target in links:
     if kind not in records_by_kind:

@@ -163,7 +163,7 @@ a = Client()
 check('wrong password is refused', a.login(admin_email, 'wrong-password-123')[0] == 200)
 check('right password logs in', a.login(admin_email, admin_pass)[0] == 303)
 check('POST without CSRF is 403', a.req('index.php', {'op': 'hide', 'id': '1'})[0] == 403)
-for page in ['index.php', 'index.php?kind=research', 'post-edit.php', 'post-edit.php?kind=innovations', 'media.php', 'home.php', 'shop.php', 'network.php', 'community.php', 'settings.php', 'users.php', 'backup.php', 'account.php']:
+for page in ['index.php', 'index.php?kind=research', 'post-edit.php', 'post-edit.php?kind=innovations', 'media.php', 'home.php', 'shop.php', 'network.php', 'network-highlights.php', 'community.php', 'settings.php', 'users.php', 'backup.php', 'account.php']:
     s, html, _ = a.req(page)
     check('page ' + page, s == 200 and not re.search(r'Fatal|Warning:|Notice:|Deprecated', html), s)
 check('old post list address redirects', a.req('posts.php')[0] == 301)
@@ -490,7 +490,7 @@ if MYSQL:
     check('community: public page shows project, year and picture', f'{tagn} A' in page and 'พ.ศ. 2568' in page and 'netitem__img' in page)
     check('community: a province with a project is coloured', re.search(r'class="is-active is-l2" data-code="TH-50"', page) is not None, re.findall(r'data-code="TH-50"', page))
     pic = sql(f"SELECT image_id FROM community_projects WHERE id={ids[0]}")[0][0]
-    check('community: the picture page names the project that uses it', 'นวัตกรรมสู่ชุมชน: ' + tagn in a.req(f'media.php?id={pic}')[1])
+    check('community: the picture page names the project that uses it', 'วิจัยและนวัตกรรมเพื่อชุมชนและสังคม: ' + tagn in a.req(f'media.php?id={pic}')[1])
     for i in ids: entity('community.php', [('op', 'hide'), ('id', str(i))])
     check('community: hiding every project greys the province', 'is-active' not in public('network-community.php') and 'กำลังรวบรวมข้อมูลเครือข่าย' in public('network-community.php'))
     for i in ids: entity('community.php', [('op', 'delete'), ('id', str(i))])
@@ -498,6 +498,45 @@ if MYSQL:
     check('community: delete removes both', not net_ids('community_projects', 'title'))
 
 # editor limits
+# network highlights (round 16): the two bands under the world map: add, bad icon, hide/show, order within a band, delete
+tagl = 'hl-' + uuid.uuid4().hex[:6]
+def hl(fields): return entity('network-highlights.php', fields)
+s, _, _ = hl([('op', 'save'), ('kind', 'model'), ('title_th', f'{tagl} model'), ('title_en', 'Tagged model'), ('icon', 'magnifier'), ('is_public', '1')])
+check('highlights: add a way of working', s == 303, s)
+s, html, _ = hl([('op', 'save'), ('kind', 'value'), ('title_th', f'{tagl} value'), ('icon', 'bulb'), ('is_public', '1')])
+check('highlights: add a gain', s == 303, s)
+s, html, _ = hl([('op', 'save'), ('kind', 'model'), ('title_th', f'{tagl} badicon'), ('icon', '<svg onload=alert(1)>'), ('is_public', '1')])
+check('highlights: an icon outside the list is refused', s == 200 and 'ไม่ถูกต้อง' in html and f'{tagl} badicon' in html, s)
+s, html, _ = hl([('op', 'save'), ('kind', 'model'), ('title_th', f'{tagl} noicon')])
+check('highlights: the icon is required', s == 200 and 'ต้องกรอก' in html, s)
+s, html, _ = hl([('op', 'save'), ('kind', 'model'), ('title_th', ''), ('icon', 'globe')])
+check('highlights: the Thai text is required', s == 200 and 'ต้องกรอก' in html, s)
+if MYSQL:
+    check('highlights: only the two good rows were saved', sql(f"SELECT COUNT(*) FROM network_highlights WHERE title_th LIKE '{tagl}%'")[0][0] == '2')
+    mid = sql(f"SELECT id FROM network_highlights WHERE title_th='{tagl} model'")[0][0]
+    vid = sql(f"SELECT id FROM network_highlights WHERE title_th='{tagl} value'")[0][0]
+    check('highlights: kinds are kept apart', sql(f"SELECT kind FROM network_highlights WHERE id={mid}")[0][0] == 'model' and sql(f"SELECT kind FROM network_highlights WHERE id={vid}")[0][0] == 'value')
+    page = public('network-international.php')
+    check('highlights: public page shows the new way and gain in their bands', re.search(r'netmodels.*?' + tagl + ' model.*?netvalues.*?' + tagl + ' value', page, re.S) is not None)
+    check('highlights: the six starting ways are still there', page.count('class="netmodel"') >= 7 and 'International Co-supervision' in page)
+    hl([('op', 'hide'), ('id', mid), ('kind', 'model')])
+    check('highlights: hide removes it from the public page', f'{tagl} model' not in public('network-international.php'))
+    hl([('op', 'show'), ('id', mid), ('kind', 'model')])
+    check('highlights: show brings it back', f'{tagl} model' in public('network-international.php'))
+    before_values = [r[0] for r in sql("SELECT id FROM network_highlights WHERE kind='value' ORDER BY sort_order, id")]
+    hl([('op', 'top'), ('id', mid), ('kind', 'model')])
+    models = [r[0] for r in sql("SELECT id FROM network_highlights WHERE kind='model' ORDER BY sort_order, id")]
+    check('highlights: "top" moves the way of working first', models[0] == mid, models)
+    check('highlights: moving one band leaves the other alone', [r[0] for r in sql("SELECT id FROM network_highlights WHERE kind='value' ORDER BY sort_order, id")] == before_values)
+    hl([('op', 'down'), ('id', mid), ('kind', 'model')])
+    check('highlights: "down" moves it one place', [r[0] for r in sql("SELECT id FROM network_highlights WHERE kind='model' ORDER BY sort_order, id")][1] == mid)
+    s, html, _ = hl([('op', 'save'), ('id', mid), ('kind', 'model'), ('title_th', f'{tagl} edited'), ('icon', 'globe'), ('is_public', '1')])
+    check('highlights: edit changes text and icon', sql(f"SELECT title_th, icon FROM network_highlights WHERE id={mid}")[0] == [f'{tagl} edited', 'globe'])
+    check('highlights: an edit with no English text clears it', sql(f"SELECT title_en IS NULL FROM network_highlights WHERE id={mid}")[0][0] == '1')
+    for i in (mid, vid): hl([('op', 'delete'), ('id', i), ('kind', 'model')])
+    check('highlights: delete removes both', sql(f"SELECT COUNT(*) FROM network_highlights WHERE title_th LIKE '{tagl}%'")[0][0] == '0')
+    check('highlights: the starting rows are untouched', sql("SELECT COUNT(*) FROM network_highlights")[0][0] == '11')
+
 if os.environ.get('EDITOR_EMAIL'):
     e = Client()
     check('editor logs in', e.login(os.environ['EDITOR_EMAIL'], os.environ['EDITOR_PASS'])[0] == 303)

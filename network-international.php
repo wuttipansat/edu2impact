@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 require_once __DIR__ . '/includes/network.php';
-$currentPage = 'network-international'; $pageTitle = 'เครือข่ายวิจัยนานาชาติ | ' . $site['name'];
+$currentPage = 'network-international'; $pageTitle = 'เครือข่ายวิจัยและความร่วมมือนานาชาติ | ' . $site['name'];
 $networkAssets = true; // network.css and network-map.js, loaded by includes/header.php
 require __DIR__ . '/includes/header.php';
 ?>

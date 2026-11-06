@@ -1,81 +1,159 @@
 /* เมนู "เครือข่าย": network-international.php (แผนที่โลก) และ network-community.php (แผนที่ประเทศไทย)
-   โหลดเฉพาะสองหน้านี้ ต่อจาก main.css และก่อน theme.css (includes/header.php) ใช้ token สีและฟอนต์จาก theme.css
-   ไม่ใช้ !important และไม่ใส่ letter-spacing ติดลบกับข้อความไทย
-   พื้นที่บนแผนที่เปลี่ยนสีตามจำนวนรายการ: ระดับ 1–4 (4 = สี่รายการขึ้นไป) */
-.page-shell--network{--land:#e5e0e8;--l1:#9c5fb8;--l2:var(--purple-600);--l3:var(--purple-700);--l4:var(--purple-900)}
+   โหลดเฉพาะสองหน้านี้ ต่อจาก main.css และก่อน theme.css (includes/header.php) ไม่ใช้ !important
+   แผนที่เป็นฉากเต็มความกว้างจอสีม่วงเข้มของธีม พื้นที่ที่มีข้อมูลยิ่งมีรายการมากยิ่งสว่าง (ระดับ 1–4)
+   สีส้มของธีม (--accent-warm) ใช้กับสิ่งที่ชี้ไปยัง ม.เกษตรศาสตร์ บางเขน: จุดเริ่มต้น เส้นเครือข่าย และพื้นที่ที่เลือก
+   --u (ตั้งโดย network-map.js) = หน่วยแผนที่ต่อ 1px บนจอ ใช้ให้ตัวหนังสือและเส้นบางส่วนคงขนาดเมื่อซูม */
+.netmap{
+  scroll-margin-top:calc(var(--header-h) + 8px);
+  --night:var(--purple-900);
+  --sea:#34163f;
+  --land:#4b2a5a;
+  --border:#2b0f35;
+  --context:#3c1d49;
+  --l1:#9b62b6;
+  --l2:var(--purple-300);
+  --l3:var(--purple-200);
+  --l4:#f1dcfb;
+  --lantern:var(--accent-warm);
+  --u:1;
+  position:relative;
+  background:var(--night);
+  color:#fff;
+}
+.netmap{overflow-x:clip} /* the closed detail panel waits off to the right of the stage; it must not widen the page */
+.netmap__stage{position:relative}
 
-/* ---- Counts ---- */
-.netintro{padding-block:clamp(28px,3.5vw,44px) 0}
-.netstats{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px clamp(20px,3vw,40px);margin:0;color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-lg)}
-.netintro__empty{margin:0;padding:18px 20px;border:1px dashed var(--purple-300);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--ink);font-size:var(--fs-lg);text-align:center}
+/* ---- The map ---- */
+.netmap__canvas{position:relative;overflow:hidden}
+.netmap__svg{display:block;width:100%;height:auto}
+.netmap.is-ready .netmap__canvas{height:clamp(460px,82svh,920px)}
+.netmap.is-ready .netmap__svg{height:100%}
+/* before the script has run (or without it) the map still has to fit the screen, never run to full width at its own height */
+.netmap:not(.is-ready) .netmap__svg{width:auto;max-width:100%;max-height:82svh;margin-inline:auto}
+.netmap__svg path{fill:var(--land);stroke:var(--border);stroke-width:.6px;vector-effect:non-scaling-stroke;transition:fill .7s ease,opacity .3s ease}
+.netmap__svg .netmap__sphere{fill:var(--sea);stroke:rgba(224,201,236,.18);stroke-width:1px}
+.netmap__svg .netmap__grid{fill:none;stroke:rgba(224,201,236,.08);stroke-width:.6px;pointer-events:none}
+.netmap__svg .netmap__context path{fill:var(--context);stroke:var(--border);pointer-events:none}
+.netmap__label{fill:rgba(224,201,236,.55);font-family:var(--font-thai);font-size:calc(var(--u) * 13px);text-anchor:middle;pointer-events:none}
+.netmap--thailand{--land:#5b356b;--context:#3a1b46}
+.netmap--thailand .netmap__canvas{background:var(--night)}
 
-/* ---- Map and panel ---- */
-.netmap{padding-block:clamp(20px,2.4vw,32px) clamp(32px,4vw,56px)}
-.netmap__layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:clamp(16px,2.4vw,32px);align-items:start}
-.netmap__stage{min-width:0}
-.netmap__tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:14px}
-.netmap__regions{display:flex;flex-wrap:wrap;gap:8px}
-.netmap__chip{min-height:40px;padding:6px 16px;border:1px solid var(--purple-300);border-radius:var(--radius-pill);background:var(--surface-raised);color:var(--purple-800);font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;cursor:pointer;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
-.netmap__chip:hover{border-color:var(--purple-600);background:var(--purple-100)}
-.netmap__chip.is-on{border-color:var(--purple-800);background:var(--purple-800);color:#fff}
-.netmap__zoom{display:flex;gap:6px}
-.netmap__btn{display:grid;place-items:center;min-width:40px;min-height:40px;padding:0 12px;border:1px solid var(--purple-300);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--purple-800);font-family:var(--font-ui);font-size:20px;line-height:1;cursor:pointer}
-.netmap__btn--text{font-family:var(--font-thai);font-size:var(--fs-sm)}
-.netmap__btn:hover{border-color:var(--purple-600);background:var(--purple-100)}
-
-.netmap__canvas{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
-.netmap[data-netmap=thailand] .netmap__canvas{max-width:560px;margin-inline:auto}
-.netmap__svg{display:block;width:100%;height:auto;max-height:80vh}
-.netmap__svg path{fill:var(--land);stroke:#fff;stroke-width:.6px;vector-effect:non-scaling-stroke;transition:opacity .2s ease}
 .netmap__svg path.is-active{cursor:pointer}
-.netmap__svg path.is-l1,.netmap__svg circle.is-l1{fill:var(--l1)}
-.netmap__svg path.is-l2,.netmap__svg circle.is-l2{fill:var(--l2)}
-.netmap__svg path.is-l3,.netmap__svg circle.is-l3{fill:var(--l3)}
-.netmap__svg path.is-l4,.netmap__svg circle.is-l4{fill:var(--l4)}
-.netmap__svg path.is-active:hover{stroke:var(--accent-warm);stroke-width:1.6px}
-.netmap__svg path.is-dimmed{opacity:.3}
+.netmap__svg .is-l1{fill:var(--l1)}
+.netmap__svg .is-l2{fill:var(--l2)}
+.netmap__svg .is-l3{fill:var(--l3)}
+.netmap__svg .is-l4{fill:var(--l4)}
+.netmap__svg path.is-active.is-pending,.netmap__svg .netmap__marker.is-pending{fill:var(--land)}
+.netmap__svg path.is-active.is-hot{fill:var(--lantern)}
+.netmap__svg path.is-dimmed{opacity:.35}
 .netmap__svg path.is-dimmed.is-active{pointer-events:none}
 .netmap__svg [tabindex]:focus,.netmap__svg [tabindex]:focus-visible{outline:none}
-/* Rings for countries too small to click at world scale (Singapore, Hong Kong, the Maldives…) */
-.netmap__marker{stroke:#fff;cursor:pointer;vector-effect:non-scaling-stroke}
-.netmap__marker:hover{stroke:var(--accent-warm)}
-.netmap__outline,.netmap__svg .netmap__outline{fill:none;stroke:var(--accent-warm);stroke-width:3px;pointer-events:none;vector-effect:non-scaling-stroke}
-.netmap__svg .netmap__focusring{fill:none;stroke:#fff;stroke-width:5px;pointer-events:none;vector-effect:non-scaling-stroke;paint-order:stroke}
-.netmap__svg .netmap__focusring--ink{stroke:var(--purple-900);stroke-width:2.5px}
-.netmap__canvas.is-zoomed{cursor:grab;touch-action:none}
-.netmap__canvas.is-dragging{cursor:grabbing}
+
+/* Arcs from Bangkhen (world) */
+.netmap__svg .netmap__arc{fill:none;stroke:var(--lantern);stroke-linecap:round;opacity:.6;pointer-events:none;transition:opacity .25s ease}
+.netmap__arc.is-pending,.netmap__arc-end.is-pending{opacity:0}
+.netmap.has-hot .netmap__arc,.netmap.has-selection .netmap__arc{opacity:.14}
+.netmap .netmap__arc.is-hot,.netmap .netmap__arc.is-selected{opacity:1;stroke-width:calc(var(--u) * 2.6)}
+.netmap__arc-end{fill:var(--lantern);pointer-events:none;transform-box:fill-box;transform-origin:center}
+.netmap .netmap__arc.is-dimmed,.netmap .netmap__arc-end.is-dimmed{opacity:.06}
+/* Rings for countries too small to point at (Singapore, Hong Kong…) */
+.netmap__marker{stroke:var(--night);cursor:pointer;transition:fill .7s ease}
+.netmap__marker.is-dimmed{opacity:.3;pointer-events:none}
+/* Bubbles: number of projects in a province (Thailand) */
+.netmap__bubble{pointer-events:none;transform-box:fill-box;transform-origin:center;transition:opacity .3s ease}
+.netmap__bubble circle{fill:var(--lantern);stroke:var(--night)}
+.netmap__bubble text{fill:var(--night);font-family:var(--font-ui);font-size:calc(var(--u) * 12px);font-weight:700;text-anchor:middle;dominant-baseline:central}
+.netmap__bubble.is-pending{opacity:0}
+.netmap__bubble.is-dimmed{opacity:.2}
+/* Kasetsart University, Bangkhen */
+.netmap__origin{pointer-events:none}
+.netmap__origin-dot{fill:var(--lantern);stroke:#fff}
+.netmap__origin-halo{fill:var(--lantern);opacity:.22}
+/* Selection and keyboard focus are copies drawn on top, so neighbouring shapes cannot hide them */
+.netmap__svg .netmap__outline{fill:none;stroke:var(--lantern);stroke-width:3px;pointer-events:none}
+.netmap__svg .netmap__focusring{fill:none;stroke:#fff;stroke-width:6px;pointer-events:none}
+.netmap__svg .netmap__focusring--ink{stroke:var(--night);stroke-width:2.5px}
+.netmap.is-ready .netmap__canvas{touch-action:pan-y}
+.netmap .netmap__canvas.is-zoomed{cursor:grab;touch-action:none}
+.netmap .netmap__canvas.is-dragging{cursor:grabbing}
 .netmap__canvas.is-dragging .netmap__svg path{pointer-events:none}
 
-.netmap__tip{position:absolute;z-index:3;transform:translate(-50%,-135%);padding:4px 12px;border-radius:var(--radius-sm);background:var(--purple-900);color:#fff;font-family:var(--font-thai);font-size:var(--fs-xs);line-height:1.6;white-space:nowrap;pointer-events:none}
-.netmap__legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 0;padding:0;list-style:none;color:var(--ink-muted);font-size:var(--fs-xs)}
+/* ---- Things that float over the map ---- */
+.netmap__hud{position:absolute;z-index:4;top:clamp(18px,2.4vw,32px);left:var(--gutter);max-width:min(560px,calc(100% - 2 * var(--gutter) - 80px));pointer-events:none}
+.netmap__hud>*{pointer-events:auto}
+.netmap__count{margin:0;color:var(--purple-200);font-family:var(--font-thai);font-size:var(--fs-base);line-height:1.5}
+.netmap__num{margin:0 .12em;color:#fff;font-family:var(--font-ui);font-size:clamp(30px,3.4vw,46px);font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.netmap__hint{margin:6px 0 0;color:rgba(224,201,236,.78);font-size:var(--fs-xs)}
+.netmap__regions{position:absolute;z-index:4;left:var(--gutter);bottom:calc(clamp(16px,2vw,28px) + 40px);display:flex;flex-wrap:wrap;gap:8px;max-width:min(620px,calc(100% - 2 * var(--gutter)))}
+.netmap.has-selection .netmap__regions{max-width:min(620px,calc(100% - var(--gutter) - min(420px,38vw) - 60px))}
+.netmap__chip{min-height:38px;padding:5px 15px;border:1px solid rgba(224,201,236,.38);border-radius:var(--radius-pill);background:rgba(43,15,53,.72);color:var(--purple-100);font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;cursor:pointer;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.netmap__chip:hover{border-color:var(--purple-200);background:var(--purple-800)}
+.netmap .netmap__chip.is-on{border-color:var(--lantern);background:var(--lantern);color:var(--night)}
+.netmap__chip:focus-visible,.netmap__btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+
+.netmap__zoom{position:absolute;z-index:4;top:clamp(18px,2.4vw,32px);right:var(--gutter);display:flex;flex-direction:column;gap:6px;transition:right .45s cubic-bezier(.2,.8,.2,1)}
+.netmap.has-selection .netmap__zoom{right:calc(clamp(14px,1.6vw,22px) + min(420px,38vw) + 16px)}
+.netmap__btn{display:grid;place-items:center;min-width:42px;min-height:42px;padding:0 12px;border:1px solid rgba(224,201,236,.38);border-radius:10px;background:rgba(43,15,53,.78);color:#fff;font-family:var(--font-ui);font-size:22px;line-height:1;cursor:pointer}
+.netmap__btn--text{font-family:var(--font-thai);font-size:var(--fs-xs)}
+.netmap__btn:hover{border-color:var(--purple-200);background:var(--purple-800)}
+
+.netmap__legend{position:absolute;z-index:3;left:var(--gutter);bottom:clamp(16px,2vw,28px);display:flex;flex-wrap:wrap;gap:8px 22px;margin:0;padding:0;list-style:none;color:var(--purple-200);font-size:var(--fs-xs);pointer-events:none}
 .netmap__legend li{display:flex;align-items:center;gap:8px}
-.netmap__swatch{width:18px;height:18px;border:1px solid var(--line);border-radius:4px;background:var(--land)}
+.netmap__legend .netmap__legend-scale{gap:0}
+.netmap__legend-text{margin-left:10px}
+.netmap__swatch{display:block;width:22px;height:12px;background:var(--land)}
+.netmap__legend-scale .netmap__swatch:first-child{border-radius:6px 0 0 6px}
+.netmap__legend-scale .netmap__swatch:nth-child(4){border-radius:0 6px 6px 0}
+.netmap__legend .netmap__swatch.is-none{width:14px;height:14px;border-radius:4px}
 .netmap__swatch.is-l1{background:var(--l1)}.netmap__swatch.is-l2{background:var(--l2)}.netmap__swatch.is-l3{background:var(--l3)}.netmap__swatch.is-l4{background:var(--l4)}
+.netmap__origin-key{width:12px;height:12px;border:2px solid #fff;border-radius:50%;background:var(--lantern)}
 
-.netmap__panel{position:sticky;top:calc(var(--header-h) + 16px);max-height:calc(100vh - var(--header-h) - 32px);overflow:auto;padding:22px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
-.netmap__panel:focus{outline:none}
-.netmap__panel:focus-visible{outline:3px solid var(--purple-600);outline-offset:3px}
+.netmap__tip{position:absolute;z-index:6;display:grid;gap:2px;min-width:150px;max-width:260px;padding:10px 14px;transform:translate(-50%,calc(-100% - 14px));border-radius:10px;background:#fff;color:var(--ink);box-shadow:0 10px 30px rgba(20,4,28,.45);font-family:var(--font-thai);font-size:var(--fs-xs);line-height:1.55;pointer-events:none}
+.netmap__tip[hidden]{display:none}
+.netmap__tip.is-below{transform:translate(-50%,18px)}
+.netmap__tip strong{color:var(--purple-900);font-size:var(--fs-sm)}
+.netmap__tip-count{color:var(--purple-600);font-weight:600}
+.netmap__tip-list{color:var(--ink-muted);white-space:pre-line}
+.netmap__tip-list:empty{display:none}
+
+/* Detail panel: slides in over the right side of the map */
+.netmap__panel{position:absolute;z-index:5;top:clamp(14px,1.6vw,22px);right:clamp(14px,1.6vw,22px);bottom:clamp(14px,1.6vw,22px);width:min(420px,38vw);overflow:auto;padding:26px 24px 28px;border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 24px 60px rgba(20,4,28,.5);visibility:hidden;transform:translateX(calc(100% + 40px));transition:transform .45s cubic-bezier(.2,.8,.2,1),visibility .45s}
+.netmap__panel.is-open{visibility:visible;transform:none}
 .netmap:not(.is-ready) .netmap__panel{display:none}
-.netmap__hint{margin:0;color:var(--ink-muted)}
-.netmap.has-selection .netmap__hint{display:none}
-.netmap__close{position:absolute;top:10px;right:10px;display:none;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--purple-100);color:var(--purple-900);font-size:26px;line-height:1;cursor:pointer}
+.netmap__panel:focus{outline:none}
+.netmap__panel:focus-visible{box-shadow:0 0 0 3px var(--lantern),0 24px 60px rgba(20,4,28,.5)}
+.netmap__close{position:absolute;top:12px;right:12px;display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:var(--purple-100);color:var(--purple-900);font-size:26px;line-height:1;cursor:pointer}
 .netmap__close:hover{background:var(--purple-200)}
-.netmap__panel.is-open .netmap__close{display:grid}
-.netmap__panel.is-open .netarea__title{padding-right:44px}
+.netmap__close:focus-visible{outline:3px solid var(--purple-700);outline-offset:2px}
+.netmap__panel .netarea{padding:0;border:0;background:none}
+.netmap__panel .netarea__title{display:block;margin:0 52px 16px 0;color:var(--purple-900);font-size:clamp(24px,2.2vw,32px);line-height:1.25}
+.netmap__panel .netarea__count{display:block;margin-top:6px;color:var(--purple-600);font-size:var(--fs-sm);font-weight:600}
 
-/* Phones and narrow windows: the panel is a sheet that slides up from the bottom; the list under the map stays the main way to read everything */
+.netmap__empty{position:absolute;z-index:3;left:50%;top:50%;width:min(480px,calc(100% - 2 * var(--gutter)));padding:22px 26px;transform:translate(-50%,-50%);border:1px solid rgba(224,201,236,.3);border-radius:14px;background:rgba(43,15,53,.88);text-align:center}
+.netmap__empty p{margin:0;color:var(--purple-200);font-size:var(--fs-sm);text-wrap:balance}
+.netmap__empty .netmap__empty-title{margin-bottom:6px;color:#fff;font-size:var(--fs-lg);font-weight:600}
+
+/* Phones and narrow windows: counts and region buttons above the map, zoom buttons in a row, legend below,
+   and the panel becomes a sheet that slides up from the bottom */
 @media(max-width:900px){
-  .netmap__layout{grid-template-columns:minmax(0,1fr)}
-  .netmap__panel{position:fixed;z-index:60;inset:auto 0 0 0;max-height:72vh;border-width:1px 0 0;border-radius:16px 16px 0 0;box-shadow:0 -12px 32px rgba(43,15,53,.22);visibility:hidden;transform:translateY(105%);transition:transform .25s ease,visibility .25s}
-  .netmap__panel.is-open{visibility:visible;transform:none}
-  .netmap__hint{display:none}
+  .netmap__stage{display:flex;flex-direction:column}
+  .netmap .netmap__hud{position:static;order:1;max-width:none;padding:22px var(--gutter) 6px}
+  .netmap .netmap__regions,.netmap.has-selection .netmap__regions{position:static;order:2;max-width:none;flex-wrap:nowrap;overflow-x:auto;padding:10px var(--gutter) 4px;scrollbar-width:none}
+  .netmap__chip{flex:0 0 auto}
+  .netmap .netmap__zoom,.netmap.has-selection .netmap__zoom{position:static;order:3;flex-direction:row;justify-content:flex-end;padding:8px var(--gutter) 10px}
+  .netmap__canvas{order:4}
+  .netmap.is-ready .netmap__canvas{height:clamp(380px,70svh,680px)}
+  .netmap--world.is-ready .netmap__canvas{height:clamp(320px,58svh,540px)}
+  .netmap .netmap__legend{position:static;order:5;padding:14px var(--gutter) 22px}
+  .netmap .netmap__panel{position:fixed;z-index:60;inset:auto 0 0 0;width:auto;max-height:76vh;padding-bottom:calc(28px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0;transform:translateY(105%);box-shadow:0 -16px 40px rgba(20,4,28,.35)}
+  .netmap .netmap__panel.is-open{transform:none}
 }
 @media(prefers-reduced-motion:reduce){
-  .netmap__panel,.netmap__chip,.netmap__svg path{transition:none}
+  .netmap__panel,.netmap__chip,.netmap__zoom,.netmap__svg path,.netmap__arc,.netmap__marker,.netmap__bubble{transition:none}
 }
 
-/* ---- Text list (works without JavaScript) ---- */
-.netlist{padding-block:clamp(8px,1vw,16px) clamp(48px,6vw,88px)}
+/* ---- Text list under the map (works without JavaScript) ---- */
+.netlist{padding-block:clamp(40px,5vw,72px) clamp(48px,6vw,88px)}
 .netlist h2{margin:0 0 clamp(18px,2vw,28px)}
 .netlist__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:clamp(14px,1.6vw,22px)}
 .netarea{padding:20px 22px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
@@ -86,7 +164,8 @@
 .netitem:first-child{padding-top:0;border-top:0}
 .netitem__img{width:100%;height:auto;margin-bottom:10px;border-radius:var(--radius-sm)}
 .netitem__title{margin:0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5}
-.netitem__sub{margin:2px 0 0;font-size:var(--fs-xs)}
+.netitem__sub,.netitem__year{margin:2px 0 0;font-size:var(--fs-xs)}
+.netitem__year{color:var(--purple-600)}
 .netitem__text{margin:8px 0 0;font-size:var(--fs-sm);line-height:1.75}
 .netitem__link{margin:8px 0 0;font-size:var(--fs-sm)}
 .netitem__link a{display:inline-flex;align-items:center;gap:6px}
@@ -94,4 +173,40 @@
 .netitem__related a{display:inline-block;padding:4px 12px;border:1px solid var(--purple-200);border-radius:var(--radius-pill);background:var(--purple-50);color:var(--purple-800);font-size:var(--fs-xs);line-height:1.6;text-decoration:none}
 .netitem__related a:hover{border-color:var(--purple-600);background:var(--purple-100)}
 .netitem__kind{color:var(--ink-muted)}
-.netmap__panel .netarea{padding:0;border:0}
+
+/* ---- Two bands under the world map: ways of working together, and what the programme gains ---- */
+.netinfo{padding-block:clamp(40px,5vw,72px) 0;background:var(--surface-raised,#fff)}
+.netinfo__band+.netinfo__band{margin-top:clamp(36px,4.5vw,64px)}
+.netinfo h2{margin:0 0 clamp(18px,2vw,28px)}
+.netmodels,.netvalues{margin:0;padding:0;list-style:none}
+.netmodels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.4vw,20px)}
+.netmodel{position:relative;display:flex;align-items:center;gap:16px;min-width:0;padding:18px 20px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--purple-50)}
+.netmodel__no{position:absolute;top:10px;right:14px;color:var(--purple-600);font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:700;line-height:1}
+.netmodel__icon,.netvalue__icon{display:grid;flex:none;place-items:center;border-radius:50%;color:var(--purple-800)}
+.netmodel__icon{width:56px;height:56px;border:1.5px solid var(--purple-200);background:#fff}
+.netmodel__text{display:grid;gap:2px;min-width:0;padding-right:18px}
+.netmodel__th{font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5;overflow-wrap:break-word}
+.netmodel__en,.netvalue__en{color:var(--ink-muted);font-size:var(--fs-xs);line-height:1.5;overflow-wrap:break-word}
+.netvalues{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:clamp(18px,2vw,28px) 0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--purple-50)}
+.netvalue{display:grid;justify-items:center;align-content:start;gap:10px;min-width:0;padding:4px clamp(12px,1.6vw,24px);text-align:center}
+.netvalue+.netvalue{border-left:1px dashed var(--purple-200)}
+.netvalue__icon{width:64px;height:64px;background:#fff;border:1.5px solid var(--purple-200)}
+.netvalue__th{font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:600;line-height:1.6;overflow-wrap:break-word}
+.netinfo .neticon{display:block}
+@media(max-width:1100px){
+  .netmodels{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .netvalues{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px 0}
+  .netvalue:nth-child(3n+1){border-left:0}
+}
+@media(max-width:760px){
+  .netmodels{grid-template-columns:1fr}
+  .netvalues{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .netvalue:nth-child(3n+1){border-left:1px dashed var(--purple-200)}
+  .netvalue:nth-child(2n+1){border-left:0}
+  .netvalue:last-child:nth-child(odd){grid-column:1/-1}
+}
+.netinfo.is-armed [data-reveal]{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+.netinfo.is-armed [data-reveal].is-in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){
+  .netinfo.is-armed [data-reveal]{opacity:1;transform:none;transition:none}
+}

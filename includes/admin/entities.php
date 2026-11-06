@@ -82,7 +82,7 @@ function admin_entity_move(string $table, int $id, string $op, string $where = '
 // $derive (optional) receives the validated values of a save and returns them with extra columns added.
 function admin_entity_post(string $table, array $spec, string $where = '1=1', array $args = [], ?callable $derive = null): array {
     $db = admin_db(); $op = in_str('op'); $id = in_int('id');
-    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects'], true)) { return ['ตารางไม่ถูกต้อง']; }
+    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects', 'network_highlights'], true)) { return ['ตารางไม่ถูกต้อง']; }
     if ($op === 'delete' && $id) { $db->prepare("DELETE FROM $table WHERE id = ?")->execute([$id]); admin_flash('ลบแล้ว'); return []; }
     if (in_array($op, ['show', 'hide'], true) && $id) {
         $db->prepare("UPDATE $table SET is_public = ? WHERE id = ?")->execute([$op === 'show' ? 1 : 0, $id]); admin_flash($op === 'show' ? 'แสดงบนเว็บแล้ว' : 'ซ่อนจากเว็บแล้ว'); return [];

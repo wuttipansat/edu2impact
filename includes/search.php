@@ -88,6 +88,24 @@ function search_index() {
             }
         }
     }
+    // The two bands under the world map (network_highlights) as one entry that links to them.
+    $highlights = [];
+    foreach (network_highlight_groups() as $rows) {
+        foreach ($rows as $row) { $highlights[] = $row['title_th']; $highlights[] = $row['title_en'] ?? ''; }
+    }
+    if (array_filter($highlights, static fn ($text): bool => trim((string) $text) !== '')) {
+        $index[] = [
+            'type' => 'network',
+            'title' => 'รูปแบบและคุณค่าความร่วมมือ',
+            'summary' => 'รูปแบบความร่วมมือกับเครือข่ายวิจัยนานาชาติ และคุณค่าที่เกิดกับหลักสูตรและนิสิต',
+            'keywords' => search_join([$highlights]),
+            'text' => search_join(['รูปแบบความร่วมมือ คุณค่าที่เกิดกับหลักสูตรและนิสิต', $highlights]),
+            'body' => '',
+            'url' => 'network-international.php#netinfo',
+            'date' => '',
+            'category' => 'เครือข่ายวิจัยนานาชาติ',
+        ];
+    }
     foreach (load_data('events') as $event) {
         if (!isset($event['title'])) { continue; }
         $index[] = [

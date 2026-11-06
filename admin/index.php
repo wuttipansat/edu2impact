@@ -52,6 +52,6 @@ echo $link('', 'ทั้งหมด'); foreach (ADMIN_KINDS as $k => $label) {
 <div class="inline"><a class="btn btn--small btn--ghost" href="post-edit.php?id=<?= (int) $r['id'] ?>">แก้ไข</a>
 <?php if ($r['is_public']): ?><a class="btn btn--small btn--ghost" href="../<?= e(detail_url($r['kind'], $r['slug'])) ?>" target="_blank" rel="noopener">ดูบนเว็บ</a><?php endif; ?></div></li><?php endforeach; ?></ul>
 <?php if (!$all && $total > count($rows)): ?><p><a href="index.php?<?= e(http_build_query(array_filter(['kind' => $kind, 'q' => $q, 'all' => '1']))) ?>">แสดงทั้งหมด (<?= $total ?> โพสต์)</a></p><?php endif; ?>
-<p class="more"><strong>จัดการอื่นๆ</strong><br><a href="media.php">คลังรูป</a><a href="home.php">แบนเนอร์หน้าแรก</a><a href="shop.php">ร้านค้า</a><a href="network.php">เครือข่ายวิจัยนานาชาติ</a><a href="community.php">นวัตกรรมสู่ชุมชน</a>
+<p class="more"><strong>จัดการอื่นๆ</strong><br><a href="media.php">คลังรูป</a><a href="home.php">แบนเนอร์หน้าแรก</a><a href="shop.php">ร้านค้า</a><a href="network.php">เครือข่ายวิจัยและความร่วมมือนานาชาติ</a><a href="network-highlights.php">รูปแบบและคุณค่าความร่วมมือ</a><a href="community.php">วิจัยและนวัตกรรมเพื่อชุมชนและสังคม</a>
 <?php if (admin_is_admin($user)): ?><a href="settings.php">ตั้งค่าเว็บ</a><a href="users.php">ผู้ใช้</a><a href="backup.php">สำรองข้อมูล</a><?php endif; ?></p>
 <?php admin_foot();

@@ -15,8 +15,8 @@ function network_config(string $mode): array {
         return $cache[$mode] = [
             'dataset' => 'network', 'field' => 'country_code', 'svg' => 'assets/maps/world.svg', 'page' => 'network-international.php',
             'names' => $names, 'region_of' => $regionOf, 'region_labels' => $labels['world'], 'all_regions' => false,
-            'area' => 'ประเทศ', 'item' => 'สถาบัน', 'zoom' => true,
-            'map_label' => 'แผนที่โลกแสดงประเทศที่มีเครือข่ายวิจัย', 'list_title' => 'เครือข่ายวิจัยทั้งหมด',
+            'area' => 'ประเทศ', 'item' => 'สถาบัน', 'lead' => 'เครือข่ายใน', 'hint' => 'ชี้หรือแตะประเทศที่สว่าง เพื่อดูสถาบันที่ร่วมงาน',
+            'map_label' => 'แผนที่โลกแสดงประเทศที่มีเครือข่ายวิจัยและความร่วมมือ', 'list_title' => 'เครือข่ายวิจัยและความร่วมมือทั้งหมด',
         ];
     }
     $names = []; $regionOf = [];
@@ -24,8 +24,8 @@ function network_config(string $mode): array {
     return $cache[$mode] = [
         'dataset' => 'community', 'field' => 'province_code', 'svg' => 'assets/maps/thailand.svg', 'page' => 'network-community.php',
         'names' => $names, 'region_of' => $regionOf, 'region_labels' => $labels['thailand'], 'all_regions' => true,
-        'area' => 'จังหวัด', 'item' => 'โครงการ', 'zoom' => false,
-        'map_label' => 'แผนที่ประเทศไทยแสดงจังหวัดที่มีงานนวัตกรรมสู่ชุมชน', 'list_title' => 'โครงการนวัตกรรมสู่ชุมชนทั้งหมด',
+        'area' => 'จังหวัด', 'item' => 'โครงการ', 'lead' => 'ลงพื้นที่แล้ว', 'hint' => 'ชี้หรือแตะจังหวัดที่สว่าง เพื่อดูโครงการในจังหวัดนั้น',
+        'map_label' => 'แผนที่ประเทศไทยแสดงจังหวัดที่มีงานวิจัยและนวัตกรรมเพื่อชุมชนและสังคม', 'list_title' => 'โครงการวิจัยและนวัตกรรมเพื่อชุมชนและสังคมทั้งหมด',
     ];
 }
 
@@ -74,8 +74,8 @@ function network_item_html(string $mode, array $item): string {
             $html .= '<img class="netitem__img" src="' . e($src) . '"' . ($w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '') . ' alt="" loading="lazy">';
         }
         $html .= '<h4 class="netitem__title">' . e($item['title']) . '</h4>';
-        $meta = array_filter([(string) ($item['community'] ?? ''), !empty($item['year']) ? 'พ.ศ. ' . (int) $item['year'] : '']);
-        if ($meta) { $html .= '<p class="netitem__sub">' . e(implode(' · ', $meta)) . '</p>'; }
+        if (!empty($item['community'])) { $html .= '<p class="netitem__sub">' . e($item['community']) . '</p>'; }
+        if (!empty($item['year'])) { $html .= '<p class="netitem__year">พ.ศ. ' . (int) $item['year'] . '</p>'; }
         if (!empty($item['summary'])) { $html .= '<p class="netitem__text">' . e($item['summary']) . '</p>'; }
     }
     $cards = network_related($item);
@@ -105,7 +105,8 @@ function network_svg(string $mode, array $areas): string {
     }, $svg) ?? $svg;
 }
 
-// Everything below the hero: counts, map with tools and legend, detail panel, and the full text list.
+// Everything below the hero: a full-width map stage (counts, region buttons, zoom, legend and the detail panel float
+// over the map) and the full text list under it. Without JavaScript the stage is just the coloured map.
 function render_network_page(string $mode): void {
     $cfg = network_config($mode);
     $areas = network_areas($mode);
@@ -114,36 +115,29 @@ function render_network_page(string $mode): void {
     $regionsWithData = array_values(array_unique(array_filter(array_column($areas, 'region'))));
     $regions = array_filter($cfg['region_labels'], static fn ($slug) => $cfg['all_regions'] || in_array($slug, $regionsWithData, true), ARRAY_FILTER_USE_KEY);
     ?>
-<section class="netintro"><div class="container">
-<?php if ($empty): ?>
-  <p class="netintro__empty" role="status">กำลังรวบรวมข้อมูลเครือข่าย</p>
-<?php else: ?>
-  <p class="netstats"><span class="netstats__lead">เครือข่ายใน</span> <span class="item-count"><strong><?= count($areas) ?></strong> <?= e($cfg['area']) ?></span> <span class="item-count"><strong><?= $items ?></strong> <?= e($cfg['item']) ?></span></p>
-<?php endif; ?>
-</div></section>
-<section class="netmap<?= $empty ? ' is-empty' : '' ?>" data-netmap="<?= e($mode) ?>" data-unit="<?= e($cfg['item']) ?>" aria-label="<?= e($cfg['map_label']) ?>"><div class="container netmap__layout">
+<section class="netmap netmap--<?= e($mode) ?><?= $empty ? ' is-empty' : '' ?>" data-netmap="<?= e($mode) ?>" data-unit="<?= e($cfg['item']) ?>" aria-label="<?= e($cfg['map_label']) ?>">
   <div class="netmap__stage">
-<?php if (!$empty): ?>
-    <div class="netmap__tools" hidden>
-<?php if ($regions): ?>      <div class="netmap__regions" role="group" aria-label="เลือกพื้นที่ที่จะดู"><button class="netmap__chip is-on" type="button" data-region="" aria-pressed="true">ทั้งหมด</button><?php foreach ($regions as $slug => $label): ?><button class="netmap__chip" type="button" data-region="<?= e($slug) ?>" aria-pressed="false"><?= e($label) ?></button><?php endforeach; ?></div>
-<?php endif; ?>
-<?php if ($cfg['zoom']): ?>      <div class="netmap__zoom" role="group" aria-label="ซูมแผนที่"><button class="netmap__btn" type="button" data-zoom="in" aria-label="ซูมเข้า">+</button><button class="netmap__btn" type="button" data-zoom="out" aria-label="ซูมออก">−</button><button class="netmap__btn netmap__btn--text" type="button" data-zoom="reset">รีเซ็ต</button></div>
-<?php endif; ?>
-    </div>
-<?php endif; ?>
     <div class="netmap__canvas"><?= network_svg($mode, $areas) ?><div class="netmap__tip" role="tooltip" hidden></div></div>
-<?php if (!$empty): ?>
-    <ul class="netmap__legend" aria-label="คำอธิบายสีบนแผนที่"><li><span class="netmap__swatch is-l1"></span>1 <?= e($cfg['item']) ?></li><li><span class="netmap__swatch is-l2"></span>2</li><li><span class="netmap__swatch is-l3"></span>3</li><li><span class="netmap__swatch is-l4"></span>4 ขึ้นไป</li><li><span class="netmap__swatch is-none"></span>ยังไม่มีข้อมูล</li></ul>
+<?php if ($empty): ?>
+    <div class="netmap__empty" role="status"><p class="netmap__empty-title">กำลังรวบรวมข้อมูลเครือข่าย</p><p>เมื่อเพิ่มรายการแรกแล้ว <?= e($cfg['area']) ?>นั้นจะสว่างขึ้นบนแผนที่นี้</p></div>
+<?php else: ?>
+    <div class="netmap__hud">
+      <p class="netmap__count"><?= e($cfg['lead']) ?> <span class="netmap__num"><?= count($areas) ?></span> <?= e($cfg['area']) ?> <span class="netmap__num"><?= $items ?></span> <?= e($cfg['item']) ?></p>
+      <p class="netmap__hint"><?= e($cfg['hint']) ?></p>
+    </div>
+<?php if ($regions): ?>
+    <div class="netmap__tools netmap__regions" role="group" aria-label="เลือกพื้นที่ที่จะดู" hidden><button class="netmap__chip is-on" type="button" data-region="" aria-pressed="true">ทั้งหมด</button><?php foreach ($regions as $slug => $label): ?><button class="netmap__chip" type="button" data-region="<?= e($slug) ?>" aria-pressed="false"><?= e($label) ?></button><?php endforeach; ?></div>
+<?php endif; ?>
+    <div class="netmap__tools netmap__zoom" role="group" aria-label="ซูมแผนที่" hidden><button class="netmap__btn" type="button" data-zoom="in" aria-label="ซูมเข้า">+</button><button class="netmap__btn" type="button" data-zoom="out" aria-label="ซูมออก">−</button><button class="netmap__btn netmap__btn--text" type="button" data-zoom="reset">ดูทั้งหมด</button></div>
+    <ul class="netmap__legend" aria-label="คำอธิบายสีบนแผนที่"><li class="netmap__legend-scale"><span class="netmap__swatch is-l1"></span><span class="netmap__swatch is-l2"></span><span class="netmap__swatch is-l3"></span><span class="netmap__swatch is-l4"></span><span class="netmap__legend-text">1 ถึง 4 <?= e($cfg['item']) ?>ขึ้นไป</span></li><li><span class="netmap__swatch is-none"></span>ยังไม่มีข้อมูล</li><li><span class="netmap__origin-key"></span>มหาวิทยาลัยเกษตรศาสตร์ บางเขน</li></ul>
+    <aside class="netmap__panel" id="netmap-panel" aria-label="รายละเอียดของ<?= e($cfg['area']) ?>ที่เลือก" tabindex="-1">
+      <button class="netmap__close" type="button" aria-label="ปิดรายละเอียด"><span aria-hidden="true">×</span></button>
+      <div class="netmap__detail" aria-live="polite"></div>
+    </aside>
 <?php endif; ?>
   </div>
-<?php if (!$empty): ?>
-  <aside class="netmap__panel" id="netmap-panel" aria-label="รายละเอียดของ<?= e($cfg['area']) ?>ที่เลือก" tabindex="-1">
-    <button class="netmap__close" type="button" aria-label="ปิดรายละเอียด"><span aria-hidden="true">×</span></button>
-    <p class="netmap__hint">เลือก<?= e($cfg['area']) ?>สีม่วงบนแผนที่ เพื่อดูรายละเอียด</p>
-    <div class="netmap__detail" aria-live="polite"></div>
-  </aside>
-<?php endif; ?>
-</div></section>
+</section>
+<?php if ($mode === 'world') { render_network_highlights(); } ?>
 <?php if (!$empty): ?>
 <section class="netlist" aria-labelledby="netlist-title"><div class="container">
   <h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2>
@@ -157,5 +151,47 @@ function render_network_page(string $mode): void {
   </div>
 </div></section>
 <?php endif; ?>
+<?php
+}
+
+// Two bands of short text with icons under the world map: how the partners work with the programme (kind "model", a
+// numbered list) and what the programme and its students gain (kind "value"). Content is network_highlights /
+// data/network-highlights.json. A band with no published row is left out, heading included.
+function network_highlight_groups(): array {
+    $groups = ['model' => [], 'value' => []];
+    foreach (load_data('network-highlights') as $row) {
+        if (!is_array($row) || !isset($groups[$row['kind'] ?? '']) || trim((string) ($row['title_th'] ?? '')) === '') { continue; }
+        $groups[$row['kind']][] = $row;
+    }
+    return $groups;
+}
+
+function render_network_highlights(): void {
+    require_once __DIR__ . '/network-icons.php';
+    $groups = network_highlight_groups();
+    if (!$groups['model'] && !$groups['value']) { return; }
+    ?>
+<div class="netinfo" id="netinfo"><div class="container">
+<?php if ($groups['model']): ?>
+  <section class="netinfo__band" aria-labelledby="netmodels-title">
+    <h2 id="netmodels-title">รูปแบบความร่วมมือ</h2>
+    <ol class="netmodels">
+<?php foreach ($groups['model'] as $i => $row): ?>
+      <li class="netmodel" data-reveal><span class="netmodel__no" aria-hidden="true"><?= $i + 1 ?></span><span class="netmodel__icon"><?= network_icon_svg((string) ($row['icon'] ?? ''), 30) ?></span><span class="netmodel__text"><span class="netmodel__th"><?= e($row['title_th']) ?></span><?php if (!empty($row['title_en'])): ?><span class="netmodel__en" lang="en"><?= e($row['title_en']) ?></span><?php endif; ?></span></li>
+<?php endforeach; ?>
+    </ol>
+  </section>
+<?php endif; ?>
+<?php if ($groups['value']): ?>
+  <section class="netinfo__band" aria-labelledby="netvalues-title">
+    <h2 id="netvalues-title">คุณค่าที่เกิดกับหลักสูตรและนิสิต</h2>
+    <ol class="netvalues">
+<?php foreach ($groups['value'] as $row): ?>
+      <li class="netvalue" data-reveal><span class="netvalue__icon"><?= network_icon_svg((string) ($row['icon'] ?? ''), 38) ?></span><span class="netvalue__th"><?= e($row['title_th']) ?></span><?php if (!empty($row['title_en'])): ?><span class="netvalue__en" lang="en"><?= e($row['title_en']) ?></span><?php endif; ?></li>
+<?php endforeach; ?>
+    </ol>
+  </section>
+<?php endif; ?>
+</div></div>
 <?php
 }

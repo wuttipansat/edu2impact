@@ -78,11 +78,12 @@ function content_db_load(string $name): ?array {
             'shop' => content_db_shop($pdo),
             'network' => content_db_network($pdo),
             'community' => content_db_community($pdo),
+            'network-highlights' => content_db_network_highlights($pdo),
             default => content_db_posts($pdo, $name),
         };
     } catch (Throwable $exception) {
         if (content_db_missing_table($exception)) {
-            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : '2026-10-27-01-structure.sql';
+            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : ($name === 'network-highlights' ? '2026-11-06-02-network-highlights.sql' : '2026-10-27-01-structure.sql');
             error_log('edu2impact: table for ' . $name . ' not found, reading its file instead. Import database/updates/' . $migration . ' (' . $exception->getMessage() . ')');
             return $cache[$name] = null;
         }
@@ -241,6 +242,17 @@ function content_db_community(PDO $pdo): array {
         if ($image !== '') { $record['image'] = $image; }
         $related = content_db_json($row['related'] ?? null);
         if ($related) { $record['related'] = $related; }
+        $records[] = $record;
+    }
+    return $records;
+}
+
+// รูปแบบความร่วมมือ and คุณค่าที่เกิดกับหลักสูตรและนิสิต (network_highlights) in the shape of data/network-highlights.json.
+function content_db_network_highlights(PDO $pdo): array {
+    $records = [];
+    foreach ($pdo->query('SELECT * FROM network_highlights WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+        $record = ['kind' => (string) $row['kind'], 'title_th' => (string) $row['title_th'], 'icon' => (string) $row['icon']];
+        if ($row['title_en'] !== null && $row['title_en'] !== '') { $record['title_en'] = (string) $row['title_en']; }
         $records[] = $record;
     }
     return $records;
