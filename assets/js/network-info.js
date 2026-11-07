@@ -1,4 +1,4 @@
-// Fades in the cards of the two bands under the world map as they scroll into view (network-international.php).
+// Draws in the hairlines and fades in the text of the two bands under the world map as they scroll into view (network-international.php).
 // Without this file, or with reduced motion, every card is simply there.
 (() => {
   'use strict';
@@ -12,7 +12,7 @@
       if (!entry.isIntersecting) return;
       const card = entry.target;
       const siblings = [...card.parentElement.children];
-      card.style.setProperty('transition-delay', Math.min(siblings.indexOf(card), 5) * 70 + 'ms');
+      card.style.setProperty('--d', Math.min(siblings.indexOf(card), 5) * 90 + 'ms');
       card.classList.add('is-in');
       seen.unobserve(card);
     });

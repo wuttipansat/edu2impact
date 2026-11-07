@@ -11,7 +11,7 @@ data/community.json hold test records (never put test records in the repo):
 It checks, at 1440, 1100 and 390 px: the menu, that the maps are coloured, tooltip, panel (click, keyboard, Esc, #CODE),
 zoom and region buttons, the text list, no console errors and no CSP violations; and the pages with JavaScript off.
 """
-import os, sys
+import os, re, sys
 from playwright.sync_api import sync_playwright
 
 SITE = os.environ.get('SITE', 'http://127.0.0.1:8090').rstrip('/')
@@ -103,8 +103,9 @@ def world(page, width):
     page.wait_for_timeout(3500)
     check(f'{tag} opening sequence finishes', page.locator('.is-pending').count() == 0, page.locator('.is-pending').count())
     check(f'{tag} list shows every active country', page.locator('.netarea').count() == 11, page.locator('.netarea').count())
-    stats = page.locator('.netmap__count').inner_text()
-    check(f'{tag} counts text', '11' in stats and '15' in stats, stats)
+    stats = page.locator('.netmap__stats').inner_text().split()
+    check(f'{tag} HUD: two figures with labels', stats == ['ประเทศ', '11', 'สถาบัน', '15'] or stats == ['11', 'ประเทศ', '15', 'สถาบัน'], stats)
+    check(f'{tag} HUD: a screen reader gets one sentence', 'เครือข่ายใน 11 ประเทศ 15 สถาบัน' in page.locator('.netmap__hud .visually-hidden').inner_text())
     menu(page, width, tag)
     start = viewbox_w(page)
     if width > 900:
@@ -130,13 +131,13 @@ def world(page, width):
     page.click('[data-zoom=out]'); page.wait_for_timeout(700)
     page.click('[data-zoom=reset]'); page.wait_for_timeout(700)
     check(f'{tag} reset', abs(viewbox_w(page) - home) < 1)
-    chips = page.locator('.netmap__chip').all_inner_texts()
-    check(f'{tag} region chips only for regions with data', 'ทั้งหมด' in chips and 'เอเชียตะวันออกเฉียงใต้' in chips and 'แอฟริกา' in chips and 'อเมริกาใต้' in chips and 'เอเชียตะวันตก' not in chips, chips)
-    page.locator('.netmap__chip', has_text='เอเชียตะวันออกเฉียงใต้').click(); page.wait_for_timeout(700)
+    chips = [re.sub(r'\s*\d+$', '', t.strip()) for t in page.locator('.netmap__tag').all_inner_texts()]
+    check(f'{tag} region chips only for regions with data', 'เอเชียตะวันออกเฉียงใต้' in chips and 'แอฟริกา' in chips and 'อเมริกาใต้' in chips and 'เอเชียตะวันตก' not in chips, chips)
+    pick_region(page, 'เอเชียตะวันออกเฉียงใต้'); page.wait_for_timeout(700)
     check(f'{tag} region zooms', abs(viewbox_w(page) - home) > 1)
     check(f'{tag} other regions dimmed', page.locator('path.is-dimmed').count() > 100, page.locator('path.is-dimmed').count())
     shot(page, f'world-{width}-region')
-    page.locator('.netmap__chip', has_text='ทั้งหมด').click(); page.wait_for_timeout(700)
+    page.click('[data-zoom=reset]'); page.wait_for_timeout(700)
     page.goto(SITE + '/network-international.php#SG')
     page.wait_for_selector('.netmap.is-ready'); page.wait_for_timeout(500)
     check(f'{tag} #SG opens the tiny country', 'TEST National Institute' in page.locator('.netmap__panel').inner_text() and viewbox_w(page) < home - 1)
@@ -150,8 +151,8 @@ def thailand(page, width):
     check(f'{tag} 77 provinces drawn', page.locator('.netmap__svg path[data-code]').count() == 77, page.locator('.netmap__svg path[data-code]').count())
     check(f'{tag} 7 provinces active', page.locator('path.is-active').count() == 7, page.locator('path.is-active').count())
     check(f'{tag} Phuket has level 4', 'is-l4' in page.locator('.netmap__land path[data-code=TH-83]').get_attribute('class'))
-    chips = page.locator('.netmap__chip').all_inner_texts()
-    check(f'{tag} six regions + all', len(chips) == 7, chips)
+    chips = [re.sub(r'\s*\d+$', '', t.strip()) for t in page.locator('.netmap__tag').all_inner_texts()]
+    check(f'{tag} only regions with projects, plus all', 'ภาคเหนือ' in chips and 'ภาคใต้' in chips and 'ภาคตะวันตก' not in chips and len(chips) >= 3, chips)
     check(f'{tag} bubbles show the number of projects', page.locator('.netmap__bubble').count() == 7 and '4' in [t.text_content() for t in page.locator('.netmap__bubble text').all()])
     page.wait_for_timeout(3200)
     check(f'{tag} opening sequence finishes', page.locator('.is-pending').count() == 0, page.locator('.is-pending').count())
@@ -163,12 +164,12 @@ def thailand(page, width):
     check(f'{tag} panel has related cards', panel.locator('.netitem__related a').count() == 2, panel.locator('.netitem__related a').count())
     shot(page, f'thailand-{width}-open')
     page.keyboard.press('Escape')
-    page.locator('.netmap__chip', has_text='ภาคใต้').click(); page.wait_for_timeout(700)
+    pick_region(page, 'ภาคใต้'); page.wait_for_timeout(700)
     dimmed = page.locator('path.is-dimmed').count()
     check(f'{tag} south filter dims the other provinces', 55 < dimmed < 77, dimmed)
     check(f'{tag} south filter zooms', viewbox_w(page) < thai_home - 1)
     shot(page, f'thailand-{width}-south')
-    page.locator('.netmap__chip', has_text='ทั้งหมด').click(); page.wait_for_timeout(700)
+    page.click('[data-zoom=reset]'); page.wait_for_timeout(700)
     page.goto(SITE + '/network-community.php#TH-83')
     page.wait_for_selector('.netmap.is-ready'); page.wait_for_timeout(500)
     check(f'{tag} #TH-83 opens Phuket', 'ภูเก็ต' in page.locator('.netmap__panel').inner_text() and page.locator('.netmap__detail .netitem').count() == 4)
@@ -222,7 +223,9 @@ def highlights(browser):
         over = page.evaluate("[...document.querySelectorAll('.netmodel,.netvalue,.netmodel *,.netvalue *')].filter(e=>e.scrollWidth>e.clientWidth+1&&!(e instanceof SVGElement)).map(e=>e.className)")
         check(f'{width}px highlights: no text spills out of a card', not over, over)
         check(f'{width}px highlights: no horizontal scroll', page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
-        check(f'{width}px highlights: cards revealed after scrolling', page.evaluate("[...document.querySelectorAll('[data-reveal]')].every(e=>+getComputedStyle(e).opacity===1)"))
+        check(f'{width}px highlights: cards revealed after scrolling', page.evaluate("[...document.querySelectorAll('[data-reveal]')].every(e=>[...e.children].every(c=>+getComputedStyle(c).opacity===1))"))
+        check(f'{width}px highlights: ways of working are numbered 01 to 06', page.locator('.netmodel__no').all_inner_texts() == ['01', '02', '03', '04', '05', '06'], page.locator('.netmodel__no').all_inner_texts())
+        check(f'{width}px highlights: the gains band is dark, the ways band is light', page.evaluate("(()=>{const l=c=>{const m=getComputedStyle(document.querySelector(c)).backgroundColor.match(/\\d+/g).map(Number);return (m[0]+m[1]+m[2])/3};return l('.netband--values')<80&&l('.netband--models')>230})()"))
         if width == 1440:
             tops = page.evaluate("[...document.querySelectorAll('.netvalue')].map(e=>Math.round(e.getBoundingClientRect().top))")
             check('1440px highlights: the five gains share one row', len(tops) == 5 and len(set(tops)) == 1, tops)
@@ -256,6 +259,89 @@ def thai_data_size(browser):
         thai_size(page, f'data {width}px')
         shot(page, f'data-community-{width}')
         page.context.close()
+
+
+def pick_region(page, name):
+    # wide screens: the label on the map; phones: the row of buttons above it
+    tag = page.locator('.netmap__tag', has_text=name)
+    (tag if tag.first.is_visible() else page.locator('.netmap__chip', has_text=name)).first.click()
+
+
+def selection_and_hud(browser):
+    # Round 17: a chosen area is filled (no heavy outline), the focus ring is for the keyboard only, the figures and the
+    # region switch are tidy, and the bottom-left block never sits on a lit area.
+    for path, code, width, height in (('network-international.php', 'JP', 1440, 900), ('network-community.php', 'TH-50', 1440, 900), ('network-international.php', 'JP', 1901, 931), ('network-community.php', 'TH-50', 1901, 931)):
+        ctx = browser.new_context(viewport={'width': width, 'height': height})
+        page = ctx.new_page()
+        errors = []
+        watch(page, errors)
+        page.goto(f'{SITE}/{path}')
+        page.evaluate("document.querySelector('.netmap').scrollIntoView({block:'start',behavior:'instant'})"); page.wait_for_timeout(3500)
+        tag = f'{path} {width}px'
+        world = path.startswith('network-international')
+        hint = page.evaluate("(()=>{const h=document.querySelector('.netmap__hint');return h?+getComputedStyle(h).opacity:null})()")
+        check(f'{tag}: usage hint: none on the world map, shown on Thailand before the first choice', hint is None if world else hint == 1, hint)
+        over = page.evaluate("""(()=>{const hit=(a,b)=>a.left<b.right-2&&a.right>b.left+2&&a.top<b.bottom-2&&a.bottom>b.top+2;
+          const blockers=['.netmap__hud','.netmap__zoom','.netmap__hint'].map(q=>document.querySelector(q)).filter(Boolean).map(n=>n.getBoundingClientRect());
+          const bad=[];
+          document.querySelectorAll('.netmap__tag').forEach(t=>{const r=t.getBoundingClientRect();if(!r.width||t.classList.contains('is-away'))return;
+            if(t.classList.contains('is-crowded'))bad.push(t.textContent+' crowded');
+            if(blockers.some(b=>hit(r,b)))bad.push(t.textContent+' on controls');
+            for(const gx of [0,.25,.5,.75,1])for(const gy of [0,.5,1]){if(document.elementsFromPoint(r.left+r.width*gx,r.top+r.height*gy).some(n=>n.matches&&n.matches('.netmap__svg path.is-active')))bad.push(t.textContent+' on lit area')}});
+          return [...new Set(bad)]})()""")
+        check(f'{tag}: region labels cover no lit area, no controls, none crowded', not over, over)
+        click_area(page, code); page.wait_for_timeout(1500)
+        r = page.evaluate("""(()=>{const s=document.querySelector('.netmap__selected');if(!s)return null;const c=getComputedStyle(s);return [c.fill,parseFloat(c.strokeWidth),document.querySelectorAll('.netmap__focusring').length,(document.querySelector('.netmap__hint')?+getComputedStyle(document.querySelector('.netmap__hint')).opacity:0)]})()""")
+        check(f'{tag}: a click fills the chosen area with a hairline edge', r is not None and r[0] != 'none' and r[1] <= 1.5, r)
+        check(f'{tag}: a click leaves no focus ring', r is not None and r[2] == 0, r)
+        check(f'{tag}: the usage hint fades once something is chosen', r is not None and r[3] == 0, r)
+        shot(page, f'selected-{path[:9]}-{width}')
+        page.keyboard.press('Escape'); page.wait_for_timeout(600)
+        page.keyboard.press('Shift')
+        page.locator('path.is-active').first.focus(); page.wait_for_timeout(200)
+        check(f'{tag}: keyboard focus draws a thin ring', page.evaluate("(()=>{const f=document.querySelector('.netmap__focusring');return !!f&&parseFloat(getComputedStyle(f).strokeWidth)<=2.5})()"))
+        check(f'{tag}: no console errors', not errors, errors)
+        ctx.close()
+    page = browser.new_context(viewport={'width': 1440, 'height': 900}).new_page()
+    page.goto(SITE + '/network-international.php')
+    page.evaluate("document.querySelector('.netmap').scrollIntoView({block:'start',behavior:'instant'})"); page.wait_for_timeout(3500)
+    tags = [re.sub(r'\s+', ' ', t.strip()) for t in page.locator('.netmap__tag').all_inner_texts()]
+    check('region labels: one per region with data, each ends in its number', len(tags) == 7 and all(re.search(r' \d+$', c) for c in tags), tags)
+    check('region labels: plain text on the map, no box, the old list is hidden', page.evaluate("(()=>{const t=getComputedStyle(document.querySelector('.netmap__tag'));return t.backgroundColor==='rgba(0, 0, 0, 0)'&&parseFloat(t.borderTopWidth)===0&&getComputedStyle(document.querySelector('.netmap__regions')).display==='none'})()"))
+    page.locator('.netmap__tag', has_text='ยุโรป').click(); page.wait_for_timeout(800)
+    check('region labels: the chosen one is marked and the others fade', page.evaluate("(()=>{const on=document.querySelectorAll('.netmap__tag.is-on');return on.length===1&&on[0].textContent.includes('ยุโรป')&&document.querySelector('.netmap__tag:not(.is-on)').getAttribute('aria-pressed')==='false'&&+getComputedStyle(document.querySelector('.netmap__tag:not(.is-on)')).opacity<.8})()"))
+    page.click('[data-zoom=reset]'); page.wait_for_timeout(1400)
+    page.locator('.netmap__tag', has_text='ยุโรป').focus(); page.keyboard.press('Enter'); page.wait_for_timeout(800)
+    check('region labels: reachable and usable from the keyboard', page.locator('.netmap__tag.is-on').count() == 1)
+    check('legend: only the origin key, no sentence, no bar and no tiny numbers', page.locator('.netmap__legend li').count() == 1 and 'พื้นที่ยิ่งสว่าง' not in page.content() and 'คลิกประเทศที่สว่าง' not in page.content() and page.locator('.netmap__scale,.netmap__scale-ticks').count() == 0, page.locator('.netmap__legend').inner_text())
+    ph = browser.new_context(viewport={'width': 390, 'height': 844}).new_page()
+    ph.goto(SITE + '/network-international.php'); ph.wait_for_timeout(800)
+    check('phone: the row of region buttons is shown, the map labels are not', ph.locator('.netmap__chip:visible').count() == 8 and ph.locator('.netmap__tag:visible').count() == 0, [ph.locator('.netmap__chip:visible').count(), ph.locator('.netmap__tag:visible').count()])
+    ph.context.close()
+    page.context.close()
+    base = os.environ.get('EMPTY_SITE', '').rstrip('/')
+    if base:
+        page = browser.new_context(viewport={'width': 1440, 'height': 900}).new_page()
+        page.goto(base + '/network-international.php')
+        check('empty map: no region switch, no HUD figures', page.locator('.netmap__regions').count() == 0 and page.locator('.netmap__stats').count() == 0)
+        page.context.close()
+    ctx = browser.new_context(java_script_enabled=False, viewport={'width': 1440, 'height': 900})
+    page = ctx.new_page()
+    page.goto(SITE + '/network-international.php')
+    check('no-js: the figures show their final numbers', page.locator('.netmap__num').all_inner_texts() == ['11', '15'], page.locator('.netmap__num').all_inner_texts())
+    ctx.close()
+
+
+def home_hero(browser):
+    # index.php: the hero fills the screen and its text never meets the slide buttons
+    for width, height in ((1440, 900), (1901, 931), (390, 844), (360, 640)):
+        ctx = browser.new_context(viewport={'width': width, 'height': height})
+        page = ctx.new_page()
+        page.goto(SITE + '/index.php'); page.wait_for_timeout(800)
+        r = page.evaluate("""(()=>{const q=s=>document.querySelector(s).getBoundingClientRect();return {h:Math.round(q('.hero-slider').height),cta:q('.hero-slide.is-active .hero-primary').bottom,ctrl:q('.hero-controls').top,sw:document.documentElement.scrollWidth}})()""")
+        check(f'home hero {width}x{height}: as tall as the screen', r['h'] == height, r)
+        check(f'home hero {width}x{height}: text clears the slide buttons, no sideways scroll', r['cta'] <= r['ctrl'] + 1 and r['sw'] <= width, r)
+        ctx.close()
 
 
 def titles_and_footer(browser):
@@ -334,6 +420,8 @@ with sync_playwright() as p:
     nav_widths(browser)
     thai_data_size(browser)
     highlights(browser)
+    selection_and_hud(browser)
+    home_hero(browser)
     titles_and_footer(browser)
     empty_state(browser)
     no_js(browser)
