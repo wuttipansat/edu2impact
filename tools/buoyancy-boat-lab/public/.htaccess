@@ -1,0 +1,11 @@
+# Single-page app: any path under this folder that is not a real file opens index.html.
+# Local to this folder; the site's own rules are untouched.
+DirectoryIndex index.html
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /apps/buoyancy-boat-lab/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . index.html [L]
+</IfModule>

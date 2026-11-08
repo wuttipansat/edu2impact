@@ -1,0 +1,7 @@
+- [Boat assembly physics](boat-assembly-physics.md) — optional parts use shared-draft buoyancy; visual geometry is bounded separately from physical inputs.
+- [Liquid illustration](liquid-illustration.md) — distinguish liquids through coordinated basin, swatch, and submerged-hull treatments without changing physics.
+- [Editor and preview visibility](editor-preview-visibility.md) — keep long boat controls internally scrollable so students can see the simulation while editing, including on mobile.
+- [Fair boat competitions](race-fairness.md) — compare boats in common freshwater from zero cargo; treat simultaneous last sinking as a tie.
+- [Race review privacy](race-review-privacy.md) — share only matching boat experiments in the post-race review; keep peer designs immutable and comments unattributed.
+- [Cargo piece display](cargo-piece-display.md) — infer visible cargo pieces from mass-per-piece, but distinguish approximate counts from actual step multiples.
+- [Lab page visual priority](lab-page-visual-priority.md) — keep race submission secondary to boat building and experiment results, not a dominant banner.
