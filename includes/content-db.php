@@ -79,11 +79,12 @@ function content_db_load(string $name): ?array {
             'network' => content_db_network($pdo),
             'community' => content_db_community($pdo),
             'network-highlights' => content_db_network_highlights($pdo),
+            'network-photos' => content_db_network_photos($pdo),
             default => content_db_posts($pdo, $name),
         };
     } catch (Throwable $exception) {
         if (content_db_missing_table($exception)) {
-            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : ($name === 'network-highlights' ? '2026-11-06-02-network-highlights.sql' : '2026-10-27-01-structure.sql');
+            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : ($name === 'network-highlights' ? '2026-11-06-02-network-highlights.sql' : ($name === 'network-photos' ? '2026-11-16-03-network-photos.sql' : '2026-10-27-01-structure.sql'));
             error_log('edu2impact: table for ' . $name . ' not found, reading its file instead. Import database/updates/' . $migration . ' (' . $exception->getMessage() . ')');
             return $cache[$name] = null;
         }
@@ -219,12 +220,27 @@ function content_db_network(PDO $pdo): array {
     $records = [];
     foreach ($pdo->query('SELECT * FROM network_partners WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
         $record = ['country_code' => (string) $row['country_code'], 'institution' => (string) $row['institution']];
-        foreach (['institution_th', 'description', 'url'] as $key) {
-            if ($row[$key] !== null && $row[$key] !== '') { $record[$key] = (string) $row[$key]; }
+        // summary and people arrive with 2026-11-16-01-network-tags.sql; before that the columns are simply absent.
+        foreach (['institution_th', 'summary', 'people', 'description', 'url'] as $key) {
+            if (isset($row[$key]) && $row[$key] !== '') { $record[$key] = (string) $row[$key]; }
         }
+        $image = content_db_image_ref($row); // image_id / image arrive with the same migration
+        if ($image !== '') { $record['image'] = $image; }
+        $tags = array_values(array_filter(array_map('trim', explode(',', (string) ($row['tags'] ?? '')))));
+        if ($tags) { $record['tags'] = $tags; }
         $related = content_db_json($row['related'] ?? null);
         if ($related) { $record['related'] = $related; }
         $records[] = $record;
+    }
+    return $records;
+}
+
+// ภาพกิจกรรมกับเครือข่าย (network_photos) in the shape of data/network-photos.json: image (media:<id> or a path), caption.
+function content_db_network_photos(PDO $pdo): array {
+    $records = [];
+    foreach ($pdo->query('SELECT * FROM network_photos WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+        $image = content_db_image_ref($row);
+        if ($image !== '') { $records[] = ['image' => $image, 'caption' => (string) $row['caption']]; }
     }
     return $records;
 }

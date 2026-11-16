@@ -163,6 +163,18 @@ function media_hidden_ids(): array {
     } catch (Throwable $exception) {
         if (!content_db_missing_table($exception)) { throw $exception; }
     }
+    // Card pictures and the photo strip of the international network. Before 2026-11-16-01-network-tags.sql and
+    // 2026-11-16-03-network-photos.sql the columns or the table do not exist yet.
+    foreach (['network_partners', 'network_photos'] as $table) {
+        try {
+            foreach ($pdo->query('SELECT image_id, image, is_public FROM ' . $table) as $item) {
+                $note((int) $item['image_id'], (int) $item['is_public'] === 1);
+                $note((string) $item['image'], (int) $item['is_public'] === 1);
+            }
+        } catch (Throwable $exception) {
+            if (!content_db_missing_table($exception) && !str_contains($exception->getMessage(), 'image')) { throw $exception; }
+        }
+    }
     $ids = array_diff_key($hidden, $public);
     // A file uploaded in the admin that no public record uses yet (not attached, or attached only to a draft) stays private.
     // Rows from the migration have uploaded_by NULL and are not touched. Before the admin migration the column does not exist.

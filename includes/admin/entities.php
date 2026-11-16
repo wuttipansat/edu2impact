@@ -1,7 +1,7 @@
 <?php
 // Small list editor shared by the home banner and shop pages (and the unlinked events page).
 // A $spec maps column => field: type text|textarea|date|url|youtube|slug|flag|image|fixed|select|int|posts, label, max, required, hint, value (fixed), default.
-// select: 'options' => [value => label]. int: 'min', 'max'. posts: 'kinds' => [post kinds]; stores [{"kind","id"}] as JSON (the network pages' `related`).
+// select: 'options' => [value => label]. tags: 'options' => [slug => label], checkboxes stored as "slug,slug". int: 'min', 'max'. posts: 'kinds' => [post kinds]; stores [{"kind","id"}] as JSON (the network pages' `related`).
 require_once __DIR__ . '/media-lib.php';
 require_once __DIR__ . '/posts.php';
 
@@ -55,6 +55,10 @@ function admin_entity_values(array $spec, ?array $current): array {
                     if (is_string($ref) && isset($known[$ref])) { [$k, $id] = explode('/', $ref, 2); $picked[$ref] = ['kind' => $k, 'id' => $id]; }
                 }
                 $v[$col] = $picked ? json_encode(array_values($picked), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null; break;
+            case 'tags':
+                $picked = array_filter((isset($_POST[$col]) && is_array($_POST[$col]) ? $_POST[$col] : []), static fn ($s): bool => is_string($s) && isset($f['options'][$s]));
+                $slugs = array_values(array_filter(array_keys($f['options']), static fn ($s): bool => in_array($s, $picked, true)));
+                $v[$col] = $slugs ? implode(',', $slugs) : null; break;
             case 'textarea': $x = in_str($col, $f['max'] ?? 4000); $v[$col] = $x === '' ? null : $x; break;
             default: $x = in_line($col, $f['max'] ?? 255); $v[$col] = $x === '' ? null : $x;
         }
@@ -82,7 +86,7 @@ function admin_entity_move(string $table, int $id, string $op, string $where = '
 // $derive (optional) receives the validated values of a save and returns them with extra columns added.
 function admin_entity_post(string $table, array $spec, string $where = '1=1', array $args = [], ?callable $derive = null): array {
     $db = admin_db(); $op = in_str('op'); $id = in_int('id');
-    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects', 'network_highlights'], true)) { return ['ตารางไม่ถูกต้อง']; }
+    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects', 'network_highlights', 'network_photos'], true)) { return ['ตารางไม่ถูกต้อง']; }
     if ($op === 'delete' && $id) { $db->prepare("DELETE FROM $table WHERE id = ?")->execute([$id]); admin_flash('ลบแล้ว'); return []; }
     if (in_array($op, ['show', 'hide'], true) && $id) {
         $db->prepare("UPDATE $table SET is_public = ? WHERE id = ?")->execute([$op === 'show' ? 1 : 0, $id]); admin_flash($op === 'show' ? 'แสดงบนเว็บแล้ว' : 'ซ่อนจากเว็บแล้ว'); return [];
@@ -142,6 +146,13 @@ function admin_entity_form(string $action, array $spec, ?array $row, array $hidd
                 echo '</div></details>';
             }
             echo '</div>';
+        } elseif ($t === 'tags') {
+            $on = array_flip($posted !== null ? array_filter((array) ($posted[$col] ?? []), 'is_string') : array_map('trim', explode(',', (string) $val)));
+            echo '<fieldset class="field"><legend><strong>' . e($f['label']) . '</strong></legend>' . $hint . '<div class="checklist">';
+            foreach ($f['options'] as $slug => $label) {
+                echo '<label class="check"><input type="checkbox" name="' . e($col) . '[]" value="' . e((string) $slug) . '"' . (isset($on[$slug]) ? ' checked' : '') . '> ' . e($label) . '</label>';
+            }
+            echo '</div></fieldset>';
         } elseif ($t === 'textarea') {
             echo '<label>' . e($f['label']) . $hint . '<textarea name="' . e($col) . '">' . e((string) $val) . '</textarea></label>';
         } elseif ($t === 'image') {

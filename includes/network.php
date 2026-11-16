@@ -59,15 +59,54 @@ function network_related(array $record): array {
     return $cards;
 }
 
-function network_item_html(string $mode, array $item): string {
-    $html = '<li class="netitem">';
+// Tags of a world record as slug => label, in the order of config/network-tags.php. Unknown slugs are dropped.
+// The database gives an array; data/network.json may hold an array or a comma-separated string.
+function network_tags_of(array $item): array {
+    static $known = null;
+    $known ??= require __DIR__ . '/../config/network-tags.php';
+    $raw = $item['tags'] ?? [];
+    $slugs = is_array($raw) ? $raw : explode(',', (string) $raw);
+    $slugs = array_flip(array_filter(array_map(static fn ($s): string => trim((string) $s), $slugs)));
+    return array_filter($known, static fn ($slug): bool => isset($slugs[$slug]), ARRAY_FILTER_USE_KEY);
+}
+
+// Description lines (one point per line), at most $max. Empty lines are skipped.
+function network_points(string $text, int $max = 3): array {
+    $lines = array_values(array_filter(array_map('trim', preg_split('~\R~u', $text) ?: []), static fn (string $l): bool => $l !== ''));
+    return array_slice(array_map(static fn (string $l): string => preg_replace('~\A[-•*·]\s*~u', '', $l) ?? $l, $lines), 0, $max);
+}
+
+// $tag: 'li' in lists, 'div' inside a card of the deck under the world map.
+function network_item_html(string $mode, array $item, string $tag = 'li'): string {
+    $tag = $tag === 'div' ? 'div' : 'li';
     if ($mode === 'world') {
-        $html .= '<h4 class="netitem__title">' . e($item['institution']) . '</h4>';
-        if (!empty($item['institution_th'])) { $html .= '<p class="netitem__sub">' . e($item['institution_th']) . '</p>'; }
-        if (!empty($item['description'])) { $html .= '<p class="netitem__text">' . e($item['description']) . '</p>'; }
+        $tags = network_tags_of($item);
+        $html = '<' . $tag . ' class="netitem" data-tags="' . e(implode(' ', array_keys($tags))) . '">';
+        if ($tags) {
+            $html .= '<ul class="netitem__tags" aria-label="รูปแบบความร่วมมือ">';
+            foreach ($tags as $label) { $html .= '<li>' . e($label) . '</li>'; }
+            $html .= '</ul>';
+        }
+        // The name links to the institution's own website (new tab), so the entry needs no separate link line.
         $url = (string) ($item['url'] ?? '');
-        if (preg_match('~\Ahttps?://~i', $url)) { $html .= '<p class="netitem__link"><a href="' . e($url) . '" target="_blank" rel="noopener noreferrer">เว็บไซต์ของสถาบัน<span class="visually-hidden"> ' . e($item['institution']) . ' (เปิดแท็บใหม่)</span> ' . icon_arrow('up-right') . '</a></p>'; }
+        $name = e($item['institution']);
+        if (preg_match('~\Ahttps?://~i', $url)) {
+            $name = '<a class="netitem__site" href="' . e($url) . '" target="_blank" rel="noopener noreferrer">' . $name . '<span class="visually-hidden"> (เว็บไซต์ของสถาบัน เปิดแท็บใหม่)</span> ' . icon_arrow('up-right') . '</a>';
+        }
+        $html .= '<h4 class="netitem__title">' . $name . '</h4>';
+        if (!empty($item['institution_th'])) { $html .= '<p class="netitem__sub">' . e($item['institution_th']) . '</p>'; }
+        if (trim((string) ($item['summary'] ?? '')) !== '') { $html .= '<p class="netitem__summary">' . e(trim((string) $item['summary'])) . '</p>'; }
+        if (trim((string) ($item['people'] ?? '')) !== '') { $html .= '<p class="netitem__people">' . e(trim((string) $item['people'])) . '</p>'; }
+        $points = network_points((string) ($item['description'] ?? ''));
+        if (count($points) > 1) {
+            $html .= '<ul class="netitem__points">';
+            foreach ($points as $point) { $html .= '<li>' . e($point) . '</li>'; }
+            $html .= '</ul>';
+        } elseif ($points) {
+            $html .= '<p class="netitem__text">' . e($points[0]) . '</p>';
+        }
     } else {
+        $html = '<li class="netitem">';
         $src = image_path($item);
         if ($src !== '') {
             [$w, $h] = image_size($src);
@@ -84,7 +123,27 @@ function network_item_html(string $mode, array $item): string {
         foreach ($cards as $card) { $html .= '<li><a href="' . e($card['url']) . '"><span class="netitem__kind">' . e($card['label']) . '</span> ' . e($card['title']) . '</a></li>'; }
         $html .= '</ul>';
     }
-    return $html . '</li>';
+    return $html . '</' . $tag . '>';
+}
+
+// Filter buttons over the list under the world map: "ทั้งหมด" and each tag that at least one institution has, with
+// counts. Hidden until network-map.js wires them, so visitors without JavaScript never see buttons that do nothing.
+function network_tag_filter(array $areas): string {
+    $counts = []; $total = 0;
+    foreach ($areas as $area) {
+        foreach ($area['items'] as $item) {
+            $total++;
+            foreach (array_keys(network_tags_of($item)) as $slug) { $counts[$slug] = ($counts[$slug] ?? 0) + 1; }
+        }
+    }
+    if (!$counts) { return ''; }
+    $html = '<div class="netfilter" role="group" aria-label="กรองตามรูปแบบความร่วมมือ" hidden>';
+    $html .= '<button class="netfilter__chip" type="button" data-tag="" aria-pressed="true">ทั้งหมด <span class="netfilter__n">' . $total . '</span></button>';
+    foreach (require __DIR__ . '/../config/network-tags.php' as $slug => $label) {
+        if (empty($counts[$slug])) { continue; }
+        $html .= '<button class="netfilter__chip" type="button" data-tag="' . e($slug) . '" aria-pressed="false">' . e($label) . ' <span class="netfilter__n">' . (int) $counts[$slug] . '</span></button>';
+    }
+    return $html . '</div>';
 }
 
 // Colour step 1..4 from the number of records in an area (4 = four or more).
@@ -150,61 +209,66 @@ function render_network_page(string $mode): void {
 <?php endif; ?>
   </div>
 </section>
-<?php if ($mode === 'world') { render_network_highlights(); } ?>
-<?php if (!$empty): ?>
-<section class="netlist" aria-labelledby="netlist-title"><div class="container">
+<?php if (!$empty && $mode === 'world'): $deckTotal = array_sum(array_map(static fn (array $a): int => count($a['items']), $areas)); ?>
+<section class="netlist netlist--world" aria-labelledby="netlist-title">
+  <div class="container"><div class="netlist__top"><h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2><?= network_tag_filter($areas) ?></div></div>
+  <div class="netdeck" aria-label="สถาบันในเครือข่าย">
+    <div class="netdeck__viewport">
+      <ul class="netdeck__track">
+<?php $first = []; foreach ($areas as $code => $area): foreach ($area['items'] as $item): $anchor = !isset($first[$code]); $first[$code] = true; $src = image_path($item); ?>
+        <li class="netdeck__card"<?= $anchor ? ' id="' . e($code) . '"' : '' ?> data-code="<?= e($code) ?>" data-country="<?= e($area['name']) ?>" data-tags="<?= e(implode(' ', array_keys(network_tags_of($item)))) ?>">
+          <div class="netdeck__media<?= $src === '' ? ' is-empty' : '' ?>"><?php if ($src !== ''): [$w, $h] = image_size($src); ?><img src="<?= e($src) ?>"<?= $w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '' ?> alt="" loading="lazy" decoding="async"><?php endif; ?></div>
+          <div class="netdeck__body">
+            <p class="netdeck__where"><span><?= e($area['name']) ?></span><a class="netdeck__map" href="#<?= e($code) ?>">ดูบนแผนที่<span class="visually-hidden"> (<?= e($area['name']) ?>)</span></a></p>
+            <?= network_item_html($mode, $item, 'div') ?>
+          </div>
+        </li>
+<?php endforeach; endforeach; ?>
+      </ul>
+      <div class="netdeck__ctrls" hidden><button class="hero-ctrl netdeck__ctrl" type="button" data-deck-prev aria-label="สถาบันก่อนหน้า"><?= icon_arrow('chevron-left') ?></button><button class="hero-ctrl netdeck__ctrl" type="button" data-deck-next aria-label="สถาบันถัดไป"><?= icon_arrow('chevron-right') ?></button></div>
+    </div>
+    <p class="netdeck__count" aria-live="polite" hidden><span data-deck-count>1</span> / <span data-deck-total><?= $deckTotal ?></span></p>
+  </div>
+</section>
+<?php elseif (!$empty): ?>
+<section class="netlist netlist--<?= e($mode) ?>" aria-labelledby="netlist-title"><div class="container">
   <h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2>
   <div class="netlist__grid">
 <?php foreach ($areas as $code => $area): $n = count($area['items']); ?>
     <section class="netarea" id="<?= e($code) ?>" data-name="<?= e($area['name']) ?>" aria-labelledby="<?= e($code) ?>-title">
-      <h3 class="netarea__title" id="<?= e($code) ?>-title"><?= e($area['name']) ?> <span class="netarea__count"><?= $n ?> <?= e($cfg['item']) ?></span></h3>
+      <h3 class="netarea__title" id="<?= e($code) ?>-title"><?= e($area['name']) ?> <span class="netarea__count"><span class="netarea__n"><?= $n ?></span> <?= e($cfg['item']) ?></span></h3>
       <ul class="netarea__items"><?php foreach ($area['items'] as $item) { echo network_item_html($mode, $item); } ?></ul>
     </section>
 <?php endforeach; ?>
   </div>
 </div></section>
 <?php endif; ?>
+<?php if ($mode === 'world') { render_network_photos(); } ?>
 <?php
 }
 
-// Two bands of short text with icons under the world map: how the partners work with the programme (kind "model", a
-// numbered list) and what the programme and its students gain (kind "value"). Content is network_highlights /
-// data/network-highlights.json. A band with no published row is left out, heading included.
-function network_highlight_groups(): array {
-    $groups = ['model' => [], 'value' => []];
-    foreach (load_data('network-highlights') as $row) {
-        if (!is_array($row) || !isset($groups[$row['kind'] ?? '']) || trim((string) ($row['title_th'] ?? '')) === '') { continue; }
-        $groups[$row['kind']][] = $row;
+// Photo strip under the deck of the world page: activity photos (network_photos / data/network-photos.json) moving
+// sideways without stop, once network-map.js has set it going. With ten photos or more they are split over two rows that
+// move in opposite directions. Without JavaScript, or with reduced motion, each row is a strip that scrolls by hand.
+function render_network_photos(): void {
+    $photos = [];
+    foreach (load_data('network-photos') as $row) {
+        $src = is_array($row) ? image_path($row) : '';
+        if ($src !== '') { $photos[] = ['src' => $src, 'alt' => trim((string) ($row['caption'] ?? ''))]; }
     }
-    return $groups;
-}
-
-function render_network_highlights(): void {
-    require_once __DIR__ . '/network-icons.php';
-    $groups = network_highlight_groups();
-    if (!$groups['model'] && !$groups['value']) { return; }
+    if (!$photos) { return; }
+    $rows = count($photos) >= 10 ? [[], []] : [[]];
+    foreach ($photos as $i => $photo) { $rows[$i % count($rows)][] = $photo; }
     ?>
-<div class="netinfo" id="netinfo">
-<?php if ($groups['model']): ?>
-  <section class="netband netband--models" aria-labelledby="netmodels-title"><div class="container netband__grid">
-    <h2 id="netmodels-title">รูปแบบความร่วมมือ</h2>
-    <ol class="netmodels">
-<?php foreach ($groups['model'] as $i => $row): ?>
-      <li class="netmodel" data-reveal><span class="netmodel__no" aria-hidden="true"><?= sprintf('%02d', $i + 1) ?></span><span class="netmodel__text"><span class="netmodel__th"><?= e($row['title_th']) ?></span><?php if (!empty($row['title_en'])): ?><span class="netmodel__en" lang="en"><?= e($row['title_en']) ?></span><?php endif; ?></span><span class="netmodel__icon"><?= network_icon_svg((string) ($row['icon'] ?? ''), 24) ?></span></li>
+<section class="netphotos" aria-labelledby="netphotos-title">
+  <div class="container netphotos__head"><h2 id="netphotos-title">ภาพกิจกรรมกับเครือข่าย</h2><button class="netphotos__toggle" type="button" aria-pressed="false" hidden>หยุดภาพเลื่อน</button></div>
+  <div class="netphotos__rows">
+<?php foreach ($rows as $r => $set): ?>
+    <div class="netphotos__row" data-dir="<?= $r ? 'right' : 'left' ?>">
+      <ul class="netphotos__strip"><?php foreach ($set as $photo): [$w, $h] = image_size($photo['src']); ?><li><img src="<?= e($photo['src']) ?>"<?= $w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '' ?> alt="<?= e($photo['alt']) ?>" loading="lazy" decoding="async"></li><?php endforeach; ?></ul>
+    </div>
 <?php endforeach; ?>
-    </ol>
-  </div></section>
-<?php endif; ?>
-<?php if ($groups['value']): ?>
-  <section class="netband netband--values" aria-labelledby="netvalues-title"><div class="container">
-    <h2 id="netvalues-title">คุณค่าที่เกิดกับหลักสูตรและนิสิต</h2>
-    <ol class="netvalues">
-<?php foreach ($groups['value'] as $row): ?>
-      <li class="netvalue" data-reveal><span class="netvalue__icon"><?= network_icon_svg((string) ($row['icon'] ?? ''), 32) ?></span><span class="netvalue__th"><?= e($row['title_th']) ?></span><?php if (!empty($row['title_en'])): ?><span class="netvalue__en" lang="en"><?= e($row['title_en']) ?></span><?php endif; ?></li>
-<?php endforeach; ?>
-    </ol>
-  </div></section>
-<?php endif; ?>
-</div>
+  </div>
+</section>
 <?php
 }

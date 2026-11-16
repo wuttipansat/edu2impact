@@ -1,0 +1,30 @@
+<?php
+// ภาพกิจกรรมกับเครือข่าย: แถบรูปที่เลื่อนต่อเนื่องใต้การ์ดสถาบันบน network-international.php (หนึ่งแถวต่อหนึ่งรูป)
+require_once dirname(__DIR__) . '/includes/admin/entities.php';
+$user = admin_boot();
+$spec = [
+    'image_id' => ['type' => 'image', 'label' => 'รูป', 'required' => true, 'hint' => 'รูปแนวนอนหรือแนวตั้งก็ได้ แถบจะจัดความสูงให้เท่ากัน'],
+    'caption' => ['label' => 'คำบรรยายภาพ', 'required' => true, 'max' => 300, 'hint' => 'บอกว่าเป็นกิจกรรมอะไร กับสถาบันไหน เช่น นิสิตแลกเปลี่ยนจาก Chiba University ทำกิจกรรมที่โรงเรียนสาธิต มก. ใช้เป็นข้อความแทนภาพสำหรับผู้ใช้โปรแกรมอ่านหน้าจอ'],
+    'is_public' => ['type' => 'flag', 'label' => 'แสดงบนเว็บ', 'default' => 1]];
+$errors = []; $posted = null; $postedId = 0;
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+    $errors = admin_entity_post('network_photos', $spec);
+    if (!$errors) { admin_go('network-photos.php'); }
+    $posted = $_POST; $postedId = in_int('id');
+}
+try {
+    $rows = admin_db()->query('SELECT * FROM network_photos ORDER BY sort_order, id')->fetchAll();
+} catch (PDOException $e) {
+    admin_fail('ยังไม่มีตาราง network_photos ให้นำเข้า database/updates/2026-11-16-03-network-photos.sql ด้วย phpMyAdmin ก่อน');
+}
+admin_head('ภาพกิจกรรมกับเครือข่าย', 'network-photos.php');
+echo '<p class="muted">รูปในแถบที่เลื่อนต่อเนื่องใต้การ์ดสถาบันในหน้า เครือข่ายวิจัยและความร่วมมือนานาชาติ (<a href="../network-international.php" target="_blank" rel="noopener">ดูบนเว็บ</a>) ควรมีอย่างน้อย 6 รูปเพื่อให้แถบเต็มจอ ถ้ามี 10 รูปขึ้นไปจะแบ่งเป็นสองแถวที่เลื่อนสวนทางกัน</p>';
+foreach ($errors as $err) { echo '<p class="notice notice--error" role="alert">' . e($err) . '</p>'; }
+$newOpen = $posted !== null && !$postedId;
+echo '<details' . ($newOpen ? ' open' : '') . '><summary>+ เพิ่มรูปใหม่</summary><div>';
+admin_entity_form('network-photos.php', $spec, null, [], 'เพิ่มรูป', $newOpen ? $posted : null);
+echo '</div></details>';
+if (!$rows) { echo '<p class="muted">ยังไม่มีรูป</p>'; }
+$last = count($rows) - 1;
+foreach ($rows as $i => $r) { admin_entity_row('network-photos.php', $spec, $r, $r['caption'], $i === 0, $i === $last, [], $posted !== null && $postedId === (int) $r['id'] ? $posted : null); }
+admin_foot();

@@ -78,6 +78,47 @@
   // The list entries keep their ids (#TH-50) for visitors without JavaScript. They are renamed here so that the browser's
   // own jump to the fragment cannot pull the page down to the list when the link is meant to open the map.
   const listItems = {};
+  const deckCards = [...document.querySelectorAll('.netdeck__card')];
+  if (deckCards.length) {
+    // World map: the page carries one card per institution (the deck under the map). The panel of a country is put
+    // together from that country's cards, in the shape the panel expects (heading, count, list of entries).
+    const byCode = {};
+    deckCards.forEach((card) => {
+      (byCode[card.dataset.code] = byCode[card.dataset.code] || []).push(card);
+      if (card.id) card.removeAttribute('id'); // so a #CODE link opens the map instead of jumping to the card
+    });
+    Object.keys(byCode).forEach((code) => {
+      const cards = byCode[code];
+      const section = document.createElement('section');
+      section.className = 'netarea';
+      section.dataset.name = cards[0].dataset.country || '';
+      const head = document.createElement('div');
+      head.className = 'netarea__head';
+      const title = document.createElement('h3');
+      title.className = 'netarea__title';
+      title.textContent = section.dataset.name;
+      const count = document.createElement('p');
+      count.className = 'netarea__count';
+      const n = document.createElement('span');
+      n.className = 'netarea__n';
+      n.textContent = String(cards.length);
+      count.append(n, ' ' + unit);
+      head.append(title, count);
+      const items = document.createElement('ul');
+      items.className = 'netarea__items';
+      cards.forEach((card) => {
+        const entry = card.querySelector('.netitem');
+        if (!entry) return;
+        const li = document.createElement('li');
+        li.className = 'netitem';
+        li.dataset.tags = entry.dataset.tags || '';
+        entry.childNodes.forEach((node) => li.append(node.cloneNode(true)));
+        items.append(li);
+      });
+      section.append(head, items);
+      listItems[code] = section;
+    });
+  }
   document.querySelectorAll('.netarea').forEach((section) => {
     const code = section.id;
     const title = section.querySelector('.netarea__title');
@@ -396,7 +437,115 @@
   svg.addEventListener('focusout', () => { hideTip(); ring(''); });
 
   // ---------- Detail panel ----------
-  let openCode = '', lastTrigger = null, viewBefore = null;
+  let openCode = '', lastTrigger = null, viewBefore = null, carousel = null;
+
+  // World map: a country with two or more institutions shows them one at a time, with previous/next buttons, a counter,
+  // ←/→ keys while focus is in the panel, and a swipe on touch screens. All slides share one grid cell, so the panel
+  // keeps the height of the tallest card and does not jump. The list under the map stays a plain list.
+  // A round button with only an arrow; its name is for screen readers.
+  const arrowButton = (label, back) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'netcar__btn netcar__btn--' + (back ? 'prev' : 'next');
+    b.setAttribute('aria-label', label);
+    const icon = el('svg', 'netcar__icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.setAttribute('focusable', 'false');
+    const line = el('path');
+    line.setAttribute('d', back ? 'M19 12H5M11 6l-6 6 6 6' : 'M5 12h14M13 6l6 6-6 6');
+    icon.append(line);
+    b.append(icon);
+    return b;
+  };
+
+  // Previous/next through a set of slides that share one grid cell. Used by the country panel and by the deck under the
+  // map. getSlides() returns the slides in play (the deck leaves out the ones the tag filter hides).
+  const slider = (box, track, getSlides, onShow) => {
+    const nav = document.createElement('div');
+    nav.className = 'netcar__nav';
+    const prev = arrowButton('สถาบันก่อนหน้า', true);
+    const next = arrowButton('สถาบันถัดไป', false);
+    const counter = document.createElement('span');
+    counter.className = 'netcar__count';
+    counter.setAttribute('aria-live', 'polite');
+    nav.append(prev, counter, next);
+    let slides = [], index = 0;
+    const show = (i, dir) => {
+      index = Math.max(0, Math.min(slides.length - 1, i));
+      box.classList.remove('is-fwd', 'is-back');
+      if (dir && !reduceMotion.matches) { void box.offsetWidth; box.classList.add(dir > 0 ? 'is-fwd' : 'is-back'); }
+      slides.forEach((slide, n) => {
+        const on = n === index;
+        slide.classList.toggle('is-current', on);
+        slide.toggleAttribute('inert', !on);
+        slide.setAttribute('aria-hidden', on ? 'false' : 'true');
+        slide.setAttribute('aria-label', (n + 1) + ' จาก ' + slides.length);
+      });
+      counter.textContent = slides.length ? (index + 1) + ' / ' + slides.length : '0';
+      prev.disabled = index <= 0;
+      next.disabled = index >= slides.length - 1;
+      nav.hidden = slides.length < 2;
+      if (onShow) onShow(slides[index]);
+    };
+    const step = (dir) => {
+      const target = index + dir;
+      if (target < 0 || target > slides.length - 1) return;
+      const hadFocus = document.activeElement === prev || document.activeElement === next;
+      show(target, dir);
+      if (hadFocus && (dir > 0 ? next.disabled : prev.disabled)) (dir > 0 ? prev : next).focus();
+    };
+    const reset = () => {
+      [...slides, ...getSlides()].forEach((slide) => { slide.removeAttribute('inert'); slide.classList.remove('is-current'); });
+      slides = getSlides();
+      slides.forEach((slide) => { slide.setAttribute('role', 'group'); slide.setAttribute('aria-roledescription', 'slide'); });
+      show(0, 0);
+    };
+    prev.addEventListener('click', () => step(-1));
+    next.addEventListener('click', () => step(1));
+    let start = null;
+    track.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse') return;
+      start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    });
+    track.addEventListener('pointerup', (event) => {
+      if (!start || event.pointerId !== start.id) return;
+      const dx = event.clientX - start.x, dy = event.clientY - start.y;
+      start = null;
+      if (Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.2) step(dx < 0 ? 1 : -1);
+    });
+    track.addEventListener('pointercancel', () => { start = null; });
+    box.addEventListener('keydown', (event) => {
+      if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+      event.preventDefault();
+      step(event.key === 'ArrowRight' ? 1 : -1);
+    });
+    return { nav, reset, step };
+  };
+
+  const makeCarousel = (section) => {
+    const track = section.querySelector('.netarea__items');
+    const slides = track ? [...track.children] : [];
+    const count = section.querySelector('.netarea__n');
+    if (count) count.textContent = String(slides.length);
+    if (slides.length < 2) return null;
+    const box = document.createElement('div');
+    box.className = 'netcar';
+    box.setAttribute('role', 'region');
+    box.setAttribute('aria-roledescription', 'carousel');
+    box.setAttribute('aria-label', 'สถาบันใน' + (section.dataset.name || ''));
+    track.before(box);
+    box.append(track);
+    track.classList.add('netcar__track');
+    track.setAttribute('role', 'presentation');
+    slides.forEach((slide) => slide.classList.add('netcar__slide'));
+    const control = slider(box, track, () => slides);
+    box.append(control.nav);
+    control.reset();
+    return control;
+  };
+
   const select = (code) => {
     codes.forEach((key) => {
       const t = targets[key];
@@ -421,7 +570,13 @@
     clone.removeAttribute('id');
     clone.removeAttribute('aria-labelledby');
     clone.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+    // The panel always shows every institution of the country, whatever the tag filter on the list hides.
+    clone.hidden = false;
+    clone.querySelectorAll('[hidden]').forEach((n) => { n.hidden = false; });
+    // In the list the country name links to its place on the map; in the panel it is just the heading.
+    clone.querySelectorAll('.netarea__map').forEach((a) => a.replaceWith(document.createTextNode(a.textContent)));
     detail.replaceChildren(clone);
+    carousel = isWorld ? makeCarousel(clone) : null;
     detail.scrollTop = 0;
     panel.scrollTop = 0;
     if (!openCode) viewBefore = (dest || view).slice();
@@ -437,6 +592,7 @@
     if (!openCode) return;
     panel.classList.remove('is-open');
     detail.replaceChildren();
+    carousel = null;
     select('');
     openCode = '';
     if (viewBefore) goTo(viewBefore);
@@ -458,6 +614,13 @@
     open(code);
   });
   panel.querySelector('.netmap__close').addEventListener('click', () => close());
+  panel.addEventListener('keydown', (event) => {
+    // ←/→ anywhere in the panel move the carousel, not only when focus is inside it.
+    if (!carousel || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.target.closest('.netcar, input, textarea, select, [contenteditable="true"]')) return;
+    event.preventDefault();
+    carousel.step(event.key === 'ArrowRight' ? 1 : -1);
+  });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && openCode && !document.querySelector('dialog[open]')) { event.preventDefault(); close(); }
   });
@@ -492,6 +655,120 @@
     });
   });
   root.querySelectorAll('.netmap__tools').forEach((n) => { n.hidden = false; });
+
+  // ---------- The deck under the world map ----------
+  // Same pattern as the ประชาสัมพันธ์ slider on the home page: one card in the middle, its neighbours dimmed and running
+  // out to both edges of the window. The row scrolls and snaps natively (swipe, trackpad, keys); the round buttons step
+  // one card with a smooth scroll; a dimmed neighbour, when clicked, slides to the middle. Without JavaScript the row
+  // is a plain scrolling strip. The tag filter decides which cards are in the row and fades the countries on the map
+  // that have none of them; the country panel on the map still shows every institution.
+  const deck = document.querySelector('.netdeck');
+  if (deck && deckCards.length) {
+    const track = deck.querySelector('.netdeck__track');
+    const controls = deck.querySelector('.netdeck__ctrls');
+    const prevButton = deck.querySelector('[data-deck-prev]');
+    const nextButton = deck.querySelector('[data-deck-next]');
+    const counter = deck.querySelector('.netdeck__count');
+    const countNow = deck.querySelector('[data-deck-count]');
+    const countAll = deck.querySelector('[data-deck-total]');
+    deck.classList.add('is-ready');
+    deck.setAttribute('role', 'region');
+    deck.setAttribute('aria-roledescription', 'carousel');
+    deckCards.forEach((card) => { card.setAttribute('role', 'group'); card.setAttribute('aria-roledescription', 'slide'); });
+
+    let live = deckCards.slice(), active = -1, frame = 0;
+    const offsetFor = (card) => {
+      const box = track.getBoundingClientRect(), rect = card.getBoundingClientRect();
+      return track.scrollLeft + rect.left - box.left - (box.width - rect.width) / 2;
+    };
+    const nearest = () => {
+      const box = track.getBoundingClientRect(), middle = box.left + box.width / 2;
+      let best = 0, distance = Infinity;
+      live.forEach((card, i) => {
+        const rect = card.getBoundingClientRect();
+        const d = Math.abs(rect.left + rect.width / 2 - middle);
+        if (d < distance) { distance = d; best = i; }
+      });
+      return best;
+    };
+    const update = (force) => {
+      frame = 0;
+      const here = nearest();
+      if (here === active && !force) return;
+      active = here;
+      live.forEach((card, i) => {
+        const on = i === here;
+        card.classList.toggle('is-active', on);
+        card.setAttribute('aria-hidden', on ? 'false' : 'true');
+        card.setAttribute('aria-label', (i + 1) + ' จาก ' + live.length);
+        card.querySelectorAll('a, button').forEach((node) => { if (on) node.removeAttribute('tabindex'); else node.setAttribute('tabindex', '-1'); });
+      });
+      if (countNow) countNow.textContent = String(here + 1);
+      if (countAll) countAll.textContent = String(live.length);
+      prevButton.disabled = here <= 0;
+      nextButton.disabled = here >= live.length - 1;
+    };
+    const go = (i, instant) => {
+      const target = live[Math.max(0, Math.min(live.length - 1, i))];
+      if (!target) return;
+      track.scrollTo({ left: offsetFor(target), behavior: instant || reduceMotion.matches ? 'auto' : 'smooth' });
+      if (instant || reduceMotion.matches) update();
+    };
+    const step = (dir) => {
+      const target = active + dir;
+      if (target < 0 || target > live.length - 1) return;
+      const leaving = dir > 0 ? nextButton : prevButton;
+      go(target);
+      // The button pressed may become disabled at the end of the row; keep focus on the other one.
+      if (document.activeElement === leaving && (dir > 0 ? target === live.length - 1 : target === 0)) (dir > 0 ? prevButton : nextButton).focus();
+    };
+
+    track.addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(() => update()); }, { passive: true });
+    prevButton.addEventListener('click', () => step(-1));
+    nextButton.addEventListener('click', () => step(1));
+    deck.addEventListener('keydown', (event) => {
+      if ((event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+      step(event.key === 'ArrowRight' ? 1 : -1);
+    });
+    // A dimmed neighbour moves to the middle when clicked; its links work once it is there.
+    track.addEventListener('click', (event) => {
+      const card = event.target.closest('.netdeck__card');
+      if (!card || card.classList.contains('is-active')) return;
+      event.preventDefault();
+      go(live.indexOf(card));
+    });
+    window.addEventListener('resize', () => { if (live[active]) go(active, true); });
+
+    const filter = document.querySelector('.netfilter');
+    if (filter) {
+      const tagChips = [...filter.querySelectorAll('.netfilter__chip')];
+      const setTag = (slug) => {
+        tagChips.forEach((chip) => chip.setAttribute('aria-pressed', chip.dataset.tag === slug ? 'true' : 'false'));
+        const shown = {};
+        deckCards.forEach((card) => {
+          const on = slug === '' || (card.dataset.tags || '').split(' ').includes(slug);
+          card.hidden = !on;
+          card.classList.remove('is-active');
+          if (on) shown[card.dataset.code] = true;
+        });
+        codes.forEach((code) => {
+          const t = targets[code];
+          [t.path, t.arc, t.end, t.bubble, t.el === t.path ? null : t.el].forEach((node) => node && node.classList.toggle('is-tag-dim', !shown[code]));
+        });
+        live = deckCards.filter((card) => !card.hidden);
+        active = -1;
+        if (controls) controls.hidden = live.length < 2;
+        go(0, true);
+      };
+      tagChips.forEach((chip) => chip.addEventListener('click', () => setTag(chip.dataset.tag || '')));
+      filter.hidden = false;
+    }
+
+    if (controls) controls.hidden = live.length < 2;
+    if (counter) counter.hidden = false;
+    go(0, true);
+  }
 
   // ---------- The opening sequence: once, when the map first comes into view ----------
   const settle = () => {
@@ -591,4 +868,63 @@
       applyView();
     }).observe(canvas);
   }
+})();
+
+// Photo strip under the deck on network-international.php: every row moves sideways all the time, at an even speed,
+// and loops without a seam. Each row's photos are repeated until one set is wider than the window, then the set is
+// copied once and the strip slides by exactly one set before starting over (CSS animation, see network.css).
+// A button stops and restarts the movement (WCAG 2.2.2). With reduced motion nothing moves and the rows scroll by hand.
+(() => {
+  'use strict';
+  const section = document.querySelector('.netphotos');
+  if (!section) return;
+  const rows = [...section.querySelectorAll('.netphotos__row')];
+  const toggle = section.querySelector('.netphotos__toggle');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const SPEED = 36; // px per second
+  const originals = rows.map((row) => [...row.querySelector('.netphotos__strip').children]);
+
+  const copyOf = (item) => {
+    const clone = item.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    clone.querySelectorAll('img').forEach((img) => { img.alt = ''; img.loading = 'eager'; });
+    return clone;
+  };
+
+  const build = () => {
+    rows.forEach((row, r) => {
+      const strip = row.querySelector('.netphotos__strip');
+      strip.replaceChildren(...originals[r]);
+      strip.style.removeProperty('--netphotos-time');
+    });
+    if (reduce.matches) { section.classList.remove('is-moving'); if (toggle) toggle.hidden = true; return; }
+    section.classList.add('is-moving');
+    rows.forEach((row, r) => {
+      const strip = row.querySelector('.netphotos__strip');
+      const width = () => strip.scrollWidth;
+      let guard = 0;
+      while (width() < row.clientWidth && guard++ < 20) originals[r].forEach((item) => strip.append(copyOf(item)));
+      const set = width();
+      [...strip.children].forEach((item) => strip.append(copyOf(item)));
+      strip.style.setProperty('--netphotos-time', (set / SPEED).toFixed(1) + 's');
+    });
+    if (toggle) toggle.hidden = false;
+  };
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const paused = section.classList.toggle('is-paused');
+      toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      toggle.textContent = paused ? 'เล่นภาพเลื่อนต่อ' : 'หยุดภาพเลื่อน';
+    });
+  }
+  let timer = 0, lastWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return; // phones fire resize when the address bar hides
+    lastWidth = window.innerWidth;
+    clearTimeout(timer);
+    timer = setTimeout(build, 200);
+  });
+  if (reduce.addEventListener) reduce.addEventListener('change', build);
+  build();
 })();

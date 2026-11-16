@@ -71,8 +71,8 @@ function search_index() {
             $english = $mode === 'world' ? ((require __DIR__ . '/../config/countries.php')[$code][1] ?? '') : '';
             foreach ($area['items'] as $item) {
                 $title = (string) ($mode === 'world' ? $item['institution'] : $item['title']);
-                $summary = (string) ($mode === 'world' ? ($item['description'] ?? '') : ($item['summary'] ?? ''));
-                $more = $mode === 'world' ? [$item['institution_th'] ?? ''] : [$item['community'] ?? '', isset($item['year']) ? 'พ.ศ. ' . $item['year'] : ''];
+                $summary = (string) ($mode === 'world' ? (($item['summary'] ?? '') !== '' ? $item['summary'] : ($item['description'] ?? '')) : ($item['summary'] ?? ''));
+                $more = $mode === 'world' ? [$item['institution_th'] ?? '', $item['people'] ?? '', $item['description'] ?? '', array_values(network_tags_of($item))] : [$item['community'] ?? '', isset($item['year']) ? 'พ.ศ. ' . $item['year'] : ''];
                 $linked = array_map(static fn (array $card): string => $card['title'], network_related($item));
                 $index[] = [
                     'type' => 'network',
@@ -87,24 +87,6 @@ function search_index() {
                 ];
             }
         }
-    }
-    // The two bands under the world map (network_highlights) as one entry that links to them.
-    $highlights = [];
-    foreach (network_highlight_groups() as $rows) {
-        foreach ($rows as $row) { $highlights[] = $row['title_th']; $highlights[] = $row['title_en'] ?? ''; }
-    }
-    if (array_filter($highlights, static fn ($text): bool => trim((string) $text) !== '')) {
-        $index[] = [
-            'type' => 'network',
-            'title' => 'รูปแบบและคุณค่าความร่วมมือ',
-            'summary' => 'รูปแบบความร่วมมือกับเครือข่ายวิจัยนานาชาติ และคุณค่าที่เกิดกับหลักสูตรและนิสิต',
-            'keywords' => search_join([$highlights]),
-            'text' => search_join(['รูปแบบความร่วมมือ คุณค่าที่เกิดกับหลักสูตรและนิสิต', $highlights]),
-            'body' => '',
-            'url' => 'network-international.php#netinfo',
-            'date' => '',
-            'category' => 'เครือข่ายวิจัยนานาชาติ',
-        ];
     }
     foreach (load_data('events') as $event) {
         if (!isset($event['title'])) { continue; }

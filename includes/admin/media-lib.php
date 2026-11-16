@@ -153,6 +153,12 @@ function admin_media_usage(): array {
     try {
         foreach ($db->query('SELECT title, image_id FROM community_projects') as $r) { $add($r['image_id'], 'วิจัยและนวัตกรรมเพื่อชุมชนและสังคม: ' . $r['title']); }
     } catch (PDOException $e) { /* table not created yet: database/updates/2026-11-06-01-network.sql */ }
+    try {
+        foreach ($db->query('SELECT institution, image_id FROM network_partners') as $r) { $add($r['image_id'], 'เครือข่ายวิจัยนานาชาติ: ' . $r['institution']); }
+    } catch (PDOException $e) { /* column not created yet: database/updates/2026-11-16-01-network-tags.sql */ }
+    try {
+        foreach ($db->query('SELECT caption, image_id FROM network_photos') as $r) { $add($r['image_id'], 'ภาพกิจกรรมกับเครือข่าย: ' . $r['caption']); }
+    } catch (PDOException $e) { /* table not created yet: database/updates/2026-11-16-03-network-photos.sql */ }
     return $use;
 }
 
