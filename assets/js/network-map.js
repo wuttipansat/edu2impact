@@ -873,13 +873,12 @@
 // Photo strip under the deck on network-international.php: every row moves sideways all the time, at an even speed,
 // and loops without a seam. Each row's photos are repeated until one set is wider than the window, then the set is
 // copied once and the strip slides by exactly one set before starting over (CSS animation, see network.css).
-// A button stops and restarts the movement (WCAG 2.2.2). With reduced motion nothing moves and the rows scroll by hand.
+// With reduced motion nothing moves and the rows scroll by hand.
 (() => {
   'use strict';
   const section = document.querySelector('.netphotos');
   if (!section) return;
   const rows = [...section.querySelectorAll('.netphotos__row')];
-  const toggle = section.querySelector('.netphotos__toggle');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
   const SPEED = 36; // px per second
   const originals = rows.map((row) => [...row.querySelector('.netphotos__strip').children]);
@@ -888,6 +887,7 @@
     const clone = item.cloneNode(true);
     clone.setAttribute('aria-hidden', 'true');
     clone.querySelectorAll('img').forEach((img) => { img.alt = ''; img.loading = 'eager'; });
+    clone.querySelectorAll('button, a').forEach((node) => node.setAttribute('tabindex', '-1'));
     return clone;
   };
 
@@ -897,7 +897,7 @@
       strip.replaceChildren(...originals[r]);
       strip.style.removeProperty('--netphotos-time');
     });
-    if (reduce.matches) { section.classList.remove('is-moving'); if (toggle) toggle.hidden = true; return; }
+    if (reduce.matches) { section.classList.remove('is-moving'); return; }
     section.classList.add('is-moving');
     rows.forEach((row, r) => {
       const strip = row.querySelector('.netphotos__strip');
@@ -908,16 +908,8 @@
       [...strip.children].forEach((item) => strip.append(copyOf(item)));
       strip.style.setProperty('--netphotos-time', (set / SPEED).toFixed(1) + 's');
     });
-    if (toggle) toggle.hidden = false;
   };
 
-  if (toggle) {
-    toggle.addEventListener('click', () => {
-      const paused = section.classList.toggle('is-paused');
-      toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
-      toggle.textContent = paused ? 'เล่นภาพเลื่อนต่อ' : 'หยุดภาพเลื่อน';
-    });
-  }
   let timer = 0, lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
     if (window.innerWidth === lastWidth) return; // phones fire resize when the address bar hides
@@ -927,4 +919,53 @@
   });
   if (reduce.addEventListener) reduce.addEventListener('change', build);
   build();
+})();
+
+// Large view of a photo (photo strip on network-international.php, activity photos on network-partner.php). Any element
+// with data-netbox opens it; the photos of the same [data-netbox-group] can be stepped through with the arrows or ←/→.
+// Copies made for the moving strip open their original. Uses <dialog>, so Esc closes it and focus returns to the photo.
+(() => {
+  'use strict';
+  const box = document.querySelector('.netbox');
+  if (!box || typeof box.showModal !== 'function') return;
+  const img = box.querySelector('.netbox__img');
+  const inst = box.querySelector('.netbox__inst');
+  const title = box.querySelector('.netbox__title');
+  const link = box.querySelector('.netbox__link');
+  const steps = [...box.querySelectorAll('[data-netbox-step]')];
+  const onPartnerPage = !!document.querySelector('.netpartner');
+  let group = [], index = 0, opener = null;
+
+  const fill = () => {
+    const item = group[index];
+    img.src = item.dataset.full;
+    img.alt = (item.getAttribute('aria-label') || '').replace(/^ดูภาพขยาย:\s*/, '');
+    inst.textContent = item.dataset.inst || '';
+    inst.hidden = !item.dataset.inst;
+    title.textContent = item.dataset.title || '';
+    const href = !onPartnerPage && item.dataset.href;
+    link.hidden = !href;
+    if (href) { link.href = href; link.textContent = 'ดูกิจกรรมทั้งหมดของ ' + (item.dataset.inst || 'สถาบันนี้'); }
+    steps.forEach((b) => { b.hidden = group.length < 2; });
+  };
+  const step = (dir) => { if (group.length < 2) return; index = (index + dir + group.length) % group.length; fill(); };
+
+  document.addEventListener('click', (event) => {
+    const item = event.target.closest('[data-netbox]');
+    if (!item) return;
+    const scope = item.closest('[data-netbox-group]');
+    group = scope ? [...scope.querySelectorAll('[data-netbox]')].filter((n) => !n.closest('[aria-hidden="true"]')) : [item];
+    index = group.indexOf(item);
+    if (index < 0) index = Math.max(0, group.findIndex((n) => n.dataset.full === item.dataset.full && n.dataset.title === item.dataset.title));
+    opener = item.closest('[aria-hidden="true"]') ? null : item;
+    fill();
+    box.showModal();
+  });
+  steps.forEach((b) => b.addEventListener('click', () => step(Number(b.dataset.netboxStep))));
+  box.querySelector('[data-netbox-close]').addEventListener('click', () => box.close());
+  box.addEventListener('click', (event) => { if (event.target === box) box.close(); });
+  box.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowRight' ? 1 : -1); }
+  });
+  box.addEventListener('close', () => { img.removeAttribute('src'); if (opener) opener.focus(); });
 })();

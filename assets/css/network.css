@@ -178,6 +178,7 @@
 
 /* ---- Text list under the map (works without JavaScript) ---- */
 .netlist{padding-block:clamp(40px,5vw,72px) clamp(48px,6vw,88px)}
+.netlist--world{padding-bottom:clamp(20px,2.4vw,32px)}
 .netlist h2{margin:0 0 clamp(18px,2vw,28px)}
 .netlist__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:clamp(14px,1.6vw,22px)}
 .netarea{padding:20px 22px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised)}
@@ -229,8 +230,12 @@
 .netdeck__body{display:flex;flex-direction:column;min-width:0;padding:clamp(24px,3.2cqw,48px) clamp(24px,3.6cqw,56px) clamp(22px,2.6cqw,36px)}
 .netdeck__where{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin:0 0 clamp(14px,1.6cqw,22px);color:var(--ink-muted);font-family:var(--font-thai);font-size:var(--fs-sm)}
 .netdeck__where>span{color:var(--purple-700);font-weight:600}
-.netdeck__map{color:var(--purple-700);font-size:var(--fs-xs);text-decoration:underline;text-decoration-color:var(--purple-300);text-underline-offset:4px}
-.netdeck__map:hover{color:var(--purple-900);text-decoration-color:currentColor}
+.netdeck__acts{color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
+/* The institution's name opens its page; on a card the link covers the whole card. */
+.netitem__page{color:inherit;text-decoration:none;background:linear-gradient(currentColor,currentColor) 0 100% / 0 2px no-repeat;padding-bottom:4px;transition:background-size .3s ease,color .2s ease}
+.netitem__page:hover,.netitem__page:focus-visible,.netdeck__card.is-active:hover .netitem__page{color:var(--purple-700);text-decoration:none;background-size:100% 2px}
+.netdeck__card .netitem__page::after{content:"";position:absolute;inset:0;z-index:1}
+.netdeck.is-ready .netdeck__card.is-active{cursor:pointer}
 .netdeck__body>.netitem{display:flex;flex:1 1 auto;flex-direction:column}
 .netdeck__card .netitem__title{font-family:var(--font-ui);font-size:clamp(1.375rem,1.1rem + 1.1cqw,2rem);font-weight:600;line-height:1.2;letter-spacing:-.012em;color:var(--purple-900)}
 .netdeck__card .netitem__summary{margin-top:14px;font-size:var(--fs-lg);line-height:1.7}
@@ -239,7 +244,7 @@
 .netdeck__card .netitem__related{order:8}
 .netdeck__card .netitem__tags{order:9;margin:auto 0 0;padding-top:clamp(18px,2cqw,26px)}
 /* Buttons over the left and right edge of the middle card, half way down. */
-.netdeck__ctrls{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 calc((100cqw - var(--slide)) / 2 + 16px);pointer-events:none}
+.netdeck__ctrls{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:0 calc((100cqw - var(--slide)) / 2 - 22px);pointer-events:none}
 .netdeck__ctrls[hidden]{display:none}
 .netdeck__ctrl:disabled{opacity:0;pointer-events:none}
 .netdeck__count{margin:14px 0 0;padding:0 calc((100cqw - var(--slide)) / 2);color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-sm);font-variant-numeric:tabular-nums}
@@ -254,7 +259,7 @@
   .netdeck__media.is-empty{aspect-ratio:auto;height:10px}
   .netdeck__body{padding:20px 20px 22px}
   /* On a phone the buttons move under the card, right-aligned with it, as on the home page. */
-  .netdeck__ctrls{position:static;justify-content:flex-end;gap:10px;margin-top:12px}
+  .netdeck__ctrls{position:static;justify-content:flex-end;gap:10px;margin-top:12px;padding:0 calc((100cqw - var(--slide)) / 2)}
   .netdeck__ctrl:disabled{opacity:.35}
   .netdeck__count{position:absolute;bottom:14px;margin:0}
 }
@@ -309,20 +314,100 @@
 /* ---- Photo strip under the deck (network-international.php): activity photos that keep moving sideways.
    Without JavaScript or with reduced motion each row is a strip that scrolls by hand. Photos keep their own
    proportions at one height; the edges of the window fade so photos slide in and out rather than being cut. ---- */
-.netphotos{padding-block:clamp(8px,1vw,16px) clamp(56px,7vw,96px)}
-.netphotos__head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px 24px;margin-bottom:clamp(20px,2.4vw,32px)}
-.netphotos__head h2{margin:0}
-.netphotos__toggle{min-height:40px;padding:6px 16px;border:1px solid var(--purple-200);border-radius:var(--radius-pill);background:transparent;color:var(--purple-800);font-family:var(--font-thai);font-size:var(--fs-sm);cursor:pointer}
-.netphotos__toggle:hover{border-color:var(--purple-500)}
-.netphotos__toggle[hidden]{display:none}
+.netphotos{padding-block:0 clamp(32px,4vw,56px)}
 .netphotos__rows{display:grid;gap:clamp(10px,1.2vw,16px)}
 .netphotos__row{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--purple-300) transparent}
 .netphotos__strip{display:flex;width:max-content;margin:0;padding:0 var(--gutter);list-style:none}
 .netphotos__strip li{flex:none;margin-right:clamp(10px,1.2vw,16px)}
-.netphotos__strip img{display:block;width:auto;height:clamp(150px,17vw,240px);max-width:none;border-radius:12px;background:var(--purple-100);object-fit:cover}
+.netphotos__strip img{display:block;width:auto;height:clamp(200px,24vw,340px);max-width:none;border-radius:12px;background:var(--purple-100);object-fit:cover}
 .netphotos.is-moving .netphotos__row{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
 .netphotos.is-moving .netphotos__strip{padding:0;animation:netphotos-slide var(--netphotos-time,60s) linear infinite}
 .netphotos.is-moving .netphotos__row[data-dir="right"] .netphotos__strip{animation-direction:reverse}
-.netphotos.is-paused .netphotos__strip{animation-play-state:paused}
 @keyframes netphotos-slide{to{transform:translateX(-50%)}}
 @media(prefers-reduced-motion:reduce){.netphotos .netphotos__strip{animation:none}}
+
+/* ---- Photo strip: each photo is a button that opens the large view; the event shows on the photo on hover or focus.
+   A row stops while the pointer is on it or one of its photos has focus, so the text can be read and the photo hit. ---- */
+.netphotos__item{position:relative;display:block;padding:0;border:0;border-radius:12px;background:none;cursor:zoom-in;overflow:hidden}
+.netphotos__item img{border-radius:0}
+.netphotos__item:focus-visible{outline:3px solid var(--purple-500);outline-offset:-3px}
+.netphotos__cap{position:absolute;inset:auto 0 0;display:flex;flex-direction:column;gap:2px;padding:36px 14px 12px;background:linear-gradient(transparent,rgba(26,8,33,.86));color:#fff;text-align:left;opacity:0;transition:opacity .2s ease;pointer-events:none}
+.netphotos__inst{color:var(--purple-200);font-family:var(--font-ui);font-size:var(--fs-xs);font-weight:600;line-height:1.4}
+.netphotos__title{font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:500;line-height:1.45}
+.netphotos__item:hover .netphotos__cap,.netphotos__item:focus-visible .netphotos__cap{opacity:1}
+.netphotos.is-moving .netphotos__row:hover .netphotos__strip,.netphotos.is-moving .netphotos__row:focus-within .netphotos__strip{animation-play-state:paused}
+@media(hover:none){.netphotos__cap{opacity:1;padding-top:28px}.netphotos__title{display:none}}
+
+/* ---- Link from an institution card to its page ---- */
+
+/* ---- network-partner.php: one institution and its activities ---- */
+.netpartner{padding-block:clamp(28px,3.4vw,48px) clamp(56px,7vw,96px)}
+.netpartner .back-link{margin-bottom:clamp(18px,2.2vw,28px)}
+.netpartner__head{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,56px);align-items:start;margin-bottom:clamp(40px,5vw,72px)}
+.netpartner__media{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:18px;background:var(--purple-900)}
+.netpartner__media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.netpartner__where{margin:0 0 8px;color:var(--purple-700);font-size:var(--fs-sm);font-weight:600}
+.netpartner__intro h1{margin:0;font-family:var(--font-ui);font-size:clamp(1.875rem,1.4rem + 2vw,3rem);font-weight:600;line-height:1.15;letter-spacing:-.015em;color:var(--purple-900)}
+.netpartner__th{margin:8px 0 0;color:var(--ink-muted)}
+.netpartner__summary{max-width:60ch;margin:18px 0 0;font-size:var(--fs-lg);line-height:1.75}
+.netpartner__facts{display:grid;gap:14px;margin:26px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+.netpartner__facts>div{display:grid;grid-template-columns:minmax(120px,11rem) minmax(0,1fr);gap:4px 20px}
+.netpartner__facts dt{color:var(--ink-muted);font-size:var(--fs-sm)}
+.netpartner__facts dd{margin:0;font-size:var(--fs-sm);line-height:1.7}
+.netpartner__facts .netitem__tags{margin:0}
+.netpartner__acts h2{margin:0 0 clamp(20px,2.6vw,32px)}
+.netpartner__n{color:var(--purple-500);font-family:var(--font-ui);font-weight:500}
+.netpartner__none{color:var(--ink-muted)}
+@media(max-width:760px){
+  .netpartner__head{grid-template-columns:1fr}
+  .netpartner__media.is-empty{display:none}
+  .netpartner__facts>div{grid-template-columns:1fr}
+}
+/* Timeline: a line down the left, a marker per activity.
+   Each activity sets its text beside its photos; the first photo gets the most room. ---- */
+.nettl{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(44px,5vw,72px);margin:0;padding:0 0 0 clamp(30px,3vw,44px);list-style:none}
+.nettl::before{content:"";position:absolute;top:10px;bottom:10px;left:7px;width:2px;border-radius:2px;background:var(--purple-200)}
+.nettl__item{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(22px,3vw,48px);align-items:start;min-width:0}
+.nettl__item.is-text{grid-template-columns:minmax(0,1fr)}
+.nettl__item::before{content:"";position:absolute;top:8px;left:calc(-1 * clamp(30px,3vw,44px));width:16px;height:16px;border:3px solid var(--purple-700);border-radius:50%;background:var(--purple-700);box-sizing:border-box}
+.nettl__text{position:sticky;top:104px;min-width:0}
+@media(max-width:900px){.nettl__text{position:static}}
+.nettl__meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:0 0 8px;font-size:var(--fs-sm)}
+.nettl__period{color:var(--ink-muted);font-variant-numeric:tabular-nums}
+.nettl__title{margin:0;font-size:clamp(1.25rem,1.05rem + .8vw,1.75rem);line-height:1.35;color:var(--purple-900)}
+.nettl__body{max-width:62ch;margin:12px 0 0;font-size:var(--fs-base);line-height:1.85}
+.nettl__photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.nettl__photos--1{grid-template-columns:minmax(0,1fr)}
+.nettl__photos--2,.nettl__photos--3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.nettl__photos--3>li:first-child,.nettl__photos--4>li:first-child{grid-column:1 / -1}
+.nettl__photo{display:block;width:100%;padding:0;border:0;border-radius:12px;background:var(--purple-100);overflow:hidden;cursor:zoom-in;aspect-ratio:4/3}
+.nettl__photos--1 .nettl__photo,.nettl__photos--3>li:first-child .nettl__photo,.nettl__photos--4>li:first-child .nettl__photo{aspect-ratio:16/10}
+.nettl__photo img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .3s ease}
+.nettl__photo:hover img{transform:scale(1.03)}
+.nettl__photo:focus-visible{outline:3px solid var(--purple-500);outline-offset:2px}
+@media(max-width:900px){.nettl__item{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.nettl__photo img,.netitem__page,.netbox .netbox__link{transition:none}}
+
+/* ---- Large view of a photo (strip and institution page) ---- */
+.netbox{width:min(1100px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:0;border-radius:18px;background:var(--purple-900);color:#fff;overflow:auto}
+.netbox::backdrop{background:rgba(18,6,24,.78)}
+.netbox__frame{position:relative}
+.netbox__close{position:absolute;top:10px;right:10px;z-index:2;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;font-size:28px;line-height:1;cursor:pointer}
+.netbox__close:hover{background:rgba(0,0,0,.7)}
+.netbox__figure{margin:0}
+.netbox__stage{position:relative;display:grid;place-items:center;background:#120618}
+.netbox__img{display:block;width:100%;max-height:calc(100dvh - 220px);object-fit:contain}
+.netbox__nav{position:absolute;top:50%;transform:translateY(-50%)}
+.netbox__nav--prev{left:14px}
+.netbox__nav--next{right:14px}
+.netbox__nav[hidden]{display:none}
+.netbox__cap{display:grid;gap:4px;padding:18px clamp(18px,3vw,32px) 22px}
+.netbox__cap p{margin:0;color:#fff}
+.netbox .netbox__inst{color:var(--purple-200);font-family:var(--font-ui);font-size:var(--fs-sm);font-weight:600}
+.netbox__title{font-size:var(--fs-lg);font-weight:600;line-height:1.5}
+/* White text at rest and on hover; a thin track under it fills with a solid white line from the left on hover. */
+.netbox .netbox__link{justify-self:start;margin-top:8px;padding-bottom:3px;color:#fff;font-size:var(--fs-sm);text-decoration:none;background:linear-gradient(#fff,#fff) 0 100% / 0 1.5px no-repeat,linear-gradient(rgba(255,255,255,.3),rgba(255,255,255,.3)) 0 100% / 100% 1px no-repeat;transition:background-size .3s ease}
+.netbox .netbox__link:hover,.netbox .netbox__link:focus-visible{color:#fff;background-size:100% 1.5px,100% 1px}
+.netbox .netbox__link:focus-visible{outline:2px solid #fff;outline-offset:4px;border-radius:2px}
+.netbox__link[hidden]{display:none}
+@media(max-width:640px){.netbox__nav{display:none}}

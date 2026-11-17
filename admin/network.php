@@ -3,7 +3,10 @@
 require_once dirname(__DIR__) . '/includes/admin/entities.php';
 $user = admin_boot();
 $countries = require dirname(__DIR__) . '/config/countries.php';
+require_once dirname(__DIR__) . '/includes/network.php';
+foreach (NETWORK_NO_MAP as $code => $label) { $countries[$code] = [$label[0], $label[1], '']; } // AsTEN: a card, not a place on the map
 $options = array_map(static fn(array $c): string => $c[0], $countries);
+foreach (NETWORK_NO_MAP as $code => $label) { $options[$code] = $label[1] . ' (ไม่ปักบนแผนที่)'; }
 $tagOptions = require dirname(__DIR__) . '/config/network-tags.php';
 $spec = [
     'country_code' => ['type' => 'select', 'label' => 'ประเทศ', 'options' => $options, 'required' => true],

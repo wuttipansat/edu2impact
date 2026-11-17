@@ -86,7 +86,7 @@ function admin_entity_move(string $table, int $id, string $op, string $where = '
 // $derive (optional) receives the validated values of a save and returns them with extra columns added.
 function admin_entity_post(string $table, array $spec, string $where = '1=1', array $args = [], ?callable $derive = null): array {
     $db = admin_db(); $op = in_str('op'); $id = in_int('id');
-    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects', 'network_highlights', 'network_photos'], true)) { return ['ตารางไม่ถูกต้อง']; }
+    if (!in_array($table, ['home_items', 'shop_items', 'events', 'network_partners', 'community_projects', 'network_highlights', 'network_photos', 'network_activities'], true)) { return ['ตารางไม่ถูกต้อง']; }
     if ($op === 'delete' && $id) { $db->prepare("DELETE FROM $table WHERE id = ?")->execute([$id]); admin_flash('ลบแล้ว'); return []; }
     if (in_array($op, ['show', 'hide'], true) && $id) {
         $db->prepare("UPDATE $table SET is_public = ? WHERE id = ?")->execute([$op === 'show' ? 1 : 0, $id]); admin_flash($op === 'show' ? 'แสดงบนเว็บแล้ว' : 'ซ่อนจากเว็บแล้ว'); return [];
@@ -159,7 +159,7 @@ function admin_entity_form(string $action, array $spec, ?array $row, array $hidd
             $cur = (int) ($row['image_id'] ?? 0); $legacy = $row && !$cur && !empty($row['image']);
             echo '<div class="field"><strong>' . e($f['label']) . '</strong>' . $hint;
             if ($cur) { echo '<img class="thumb" src="media-img.php?id=' . $cur . '" alt="">'; }
-            elseif ($legacy) { echo '<p class="muted">ตอนนี้ใช้รูปเดิมของเว็บ (ไม่ต้องเลือกใหม่ถ้าไม่ต้องการเปลี่ยน)</p>'; }
+            elseif ($legacy) { $path = admin_legacy_image((string) $row['image']); echo $path !== '' ? '<img class="thumb" src="' . e($path) . '" alt="">' : ''; echo '<p class="muted">ตอนนี้ใช้รูปจากโฟลเดอร์ของเว็บ' . ($path !== '' ? ' (' . e((string) $row['image']) . ')' : '') . ' ไม่ต้องเลือกใหม่ถ้าไม่ต้องการเปลี่ยน</p>'; }
             echo '<label class="check"><input type="radio" name="' . e($col) . '" value="keep" checked> ' . ($cur || $legacy ? 'ใช้รูปนี้ต่อ' : 'ยังไม่ใส่รูป') . '</label>';
             if ($cur || $legacy) { echo '<label class="check"><input type="radio" name="' . e($col) . '" value="none"> เอารูปออก</label>'; }
             echo '<label>อัปโหลดรูปใหม่<input type="file" name="' . e($col) . '_file" accept="image/*"></label>';
@@ -174,10 +174,18 @@ function admin_entity_form(string $action, array $spec, ?array $row, array $hidd
 }
 
 // One row of a list: thumbnail + title + status + move/hide/delete buttons, with the edit form folded underneath.
+// Address, from the admin folder, of a picture stored as a path in the site's own folder (column `image`), or '' when
+// the path is not a picture under assets/images/ or the file is missing.
+function admin_legacy_image(string $path): string {
+    if (!preg_match('~\Aassets/images/[a-zA-Z0-9_/-]+\.(?:png|jpe?g|webp)\z~', $path) || !is_file(dirname(__DIR__, 2) . '/' . $path)) { return ''; }
+    return '../' . $path;
+}
+
 function admin_entity_row(string $action, array $spec, array $r, string $title, bool $first, bool $last, array $hidden = [], ?array $posted = null, string $sub = ''): void {
     echo '<div class="row">';
     echo '<p><strong>' . e($title) . '</strong> ' . ($r['is_public'] ? '<span class="tag tag--live">แสดงบนเว็บ</span>' : '<span class="tag">ซ่อนอยู่</span>') . ($sub !== '' ? '<br><span class="muted">' . e($sub) . '</span>' : '') . '</p>';
     if (!empty($r['image_id'])) { echo '<img class="thumb thumb--small" src="media-img.php?id=' . (int) $r['image_id'] . '" alt="">'; }
+    elseif (!empty($r['image']) && ($path = admin_legacy_image((string) $r['image'])) !== '') { echo '<img class="thumb thumb--small" src="' . e($path) . '" alt="">'; }
     echo '<div class="inline">';
     foreach ([['top', 'บนสุด', $first], ['up', '↑ ขึ้น', $first], ['down', '↓ ลง', $last]] as [$op, $label, $off]) {
         if ($off) { continue; }

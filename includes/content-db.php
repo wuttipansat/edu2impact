@@ -80,11 +80,12 @@ function content_db_load(string $name): ?array {
             'community' => content_db_community($pdo),
             'network-highlights' => content_db_network_highlights($pdo),
             'network-photos' => content_db_network_photos($pdo),
+            'network-activities' => content_db_network_activities($pdo),
             default => content_db_posts($pdo, $name),
         };
     } catch (Throwable $exception) {
         if (content_db_missing_table($exception)) {
-            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : ($name === 'network-highlights' ? '2026-11-06-02-network-highlights.sql' : ($name === 'network-photos' ? '2026-11-16-03-network-photos.sql' : '2026-10-27-01-structure.sql'));
+            $migration = in_array($name, ['network', 'community'], true) ? '2026-11-06-01-network.sql' : ($name === 'network-highlights' ? '2026-11-06-02-network-highlights.sql' : ($name === 'network-photos' ? '2026-11-16-03-network-photos.sql' : ($name === 'network-activities' ? '2026-11-16-05-network-activities.sql' : '2026-10-27-01-structure.sql')));
             error_log('edu2impact: table for ' . $name . ' not found, reading its file instead. Import database/updates/' . $migration . ' (' . $exception->getMessage() . ')');
             return $cache[$name] = null;
         }
@@ -219,7 +220,7 @@ function content_db_shop(PDO $pdo): array {
 function content_db_network(PDO $pdo): array {
     $records = [];
     foreach ($pdo->query('SELECT * FROM network_partners WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
-        $record = ['country_code' => (string) $row['country_code'], 'institution' => (string) $row['institution']];
+        $record = ['id' => (int) $row['id'], 'country_code' => (string) $row['country_code'], 'institution' => (string) $row['institution']];
         // summary and people arrive with 2026-11-16-01-network-tags.sql; before that the columns are simply absent.
         foreach (['institution_th', 'summary', 'people', 'description', 'url'] as $key) {
             if (isset($row[$key]) && $row[$key] !== '') { $record[$key] = (string) $row[$key]; }
@@ -235,12 +236,44 @@ function content_db_network(PDO $pdo): array {
     return $records;
 }
 
-// ภาพกิจกรรมกับเครือข่าย (network_photos) in the shape of data/network-photos.json: image (media:<id> or a path), caption.
+// ภาพกิจกรรมกับเครือข่าย (network_photos) in the shape of data/network-photos.json: image (media:<id> or a path), caption,
+// in_strip, and the activity the photo belongs to (activity_id, title, period, partner_id, institution) when there is one.
+// Before 2026-11-16-05-network-activities.sql there is no activity_id / in_strip: every photo goes in the strip.
 function content_db_network_photos(PDO $pdo): array {
+    try {
+        $rows = $pdo->query('SELECT ph.*, a.title, a.period, a.partner_id, p.institution FROM network_photos ph
+            LEFT JOIN network_activities a ON a.id = ph.activity_id AND a.is_public = 1
+            LEFT JOIN network_partners p ON p.id = a.partner_id AND p.is_public = 1
+            WHERE ph.is_public = 1 ORDER BY ph.sort_order, ph.id')->fetchAll();
+    } catch (PDOException $exception) {
+        $rows = $pdo->query('SELECT * FROM network_photos WHERE is_public = 1 ORDER BY sort_order, id')->fetchAll();
+    }
     $records = [];
-    foreach ($pdo->query('SELECT * FROM network_photos WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+    foreach ($rows as $row) {
         $image = content_db_image_ref($row);
-        if ($image !== '') { $records[] = ['image' => $image, 'caption' => (string) $row['caption']]; }
+        if ($image === '') { continue; }
+        $record = ['image' => $image, 'caption' => (string) $row['caption'], 'in_strip' => (int) ($row['in_strip'] ?? 1) === 1];
+        if (!empty($row['partner_id']) && isset($row['institution'])) {
+            $record += ['activity_id' => (int) $row['activity_id'], 'title' => (string) $row['title'], 'period' => (string) ($row['period'] ?? ''), 'partner_id' => (int) $row['partner_id'], 'institution' => (string) $row['institution']];
+        }
+        $records[] = $record;
+    }
+    return $records;
+}
+
+// กิจกรรมของสถาบัน (network_activities) in the shape of data/network-activities.json: id, partner_id, direction,
+// period, title, body, photos [{image, caption}] (every public photo of the activity, also those not in the strip).
+function content_db_network_activities(PDO $pdo): array {
+    $photos = [];
+    foreach ($pdo->query('SELECT * FROM network_photos WHERE is_public = 1 AND activity_id IS NOT NULL ORDER BY id') as $row) {
+        $image = content_db_image_ref($row);
+        if ($image !== '') { $photos[(int) $row['activity_id']][] = ['image' => $image, 'caption' => (string) $row['caption']]; }
+    }
+    $records = [];
+    foreach ($pdo->query('SELECT * FROM network_activities WHERE is_public = 1 ORDER BY sort_order, id') as $row) {
+        $records[] = ['id' => (int) $row['id'], 'partner_id' => (int) $row['partner_id'], 'direction' => (string) $row['direction'],
+            'period' => (string) ($row['period'] ?? ''), 'title' => (string) $row['title'], 'body' => (string) ($row['body'] ?? ''),
+            'photos' => $photos[(int) $row['id']] ?? []];
     }
     return $records;
 }

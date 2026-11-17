@@ -4,6 +4,10 @@
 // The SVG maps (assets/maps/*.svg) are inlined so the page works without a request for them and under the strict CSP.
 // Without JavaScript the map is coloured and the full text list below it carries all the content.
 
+// Codes for partners that are networks of several countries rather than one place: code => [name, line on the card].
+// XA is from the ISO 3166 user-assigned range, so it never clashes with a real country.
+const NETWORK_NO_MAP = ['XA' => ['อาเซียน', 'เครือข่าย 10 ประเทศอาเซียน']];
+
 // Settings of one map. $mode is 'world' or 'thailand'.
 function network_config(string $mode): array {
     static $cache = [];
@@ -12,6 +16,8 @@ function network_config(string $mode): array {
     if ($mode === 'world') {
         $names = []; $regionOf = [];
         foreach (require __DIR__ . '/../config/countries.php' as $code => $country) { $names[$code] = $country[0]; $regionOf[$code] = $country[2]; }
+        // Networks of several countries (AsTEN) use a user-assigned code: a card in the deck, no place on the map.
+        foreach (NETWORK_NO_MAP as $code => $label) { $names[$code] = $label[0]; $regionOf[$code] = ''; }
         return $cache[$mode] = [
             'dataset' => 'network', 'field' => 'country_code', 'svg' => 'assets/maps/world.svg', 'page' => 'network-international.php',
             'names' => $names, 'region_of' => $regionOf, 'region_labels' => $labels['world'], 'all_regions' => false,
@@ -87,11 +93,11 @@ function network_item_html(string $mode, array $item, string $tag = 'li'): strin
             foreach ($tags as $label) { $html .= '<li>' . e($label) . '</li>'; }
             $html .= '</ul>';
         }
-        // The name links to the institution's own website (new tab), so the entry needs no separate link line.
-        $url = (string) ($item['url'] ?? '');
+        // The name opens the institution's page on this site (activities, photos, its website). On a deck card the link
+        // covers the whole card. Without an id (data/network.json written by hand) the name is plain text.
         $name = e($item['institution']);
-        if (preg_match('~\Ahttps?://~i', $url)) {
-            $name = '<a class="netitem__site" href="' . e($url) . '" target="_blank" rel="noopener noreferrer">' . $name . '<span class="visually-hidden"> (เว็บไซต์ของสถาบัน เปิดแท็บใหม่)</span> ' . icon_arrow('up-right') . '</a>';
+        if (!empty($item['id'])) {
+            $name = '<a class="netitem__page" href="' . e(network_partner_url((int) $item['id'])) . '">' . $name . '</a>';
         }
         $html .= '<h4 class="netitem__title">' . $name . '</h4>';
         if (!empty($item['institution_th'])) { $html .= '<p class="netitem__sub">' . e($item['institution_th']) . '</p>'; }
@@ -146,6 +152,45 @@ function network_tag_filter(array $areas): string {
     return $html . '</div>';
 }
 
+// Activities of one partner (network_activities / data/network-activities.json), in their order. [] for id 0.
+function network_activities_of(int $partnerId): array {
+    static $byPartner = null;
+    if ($byPartner === null) {
+        $byPartner = [];
+        foreach (load_data('network-activities') as $activity) {
+            if (is_array($activity) && !empty($activity['partner_id'])) { $byPartner[(int) $activity['partner_id']][] = $activity; }
+        }
+    }
+    return $partnerId > 0 ? ($byPartner[$partnerId] ?? []) : [];
+}
+
+function network_partner_url(int $id): string { return 'network-partner.php?id=' . $id; }
+
+// Who went where: outbound = the faculty's people went abroad, inbound = guests came to the faculty, joint = together.
+function network_direction_label(string $direction): string {
+    return ['outbound' => 'คณะไปเยือน', 'inbound' => 'มาเยือนคณะ'][$direction] ?? 'ทำร่วมกัน';
+}
+
+// One photo that opens the large view (assets/js/network-map.js, netbox). $meta: title, institution, period, href.
+function network_photo_button(string $src, string $alt, array $meta, string $class, string $extra = ''): string {
+    [$w, $h] = image_size($src);
+    $data = ' data-netbox data-full="' . e($src) . '" data-title="' . e((string) (($meta['title'] ?? '') !== '' ? $meta['title'] : $alt)) . '"';
+    foreach (['institution' => 'inst', 'period' => 'period', 'href' => 'href'] as $key => $attr) {
+        if (($meta[$key] ?? '') !== '') { $data .= ' data-' . $attr . '="' . e((string) $meta[$key]) . '"'; }
+    }
+    return '<button class="' . e($class) . '" type="button"' . $data . ' aria-label="ดูภาพขยาย: ' . e($alt) . '"><img src="' . e($src) . '"'
+        . ($w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '') . ' alt="" loading="lazy" decoding="async">' . $extra . '</button>';
+}
+
+// The large view of a photo, once per page, filled by JavaScript.
+function network_lightbox(): string {
+    return '<dialog class="netbox" aria-labelledby="netbox-title"><div class="netbox__frame">'
+        . '<button class="netbox__close" type="button" data-netbox-close aria-label="ปิดภาพขยาย"><span aria-hidden="true">×</span></button>'
+        . '<figure class="netbox__figure"><div class="netbox__stage"><img class="netbox__img" src="data:," alt=""><button class="hero-ctrl netbox__nav netbox__nav--prev" type="button" data-netbox-step="-1" aria-label="ภาพก่อนหน้า">' . icon_arrow('chevron-left') . '</button><button class="hero-ctrl netbox__nav netbox__nav--next" type="button" data-netbox-step="1" aria-label="ภาพถัดไป">' . icon_arrow('chevron-right') . '</button></div>'
+        . '<figcaption class="netbox__cap"><p class="netbox__inst"></p><p class="netbox__title" id="netbox-title"></p><a class="netbox__link" href="#" hidden></a></figcaption></figure>'
+        . '</div></dialog>';
+}
+
 // Colour step 1..4 from the number of records in an area (4 = four or more).
 function network_level(int $count): int { return max(1, min(4, $count)); }
 
@@ -171,6 +216,7 @@ function render_network_page(string $mode): void {
     $areas = network_areas($mode);
     $items = array_sum(array_map(static fn (array $a): int => count($a['items']), $areas));
     $empty = $areas === [];
+    $placed = count(array_diff_key($areas, NETWORK_NO_MAP)); // countries on the map (a multi-country network is not one)
     // Region buttons: only regions that have records, each with its number of records; none unless there are two or more.
     $regionCounts = [];
     foreach ($areas as $area) { if ($area['region'] !== '') { $regionCounts[$area['region']] = ($regionCounts[$area['region']] ?? 0) + count($area['items']); } }
@@ -184,9 +230,9 @@ function render_network_page(string $mode): void {
     <div class="netmap__empty" role="status"><p class="netmap__empty-title">กำลังรวบรวมข้อมูลเครือข่าย</p><p>เมื่อเพิ่มรายการแรกแล้ว <?= e($cfg['area']) ?>นั้นจะสว่างขึ้นบนแผนที่นี้</p></div>
 <?php else: ?>
     <div class="netmap__hud">
-      <p class="visually-hidden"><?= e($cfg['lead']) ?> <?= count($areas) ?> <?= e($cfg['area']) ?> <?= $items ?> <?= e($cfg['item']) ?></p>
+      <p class="visually-hidden"><?= e($cfg['lead']) ?> <?= $placed ?> <?= e($cfg['area']) ?> <?= $items ?> <?= e($cfg['item']) ?></p>
       <dl class="netmap__stats" aria-hidden="true">
-        <div class="netmap__stat"><dt><?= e($cfg['stat_area']) ?></dt><dd class="netmap__num" data-count="<?= count($areas) ?>"><?= count($areas) ?></dd></div>
+        <div class="netmap__stat"><dt><?= e($cfg['stat_area']) ?></dt><dd class="netmap__num" data-count="<?= $placed ?>"><?= $placed ?></dd></div>
         <div class="netmap__stat"><dt><?= e($cfg['stat_item']) ?></dt><dd class="netmap__num" data-count="<?= $items ?>"><?= $items ?></dd></div>
       </dl>
       <ul class="netmap__legend" aria-label="คำอธิบายสีบนแผนที่">
@@ -219,7 +265,11 @@ function render_network_page(string $mode): void {
         <li class="netdeck__card"<?= $anchor ? ' id="' . e($code) . '"' : '' ?> data-code="<?= e($code) ?>" data-country="<?= e($area['name']) ?>" data-tags="<?= e(implode(' ', array_keys(network_tags_of($item)))) ?>">
           <div class="netdeck__media<?= $src === '' ? ' is-empty' : '' ?>"><?php if ($src !== ''): [$w, $h] = image_size($src); ?><img src="<?= e($src) ?>"<?= $w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '' ?> alt="" loading="lazy" decoding="async"><?php endif; ?></div>
           <div class="netdeck__body">
-            <p class="netdeck__where"><span><?= e($area['name']) ?></span><a class="netdeck__map" href="#<?= e($code) ?>">ดูบนแผนที่<span class="visually-hidden"> (<?= e($area['name']) ?>)</span></a></p>
+<?php if (isset(NETWORK_NO_MAP[$code])): ?>
+            <p class="netdeck__where"><span><?= e(NETWORK_NO_MAP[$code][1]) ?></span><?php $acts = count(network_activities_of((int) ($item['id'] ?? 0))); if ($acts): ?><span class="netdeck__acts"><?= $acts ?> กิจกรรม</span><?php endif; ?></p>
+<?php else: ?>
+            <p class="netdeck__where"><span><?= e($area['name']) ?></span><?php $acts = count(network_activities_of((int) ($item['id'] ?? 0))); if ($acts): ?><span class="netdeck__acts"><?= $acts ?> กิจกรรม</span><?php endif; ?></p>
+<?php endif; ?>
             <?= network_item_html($mode, $item, 'div') ?>
           </div>
         </li>
@@ -247,28 +297,104 @@ function render_network_page(string $mode): void {
 <?php
 }
 
-// Photo strip under the deck of the world page: activity photos (network_photos / data/network-photos.json) moving
-// sideways without stop, once network-map.js has set it going. With ten photos or more they are split over two rows that
-// move in opposite directions. Without JavaScript, or with reduced motion, each row is a strip that scrolls by hand.
+// Photo strip under the deck of the world page: activity photos (network_photos / data/network-photos.json, those with
+// in_strip) moving sideways without stop, once network-map.js has set it going. A row stops while the pointer is on it
+// or a photo has focus; each photo shows what event it is from and opens a large view. With ten photos or more they are
+// split over two rows that move in opposite directions. Without JavaScript, or with reduced motion, each row is a strip
+// that scrolls by hand.
 function render_network_photos(): void {
     $photos = [];
     foreach (load_data('network-photos') as $row) {
-        $src = is_array($row) ? image_path($row) : '';
-        if ($src !== '') { $photos[] = ['src' => $src, 'alt' => trim((string) ($row['caption'] ?? ''))]; }
+        if (!is_array($row) || (array_key_exists('in_strip', $row) && !$row['in_strip'])) { continue; }
+        $src = image_path($row);
+        if ($src === '') { continue; }
+        $meta = ['title' => (string) ($row['title'] ?? ''), 'institution' => (string) ($row['institution'] ?? ''), 'period' => (string) ($row['period'] ?? '')];
+        if (!empty($row['partner_id'])) { $meta['href'] = network_partner_url((int) $row['partner_id']); }
+        $photos[] = ['src' => $src, 'alt' => trim((string) ($row['caption'] ?? '')), 'meta' => $meta];
     }
     if (!$photos) { return; }
     $rows = count($photos) >= 10 ? [[], []] : [[]];
     foreach ($photos as $i => $photo) { $rows[$i % count($rows)][] = $photo; }
     ?>
-<section class="netphotos" aria-labelledby="netphotos-title">
-  <div class="container netphotos__head"><h2 id="netphotos-title">ภาพกิจกรรมกับเครือข่าย</h2><button class="netphotos__toggle" type="button" aria-pressed="false" hidden>หยุดภาพเลื่อน</button></div>
-  <div class="netphotos__rows">
+<section class="netphotos" aria-label="ภาพกิจกรรมกับเครือข่าย">
+  <div class="netphotos__rows" data-netbox-group>
 <?php foreach ($rows as $r => $set): ?>
     <div class="netphotos__row" data-dir="<?= $r ? 'right' : 'left' ?>">
-      <ul class="netphotos__strip"><?php foreach ($set as $photo): [$w, $h] = image_size($photo['src']); ?><li><img src="<?= e($photo['src']) ?>"<?= $w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '' ?> alt="<?= e($photo['alt']) ?>" loading="lazy" decoding="async"></li><?php endforeach; ?></ul>
+      <ul class="netphotos__strip"><?php foreach ($set as $photo):
+          $cap = $photo['meta']['title'] !== '' ? '<span class="netphotos__cap"><span class="netphotos__inst">' . e($photo['meta']['institution']) . '</span><span class="netphotos__title">' . e($photo['meta']['title']) . '</span></span>' : '';
+          ?><li><?= network_photo_button($photo['src'], $photo['alt'], $photo['meta'], 'netphotos__item', $cap) ?></li><?php endforeach; ?></ul>
     </div>
 <?php endforeach; ?>
   </div>
+  <?= network_lightbox() ?>
 </section>
+<?php
+}
+
+// network-partner.php: one institution with every activity the faculty did with it, in the order set in the admin,
+// each with its photos (which open the same large view as the strip).
+function render_network_partner(array $partner, string $countryName): void {
+    $activities = network_activities_of((int) $partner['id']);
+    $tags = network_tags_of($partner);
+    $src = image_path($partner);
+    $code = (string) $partner['country_code'];
+    $url = (string) ($partner['url'] ?? '');
+    $onMap = !isset(NETWORK_NO_MAP[$code]);
+    $where = $onMap ? $countryName : NETWORK_NO_MAP[$code][1];
+    ?>
+<section class="netpartner"><div class="container">
+  <a class="text-link back-link" href="network-international.php<?= $onMap ? '#' . e($code) : '' ?>"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>เครือข่ายวิจัยนานาชาติ</span></a>
+  <header class="netpartner__head">
+    <div class="netpartner__media<?= $src === '' ? ' is-empty' : '' ?>"><?php if ($src !== ''): [$w, $h] = image_size($src); ?><img src="<?= e($src) ?>"<?= $w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '' ?> alt=""><?php endif; ?></div>
+    <div class="netpartner__intro">
+      <p class="netpartner__where"><?= e($where) ?></p>
+      <h1><?= e($partner['institution']) ?></h1>
+<?php if (!empty($partner['institution_th'])): ?>
+      <p class="netpartner__th"><?= e($partner['institution_th']) ?></p>
+<?php endif; ?>
+<?php if (trim((string) ($partner['summary'] ?? '')) !== ''): ?>
+      <p class="netpartner__summary"><?= e(trim((string) $partner['summary'])) ?></p>
+<?php endif; ?>
+      <dl class="netpartner__facts">
+<?php if ($tags): ?>
+        <div><dt>รูปแบบความร่วมมือ</dt><dd><ul class="netitem__tags"><?php foreach ($tags as $label): ?><li><?= e($label) ?></li><?php endforeach; ?></ul></dd></div>
+<?php endif; ?>
+<?php if (trim((string) ($partner['people'] ?? '')) !== ''): ?>
+        <div><dt>ผู้ประสานงานและนักวิชาการ</dt><dd><?= e(trim((string) $partner['people'])) ?></dd></div>
+<?php endif; ?>
+<?php if (preg_match('~\Ahttps?://~i', $url)): ?>
+        <div><dt>เว็บไซต์</dt><dd><a class="netitem__site" href="<?= e($url) ?>" target="_blank" rel="noopener noreferrer"><?= e((string) preg_replace('~\Ahttps?://(www\.)?|/\z~i', '', $url)) ?><span class="visually-hidden"> (เปิดแท็บใหม่)</span> <?= icon_arrow('up-right') ?></a></dd></div>
+<?php endif; ?>
+      </dl>
+    </div>
+  </header>
+  <section class="netpartner__acts" aria-labelledby="netpartner-acts">
+    <h2 id="netpartner-acts">กิจกรรม <span class="netpartner__n"><?= count($activities) ?></span></h2>
+<?php if (!$activities): ?>
+    <p class="netpartner__none">ยังไม่มีรายละเอียดกิจกรรมของสถาบันนี้</p>
+<?php else: ?>
+    <ul class="nettl">
+<?php foreach ($activities as $activity): ?>
+      <li class="nettl__item<?= empty($activity['photos']) ? ' is-text' : '' ?>">
+        <div class="nettl__text">
+<?php if (($activity['period'] ?? '') !== ''): ?>
+        <p class="nettl__meta"><span class="nettl__period"><?= e($activity['period']) ?></span></p>
+<?php endif; ?>
+        <h3 class="nettl__title"><?= e($activity['title']) ?></h3>
+<?php if (trim((string) ($activity['body'] ?? '')) !== ''): ?>
+        <p class="nettl__body"><?= e(trim((string) $activity['body'])) ?></p>
+<?php endif; ?>
+        </div>
+<?php if (!empty($activity['photos'])): ?>
+<?php $shown = array_values(array_filter($activity['photos'], static fn ($ph): bool => is_array($ph) && image_path($ph) !== '')); ?>
+        <ul class="nettl__photos nettl__photos--<?= min(4, count($shown)) ?>" data-netbox-group><?php foreach ($activity['photos'] as $photo): $psrc = image_path($photo); if ($psrc === '') { continue; } ?><li><?= network_photo_button($psrc, (string) ($photo['caption'] ?? $activity['title']), ['title' => $activity['title'], 'institution' => $partner['institution'], 'period' => (string) ($activity['period'] ?? '')], 'nettl__photo') ?></li><?php endforeach; ?></ul>
+<?php endif; ?>
+      </li>
+<?php endforeach; ?>
+    </ul>
+<?php endif; ?>
+  </section>
+</div></section>
+<?= network_lightbox() ?>
 <?php
 }

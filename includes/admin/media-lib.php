@@ -16,6 +16,14 @@ function admin_media_prepare(array $file) {
     if (filesize($file['tmp_name']) > ADMIN_UPLOAD_MAX) { return 'ไฟล์ใหญ่เกิน 8 MB'; }
     $bytes = file_get_contents($file['tmp_name']);
     if ($bytes === false || $bytes === '') { return 'อ่านไฟล์ไม่ได้'; }
+    return admin_media_prepare_bytes($bytes);
+}
+
+// The checks and re-encoding of admin_media_prepare() for bytes that did not come from a form field: a picture inside an
+// uploaded zip, or one already in the site's own folder (admin/network-import.php). Same return value.
+function admin_media_prepare_bytes(string $bytes) {
+    if ($bytes === '') { return 'อ่านไฟล์ไม่ได้'; }
+    if (strlen($bytes) > ADMIN_UPLOAD_MAX) { return 'ไฟล์ใหญ่เกิน 8 MB'; }
     $mime = (new finfo(FILEINFO_MIME_TYPE))->buffer($bytes);   // never trust the browser's type or the file name
     if ($mime === 'application/pdf') {
         if (strncmp($bytes, '%PDF-', 5) !== 0) { return 'ไฟล์ PDF ไม่ถูกต้อง'; }
