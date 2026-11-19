@@ -83,9 +83,9 @@ require __DIR__ . '/includes/header.php';
 <?php foreach ($promos as $i => $promo): $promoLive = $promo['url'] !== '#'; ?>
           <div class="stage__item" role="group" aria-roledescription="สไลด์" aria-label="<?= $i + 1 ?> จาก <?= $promoTotal ?>" data-title="<?= e($promo['title']) ?>">
 <?php if ($promoLive): ?>
-            <a class="banner" href="<?= e($promo['url']) ?>" aria-label="<?= e($promo['title']) ?>"><img src="<?= e($promo['image']) ?>" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></a>
+            <a class="banner" href="<?= e($promo['url']) ?>" aria-label="<?= e($promo['title']) ?>"><img src="<?= e($promo['image']) ?>" width="1600" height="800" alt="" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></a>
 <?php else: ?>
-            <div class="banner"><img src="<?= e($promo['image']) ?>" alt="<?= e($promo['title']) ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></div>
+            <div class="banner"><img src="<?= e($promo['image']) ?>" width="1600" height="800" alt="<?= e($promo['title']) ?>" loading="<?= $i === 0 ? 'eager' : 'lazy' ?>" decoding="async"></div>
 <?php endif; ?>
 <?php if ($promo['date'] !== ''): ?>            <p class="stage__caption"><time datetime="<?= e($promo['date']) ?>"><?= e(thai_date($promo['date'])) ?></time></p>
 <?php endif; ?>

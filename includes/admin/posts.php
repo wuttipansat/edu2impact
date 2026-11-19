@@ -215,9 +215,9 @@ function admin_post_load(int $id): ?array {
 }
 
 // One uploaded picture/PDF -> media id. Returns [id|null, error|null]; "no file chosen" is [null, null].
-function admin_post_upload(?array $file, string $alt = ''): array {
+function admin_post_upload(?array $file, string $alt = '', ?array $fit = null): array {
     if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) { return [null, null]; }
-    $prep = admin_media_prepare($file);
+    $prep = admin_media_prepare($file, $fit);
     if (is_string($prep)) { return [null, basename((string) ($file['name'] ?? '')) . ': ' . $prep]; }
     try { return [admin_media_store($prep, basename((string) $file['name']), $alt, (int) (auth_user()['id'] ?? 0) ?: null), null]; }
     catch (Throwable $e) { error_log('edu2impact admin upload: ' . $e->getMessage()); return [null, 'อัปโหลดไม่สำเร็จ: ฐานข้อมูลไม่รับไฟล์ (อาจใหญ่เกินไป)']; }

@@ -6,7 +6,9 @@ const ADMIN_UPLOAD_MAX = 8388608;   // 8 MB per file before processing
 const ADMIN_IMAGE_MAX_SIDE = 1920;
 
 // Returns ['data'=>, 'mime'=>, 'width'=>, 'height'=>, 'ext'=>] or a string (Thai error message).
-function admin_media_prepare(array $file) {
+// $fit = [width, height]: the picture is cut to that shape around its centre and made that size (never enlarged).
+// Used where the site always shows one shape, such as the ประชาสัมพันธ์ banners (1600 x 800).
+function admin_media_prepare(array $file, ?array $fit = null) {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
         $code = $file['error'] ?? UPLOAD_ERR_NO_FILE;
         if ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE) { return 'ไฟล์ใหญ่เกินที่เซิร์ฟเวอร์รับได้ (' . ini_get('upload_max_filesize') . ')'; }
@@ -16,12 +18,12 @@ function admin_media_prepare(array $file) {
     if (filesize($file['tmp_name']) > ADMIN_UPLOAD_MAX) { return 'ไฟล์ใหญ่เกิน 8 MB'; }
     $bytes = file_get_contents($file['tmp_name']);
     if ($bytes === false || $bytes === '') { return 'อ่านไฟล์ไม่ได้'; }
-    return admin_media_prepare_bytes($bytes);
+    return admin_media_prepare_bytes($bytes, $fit);
 }
 
 // The checks and re-encoding of admin_media_prepare() for bytes that did not come from a form field: a picture inside an
 // uploaded zip, or one already in the site's own folder (admin/network-import.php). Same return value.
-function admin_media_prepare_bytes(string $bytes) {
+function admin_media_prepare_bytes(string $bytes, ?array $fit = null) {
     if ($bytes === '') { return 'อ่านไฟล์ไม่ได้'; }
     if (strlen($bytes) > ADMIN_UPLOAD_MAX) { return 'ไฟล์ใหญ่เกิน 8 MB'; }
     $mime = (new finfo(FILEINFO_MIME_TYPE))->buffer($bytes);   // never trust the browser's type or the file name
@@ -41,6 +43,16 @@ function admin_media_prepare_bytes(string $bytes) {
         if ($rotate) { $r = imagerotate($img, $rotate, 0); if ($r) { $img = $r; } }
     }
     $w = imagesx($img); $h = imagesy($img);
+    if ($fit && $fit[0] > 0 && $fit[1] > 0) {
+        // Cut the middle to the target shape, then shrink to the target size if larger.
+        $ratio = $fit[0] / $fit[1];
+        $cw = (int) min($w, round($h * $ratio)); $ch = (int) min($h, round($w / $ratio));
+        $tw = (int) min($fit[0], $cw); $th = (int) round($tw / $ratio);
+        $cut = imagecreatetruecolor($tw, $th);
+        imagealphablending($cut, false); imagesavealpha($cut, true);
+        imagecopyresampled($cut, $img, 0, 0, (int) (($w - $cw) / 2), (int) (($h - $ch) / 2), $tw, $th, $cw, $ch);
+        $img = $cut; $w = $tw; $h = $th;
+    }
     $scale = min(1.0, ADMIN_IMAGE_MAX_SIDE / max($w, $h));
     if ($scale < 1.0) {
         $img2 = imagescale($img, (int) round($w * $scale), (int) round($h * $scale), IMG_BICUBIC);

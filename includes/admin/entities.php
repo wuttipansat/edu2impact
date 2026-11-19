@@ -1,7 +1,7 @@
 <?php
 // Small list editor shared by the home banner and shop pages (and the unlinked events page).
 // A $spec maps column => field: type text|textarea|date|url|youtube|slug|flag|image|fixed|select|int|posts, label, max, required, hint, value (fixed), default.
-// select: 'options' => [value => label]. tags: 'options' => [slug => label], checkboxes stored as "slug,slug". int: 'min', 'max'. posts: 'kinds' => [post kinds]; stores [{"kind","id"}] as JSON (the network pages' `related`).
+// select: 'options' => [value => label]. tags: 'options' => [slug => label], checkboxes stored as "slug,slug". int: 'min', 'max'. image: 'fit' => [w, h] cuts uploads to that shape and size. posts: 'kinds' => [post kinds]; stores [{"kind","id"}] as JSON (the network pages' `related`).
 require_once __DIR__ . '/media-lib.php';
 require_once __DIR__ . '/posts.php';
 
@@ -30,7 +30,7 @@ function admin_entity_values(array $spec, ?array $current): array {
             case 'youtube': $x = in_line($col, 500); if ($x !== '' && !preg_match('~\Ahttps://(www\.|m\.)?(youtube\.com|youtube-nocookie\.com|youtu\.be)/[\w\-./?=&%]+\z~', $x)) { $errors[] = "$label ต้องเป็นลิงก์ YouTube"; $x = ''; } $v[$col] = $x === '' ? null : $x; break;
             case 'slug': $x = clean_slug(in_line($col, 120)); $v[$col] = $x === '' ? null : $x; break;
             case 'image':
-                [$up, $upErr] = admin_post_upload(admin_file_at($col . '_file'));
+                [$up, $upErr] = admin_post_upload(admin_file_at($col . '_file'), '', $f['fit'] ?? null);
                 $pick = in_str($col . '_pick'); $choice = in_str($col);
                 $id = $up ?: (ctype_digit($pick) ? (int) $pick : null);
                 if ($upErr) { $errors[] = $upErr; }
