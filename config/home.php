@@ -36,7 +36,6 @@ return [
     // shown under the banner). "label" is still accepted but not shown. Delete every row to hide the section.
     // The rows below are placeholders, marked "[ตัวอย่าง]".
     'promos' => [
-        ['title' => 'คลังความรู้อาชีพ 5,280 รายการ เพื่อโรงเรียนห่างไกล ทั้งวีดิโอ อีบุ๊ก เกมการเรียนรู้ และสื่อวิทยุ', 'date' => '2026-11-23', 'label' => 'นวัตกรรม', 'image' => 'assets/images/promo-moveeef-career-library.webp', 'url' => 'https://www.edu2impact.edu.ku.ac.th/innovation-detail.php?id=moveeef'],
         ['title' => '[ตัวอย่าง] เปิดรับสมัครเวิร์กช็อปออกแบบบทเรียนด้วย PCK Canvas สำหรับครูทุกกลุ่มสาระ', 'date' => '2026-10-22', 'label' => 'รับสมัคร', 'image' => 'assets/images/innovation-pck-canvas.webp', 'url' => '#'],
         ['title' => '[ตัวอย่าง] เชิญร่วมเสวนา "จากงานวิจัยสู่ห้องเรียน" ร่วมกับโรงเรียนเครือข่าย', 'date' => '2026-10-18', 'label' => 'กิจกรรม', 'image' => 'assets/images/nonthaburi-learning.webp', 'url' => '#'],
         ['title' => '[ตัวอย่าง] ผลงาน Coding4Change ได้รับเชิญนำเสนอในเวทีสะเต็มศึกษา', 'date' => '2026-10-12', 'label' => 'ข่าว', 'image' => 'assets/images/coding4change-pilot.webp', 'url' => '#'],
