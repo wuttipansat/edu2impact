@@ -284,41 +284,56 @@
 }
 .netarea[hidden],.netitem[hidden]{display:none}
 
-/* ---- Project list under the map of Thailand (render_network_programs): one block per project, project first.
-   A programme run in many provinces lists them by region, name and year, in short runs that wrap; one-school projects
-   sit in a list with the province above each title. Same type and markers as the institution cards of the world list
-   (.netdeck__where, .netitem__tags); blocks are divided by a rule, not boxed, so the page does not turn into a grid of
-   equal cards. ---- */
+/* ---- Project list under the map of Thailand (render_network_programs): one card per project.
+   The left of each card is the night purple of the big map with a small Thailand on it, the project's provinces lit
+   in the same light purple as the big map, so a glance says how far the project reached. The count and years sit
+   under it. The right holds the title and the provinces by region (pointing at a province lights it in orange on
+   the small map, network-map.js). Cards share the white, 14px-corner frame of the institution cards on the world
+   page. ---- */
 .netlist__areas[hidden]{display:none}
 .netlist--thailand .netlist__top h2{margin:0}
-.netprogs{display:grid;gap:0}
-.netprog{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(18px,3vw,56px);padding-block:clamp(26px,3vw,40px);border-top:1px solid var(--line)}
-.netprog:last-child{border-bottom:1px solid var(--line)}
-.netprog__head{min-width:0}
-.netprog__where{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0 0 10px;color:var(--ink-muted);font-family:var(--font-thai);font-size:var(--fs-sm)}
-.netprog__where>span:first-child{color:var(--purple-700);font-weight:600}
-.netprog__span{font-variant-numeric:tabular-nums}
-.netprog__title{margin:0 0 14px;font-family:var(--font-thai);font-size:clamp(1.25rem,1.1rem + .6vw,1.625rem);font-weight:600;line-height:1.4;color:var(--purple-900)}
-.netprog__head .netitem__tags{margin:0}
-.netprog__head .netitem__summary{margin-top:12px}
-.netprog__regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:22px clamp(18px,2.4vw,36px);align-content:start}
+.netprog__defs{position:absolute;width:0;height:0;overflow:hidden}
+.netprogs{display:grid;gap:clamp(16px,2vw,28px)}
+.netprog{display:grid;grid-template-columns:minmax(220px,3fr) minmax(0,8fr);overflow:hidden;border-radius:14px;background:#fff}
+.netprog__reach{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:20px;padding:clamp(22px,2.4vw,34px) clamp(20px,2.2vw,30px);background:var(--purple-900);color:#fff}
+.netprog__map{position:sticky;top:calc(var(--header-h, 72px) + 24px);display:block;width:100%;max-width:200px;height:auto;max-height:360px;margin-inline:auto}
+.netprog__count{position:sticky;bottom:24px}
+.netprog__map use{fill:#4b2a5a;stroke:#2b0f35;stroke-width:1.2px;transition:fill .25s ease}
+.netprog__map use.is-on{fill:var(--purple-200)}
+.netprog__map use.is-hot{fill:var(--accent-warm)}
+.netprog__count{margin:0;font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;color:var(--purple-100)}
+.netprog__big{margin-right:4px;font-family:var(--font-ui);font-size:clamp(2.5rem,2rem + 1.6vw,3.5rem);font-weight:600;line-height:1;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+.netprog__span{display:block;margin-top:8px;color:var(--purple-200);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
+.netprog__body{min-width:0;padding:clamp(24px,3vw,44px) clamp(22px,3.2vw,48px) clamp(26px,3vw,40px)}
+.netprog__title{max-width:28ch;margin:0 0 12px;font-family:var(--font-thai);font-size:clamp(1.375rem,1.15rem + .9vw,1.875rem);font-weight:600;line-height:1.35;color:var(--purple-900)}
+.netprog__body>.netitem__tags{margin:0 0 4px}
+.netprog__body>.netitem__summary{margin-top:10px}
+.netprog__regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:22px clamp(18px,2.4vw,32px);margin-top:clamp(20px,2.4vw,30px)}
 .netprog__region-title{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:600;color:var(--ink)}
 .netprog__n{margin-left:4px;color:var(--ink-muted);font-family:var(--font-ui);font-weight:400;font-variant-numeric:tabular-nums}
-.netprog__places{display:grid;gap:2px;margin:0;padding:0;list-style:none}
-.netprog__places li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:var(--fs-sm);line-height:1.6}
+.netprog__places{display:grid;gap:1px;margin:0;padding:0;list-style:none}
+.netprog__places li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:var(--fs-sm);line-height:1.65}
 .netprog__place{color:var(--ink);text-decoration:none;border-radius:2px}
 .netprog__place:hover{color:var(--purple-700);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
 .netprog__place:focus-visible{outline:2px solid var(--purple-600);outline-offset:2px}
 .netprog__yr{color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums;white-space:nowrap}
-.netprog__schools{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:22px clamp(18px,2.4vw,36px);margin:0;padding:0;list-style:none;align-content:start}
-.netprog__school{padding-top:12px;border-top:1px solid var(--line)}
+/* One-school projects: rows in two columns, the province above each title, divided by hairlines. */
+.netprog__schools{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:0 clamp(20px,2.6vw,36px);margin:clamp(14px,1.6vw,20px) 0 0;padding:0;list-style:none}
+.netprog__school{padding:14px 0 16px;border-top:1px solid var(--line)}
 .netprog__at{display:flex;align-items:baseline;gap:10px;margin:0 0 4px;font-size:var(--fs-xs)}
 .netprog__at .netprog__place{color:var(--purple-700);font-weight:600}
 .netprog__school-title{margin:0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5;color:var(--ink)}
-@media(max-width:900px){
+.netprog__school-where{margin:3px 0 0;color:var(--ink-muted);font-size:var(--fs-xs);line-height:1.6}
+@media(max-width:760px){
   .netprog{grid-template-columns:1fr}
-  .netprog__regions{grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr))}
+  .netprog__reach{flex-direction:row;align-items:flex-end;padding:18px 20px}
+  .netprog__map{position:static;order:2;width:96px;max-width:none;margin:0}
+  .netprog__count{position:static}
+  .netprog__count{order:1}
+  .netprog__regions{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 18px}
+  .netprog__places li{gap:8px}
 }
+@media(prefers-reduced-motion:reduce){.netprog__map use{transition:none}}
 .netmap__svg path.is-tag-dim,.netmap__marker.is-tag-dim{opacity:.35}
 .netmap .netmap__arc.is-tag-dim,.netmap .netmap__arc-end.is-tag-dim{opacity:.06}
 

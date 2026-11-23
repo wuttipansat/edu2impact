@@ -108,8 +108,37 @@ function network_place_link(array $place, array &$anchored): string {
         . e($place['name']) . '<span class="visually-hidden"> (ดูบนแผนที่)</span></a>';
 }
 
-// The project-first list under the map of Thailand. The per-province sections the map panel shows are printed after it,
-// hidden (network-map.js copies one into the panel when a province is chosen).
+// Province outlines of assets/maps/thailand.svg as code => path data, for the small maps on the project cards.
+function network_thai_shapes(): array {
+    static $shapes = null;
+    if ($shapes !== null) { return $shapes; }
+    $shapes = [];
+    $svg = @file_get_contents(__DIR__ . '/../assets/maps/thailand.svg');
+    if ($svg === false) { return $shapes; }
+    preg_match_all('~<path data-code="(TH-[0-9]+)"[^>]*? d="([^"]+)"~', $svg, $m, PREG_SET_ORDER);
+    foreach ($m as $hit) { $shapes[$hit[1]] = $hit[2]; }
+    return $shapes;
+}
+
+// Each province once, as <defs>, so a card's map is 77 short <use> tags instead of a second copy of the whole map.
+function network_shape_defs(): string {
+    $html = '<svg class="netprog__defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>';
+    foreach (network_thai_shapes() as $code => $d) { $html .= '<path id="tp-' . e($code) . '" d="' . e($d) . '"/>'; }
+    return $html . '</defs></svg>';
+}
+
+// The small map of Thailand on a card: the provinces in $lit are bright. Decorative; the list beside it says the same.
+function network_mini_map(array $lit): string {
+    $html = '<svg class="netprog__map" viewBox="19.3 0 481.5 880" aria-hidden="true" focusable="false">';
+    foreach (array_keys(network_thai_shapes()) as $code) {
+        $html .= '<use href="#tp-' . e($code) . '" data-code="' . e($code) . '"' . (isset($lit[$code]) ? ' class="is-on"' : '') . '/>';
+    }
+    return $html . '</svg>';
+}
+
+// The project-first list under the map of Thailand: one card per project, its reach drawn on a small map. The
+// per-province sections the big map's panel shows are printed after it, hidden (network-map.js copies one into the
+// panel when a province is chosen).
 function render_network_programs(array $areas): void {
     $cfg = network_config('thailand');
     ['programs' => $programs, 'singles' => $singles] = network_programs($areas);
@@ -118,11 +147,18 @@ function render_network_programs(array $areas): void {
     ?>
 <section class="netlist netlist--thailand" aria-labelledby="netlist-title"><div class="container">
   <div class="netlist__top"><h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2></div>
+  <?= network_shape_defs() ?>
   <div class="netprogs">
-<?php foreach ($programs as $program): $n++; $span = network_year_span($program['years']); ?>
+<?php foreach ($programs as $program): $n++; $span = network_year_span($program['years']);
+    $lit = [];
+    foreach ($program['regions'] as $region) { foreach ($region['places'] as $code => $place) { $lit[$code] = true; } }
+    ?>
     <article class="netprog" aria-labelledby="netprog-<?= $n ?>">
-      <header class="netprog__head">
-        <p class="netprog__where"><span><?= (int) $program['provinces'] ?> <?= e($cfg['area']) ?></span><?php if ($span !== ''): ?> <span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+      <div class="netprog__reach">
+        <?= network_mini_map($lit) ?>
+        <p class="netprog__count"><span class="netprog__big"><?= (int) $program['provinces'] ?></span> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+      </div>
+      <div class="netprog__body">
         <h3 class="netprog__title" id="netprog-<?= $n ?>"><?= e($program['title']) ?></h3>
 <?php if ($program['partner'] !== ''): ?>
         <ul class="netitem__tags"><li>ร่วมกับ<?= e($program['partner']) ?></li></ul>
@@ -133,19 +169,19 @@ function render_network_programs(array $areas): void {
 <?php if ($program['related']): ?>
         <ul class="netitem__related" aria-label="เนื้อหาที่เกี่ยวข้อง"><?php foreach ($program['related'] as $card): ?><li><a href="<?= e($card['url']) ?>"><span class="netitem__kind"><?= e($card['label']) ?></span> <?= e($card['title']) ?></a></li><?php endforeach; ?></ul>
 <?php endif; ?>
-      </header>
-      <div class="netprog__regions">
+        <div class="netprog__regions">
 <?php foreach ($program['regions'] as $slug => $region): ?>
-        <section class="netprog__region" aria-labelledby="netprog-<?= $n ?>-<?= e($slug) ?>">
-          <h4 class="netprog__region-title" id="netprog-<?= $n ?>-<?= e($slug) ?>"><?= e($region['label']) ?> <span class="netprog__n"><?= count($region['places']) ?></span></h4>
-          <ul class="netprog__places"><?php foreach ($region['places'] as $place): ksort($place['years']); ?><li><?= network_place_link($place, $anchored) ?><?php if ($place['years']): ?> <span class="netprog__yr"><?= e(implode(', ', $place['years'])) ?></span><?php endif; ?></li><?php endforeach; ?></ul>
-        </section>
+          <section class="netprog__region" aria-labelledby="netprog-<?= $n ?>-<?= e($slug) ?>">
+            <h4 class="netprog__region-title" id="netprog-<?= $n ?>-<?= e($slug) ?>"><?= e($region['label']) ?> <span class="netprog__n"><?= count($region['places']) ?></span></h4>
+            <ul class="netprog__places"><?php foreach ($region['places'] as $place): ksort($place['years']); ?><li><?= network_place_link($place, $anchored) ?><?php if ($place['years']): ?> <span class="netprog__yr"><?= e(implode(', ', $place['years'])) ?></span><?php endif; ?></li><?php endforeach; ?></ul>
+          </section>
 <?php endforeach; ?>
+        </div>
       </div>
     </article>
 <?php endforeach; ?>
 <?php foreach ($singles as $group): $n++;
-    $provinces = count(array_unique(array_column($group['rows'], 'code')));
+    $lit = array_fill_keys(array_column($group['rows'], 'code'), true);
     $years = array_values(array_unique(array_filter(array_map(static fn (array $r): int => (int) ($r['item']['year'] ?? 0), $group['rows']))));
     sort($years);
     $span = network_year_span($years);
@@ -159,24 +195,27 @@ function render_network_programs(array $areas): void {
     });
     ?>
     <article class="netprog netprog--schools" aria-labelledby="netprog-<?= $n ?>">
-      <header class="netprog__head">
-        <p class="netprog__where"><span><?= count($rows) ?> <?= e($cfg['item']) ?> · <?= $provinces ?> <?= e($cfg['area']) ?></span><?php if ($span !== ''): ?> <span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+      <div class="netprog__reach">
+        <?= network_mini_map($lit) ?>
+        <p class="netprog__count"><span class="netprog__big"><?= count($rows) ?></span> <?= e($cfg['item']) ?> ใน <?= count($lit) ?> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+      </div>
+      <div class="netprog__body">
         <h3 class="netprog__title" id="netprog-<?= $n ?>"><?php if ($group['url'] !== ''): ?><a class="netitem__page" href="<?= e($group['url']) ?>"><?= e($group['title']) ?></a><?php else: ?><?= e($group['title']) ?><?php endif; ?></h3>
-      </header>
-      <ul class="netprog__schools">
+        <ul class="netprog__schools">
 <?php foreach ($rows as $row): $item = $row['item']; $place = ['code' => $row['code'], 'name' => $row['area']['name']]; ?>
-        <li class="netprog__school">
-          <p class="netprog__at"><?= network_place_link($place, $anchored) ?><?php if (!empty($item['year'])): ?> <span class="netprog__yr"><?= (int) $item['year'] ?></span><?php endif; ?></p>
-          <h4 class="netprog__school-title"><?= e($item['title']) ?></h4>
+          <li class="netprog__school">
+            <p class="netprog__at"><?= network_place_link($place, $anchored) ?><?php if (!empty($item['year'])): ?> <span class="netprog__yr"><?= (int) $item['year'] ?></span><?php endif; ?></p>
+            <h4 class="netprog__school-title"><?= e($item['title']) ?></h4>
 <?php if (!empty($item['community'])): ?>
-          <p class="netitem__sub"><?= e($item['community']) ?></p>
+            <p class="netprog__school-where"><?= e($item['community']) ?></p>
 <?php endif; ?>
 <?php if (!empty($item['summary'])): ?>
-          <p class="netitem__text"><?= e($item['summary']) ?></p>
+            <p class="netitem__text"><?= e($item['summary']) ?></p>
 <?php endif; ?>
-        </li>
+          </li>
 <?php endforeach; ?>
-      </ul>
+        </ul>
+      </div>
     </article>
 <?php endforeach; ?>
   </div>
