@@ -478,7 +478,7 @@ html{scroll-padding-top:84px}
 .search-dialog__panel{padding:24px}
 
 /* ===================================================================== 13. Closing call and footer */
-.closing-cta{position:relative;overflow:hidden;background:var(--surface-dark) url("../images/hero-partners.webp") center 60%/cover no-repeat;color:#fff;isolation:isolate}
+.closing-cta{position:relative;overflow:hidden;background:var(--surface-dark) url("../images/closing-cta.webp") center 38%/cover no-repeat;color:#fff;isolation:isolate}
 .closing-cta::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(43,15,53,.96) 6%,rgba(43,15,53,.82) 60%,rgba(43,15,53,.9) 100%)}
 .closing-cta__inner{display:flex;flex-direction:column;align-items:center;padding-block:clamp(56px,6.5vw,88px);text-align:center}
 .closing-cta h2{max-width:20em;margin:0 0 16px;color:#fff;font-family:var(--font-thai);font-size:clamp(26px,2.9vw,40px);font-weight:300;line-height:1.3;letter-spacing:0;text-wrap:balance}
