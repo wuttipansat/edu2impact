@@ -32,10 +32,10 @@ $facultyLinks = home_faculty_links();
 $homeSections = array_values(array_filter([
     $promos ? ['type' => 'promos', 'id' => 'promos', 'heading' => 'ประชาสัมพันธ์', 'tone' => ''] : null,
     $feed ? ['type' => 'latest', 'id' => 'latest', 'heading' => 'ผลงานใหม่ล่าสุด', 'tone' => ''] : null,
-    $videos ? ['type' => 'videos', 'id' => 'scoop', 'heading' => 'Scoop', 'tone' => ''] : null,
-    $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'From Innovation to Workshop', 'tone' => 'dark'] : null,
     $innovations ? $cardSection($innovations, 'innovations', 'innovations', 'นวัตกรรมการศึกษาล่าสุด', 'นวัตกรรม') : null,
     $workshops ? $cardSection($workshops, 'workshops', 'workshops', 'อบรมและเวิร์กช็อป', 'เวิร์กช็อป') : null,
+    $videos ? ['type' => 'videos', 'id' => 'scoop', 'heading' => 'Scoop', 'tone' => ''] : null,
+    $pairs ? ['type' => 'pairs', 'id' => 'from-research', 'heading' => 'From Innovation to Workshop', 'tone' => 'dark'] : null,
     $facultyLinks ? ['type' => 'sites', 'id' => 'faculty-sites', 'heading' => 'เว็บไซต์ของคณะ', 'tone' => ''] : null,
 ]));
 $nextTone = 'white';
