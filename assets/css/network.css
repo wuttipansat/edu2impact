@@ -299,7 +299,7 @@
 .netprog__body{min-width:0;padding:clamp(24px,3vw,44px) clamp(22px,3.2vw,48px) clamp(26px,3vw,40px)}
 .netprog__title{margin:0 0 4px;font-family:var(--font-thai);font-size:clamp(1.375rem,1.15rem + .9vw,1.875rem);font-weight:600;line-height:1.35;color:var(--purple-900)}
 .netprog__body>.netitem__summary{margin-top:10px}
-.netprog__regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:22px clamp(18px,2.4vw,32px);margin-top:clamp(20px,2.4vw,30px)}
+.netprog__regions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px clamp(18px,2.4vw,32px);margin-top:clamp(20px,2.4vw,30px)}
 .netprog__region-title{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:600;color:var(--ink)}
 .netprog__n{margin-left:4px;color:var(--ink-muted);font-family:var(--font-ui);font-weight:400;font-variant-numeric:tabular-nums}
 .netprog__places{display:grid;gap:1px;margin:0;padding:0;list-style:none}
@@ -314,6 +314,8 @@
 .netprog__at .netprog__place{color:var(--purple-700);font-weight:600}
 .netprog__school-title{margin:0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5;color:var(--ink)}
 .netprog__school-where{margin:3px 0 0;color:var(--ink-muted);font-size:var(--fs-xs);line-height:1.6}
+/* Regions three across (six regions make two even rows of three, five make three and two); two across below 1000px. */
+@media(max-width:1000px){.netprog__regions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){
   .netprog{grid-template-columns:1fr}
   .netprog__reach{flex-direction:row;align-items:flex-end;padding:18px 20px}
