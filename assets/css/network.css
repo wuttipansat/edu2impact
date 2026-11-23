@@ -285,11 +285,10 @@
 .netarea[hidden],.netitem[hidden]{display:none}
 
 /* ---- Project list under the map of Thailand (render_network_programs): one card per project.
-   The left of each card is the night purple of the big map with a small Thailand on it, the project's provinces lit
-   in the same light purple as the big map, so a glance says how far the project reached. The count and years sit
-   under it. The right holds the title and the provinces by region (pointing at a province lights it in orange on
-   the small map, network-map.js). Cards share the white, 14px-corner frame of the institution cards on the world
-   page. ---- */
+   The left of each card is the project's picture when it has one (.has-photo: the photo fills the panel, the count
+   sits on a dark fade at its foot), otherwise the night purple of the big map with a small Thailand on it, the
+   project's provinces lit. The right holds the title and the provinces by region. Cards share the white, 14px-corner
+   frame of the institution cards on the world page. ---- */
 .netlist__areas[hidden]{display:none}
 .netlist--thailand .netlist__top h2{margin:0}
 .netprog__defs{position:absolute;width:0;height:0;overflow:hidden}
@@ -298,9 +297,12 @@
 .netprog__reach{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:20px;padding:clamp(22px,2.4vw,34px) clamp(20px,2.2vw,30px);background:var(--purple-900);color:#fff}
 .netprog__map{position:sticky;top:calc(var(--header-h, 72px) + 24px);display:block;width:100%;max-width:200px;height:auto;max-height:360px;margin-inline:auto}
 .netprog__count{position:sticky;bottom:24px}
-.netprog__map use{fill:#4b2a5a;stroke:#2b0f35;stroke-width:1.2px;transition:fill .25s ease}
+.netprog__reach.has-photo{justify-content:flex-end;min-height:clamp(320px,34vw,460px);overflow:hidden}
+.netprog__photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.netprog__reach.has-photo::after{content:"";position:absolute;inset:auto 0 0;height:55%;background:linear-gradient(to top,rgba(43,15,53,.92),rgba(43,15,53,0))}
+.netprog__reach.has-photo .netprog__count{position:relative;z-index:1}
+.netprog__map use{fill:#4b2a5a;stroke:#2b0f35;stroke-width:1.2px}
 .netprog__map use.is-on{fill:var(--purple-200)}
-.netprog__map use.is-hot{fill:var(--accent-warm)}
 .netprog__count{margin:0;font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;color:var(--purple-100)}
 .netprog__big{margin-right:4px;font-family:var(--font-ui);font-size:clamp(2.5rem,2rem + 1.6vw,3.5rem);font-weight:600;line-height:1;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
 .netprog__span{display:block;margin-top:8px;color:var(--purple-200);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
@@ -329,11 +331,14 @@
   .netprog__reach{flex-direction:row;align-items:flex-end;padding:18px 20px}
   .netprog__map{position:static;order:2;width:96px;max-width:none;margin:0}
   .netprog__count{position:static}
+  .netprog__reach.has-photo{min-height:0;padding:0;align-items:stretch}
+  .netprog__reach.has-photo .netprog__photo{position:static;order:2;width:112px;height:150px;flex:none}
+  .netprog__reach.has-photo::after{display:none}
+  .netprog__reach.has-photo .netprog__count{flex:1;align-self:flex-end;padding:18px 20px}
   .netprog__count{order:1}
   .netprog__regions{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 18px}
   .netprog__places li{gap:8px}
 }
-@media(prefers-reduced-motion:reduce){.netprog__map use{transition:none}}
 .netmap__svg path.is-tag-dim,.netmap__marker.is-tag-dim{opacity:.35}
 .netmap .netmap__arc.is-tag-dim,.netmap .netmap__arc-end.is-tag-dim{opacity:.06}
 

@@ -991,26 +991,3 @@
   });
   box.addEventListener('close', () => { img.removeAttribute('src'); if (opener) opener.focus(); });
 })();
-
-// Project cards under the map of Thailand: pointing at or focusing a province in a card lights it on that card's small
-// map, so the name and the place read together.
-(() => {
-  'use strict';
-  const cards = document.querySelectorAll('.netprog');
-  if (!cards.length) return;
-  let lit = null;
-  const light = (link) => {
-    const card = link && link.closest('.netprog');
-    const shape = card ? card.querySelector('.netprog__map use[data-code="' + link.dataset.map + '"]') : null;
-    if (shape === lit) return;
-    if (lit) lit.classList.remove('is-hot');
-    lit = shape;
-    if (lit) lit.classList.add('is-hot');
-  };
-  cards.forEach((card) => {
-    card.addEventListener('pointerover', (event) => light(event.target.closest('.netprog__place')));
-    card.addEventListener('pointerleave', () => light(null));
-    card.addEventListener('focusin', (event) => light(event.target.closest('.netprog__place')));
-    card.addEventListener('focusout', () => light(null));
-  });
-})();
