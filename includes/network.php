@@ -108,36 +108,8 @@ function network_place_link(array $place, array &$anchored): string {
         . e($place['name']) . '<span class="visually-hidden"> (ดูบนแผนที่)</span></a>';
 }
 
-// Province outlines of assets/maps/thailand.svg as code => path data, for the small maps on the project cards.
-function network_thai_shapes(): array {
-    static $shapes = null;
-    if ($shapes !== null) { return $shapes; }
-    $shapes = [];
-    $svg = @file_get_contents(__DIR__ . '/../assets/maps/thailand.svg');
-    if ($svg === false) { return $shapes; }
-    preg_match_all('~<path data-code="(TH-[0-9]+)"[^>]*? d="([^"]+)"~', $svg, $m, PREG_SET_ORDER);
-    foreach ($m as $hit) { $shapes[$hit[1]] = $hit[2]; }
-    return $shapes;
-}
-
-// Each province once, as <defs>, so a card's map is 77 short <use> tags instead of a second copy of the whole map.
-function network_shape_defs(): string {
-    $html = '<svg class="netprog__defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>';
-    foreach (network_thai_shapes() as $code => $d) { $html .= '<path id="tp-' . e($code) . '" d="' . e($d) . '"/>'; }
-    return $html . '</defs></svg>';
-}
-
-// The small map of Thailand on a card: the provinces in $lit are bright. Decorative; the list beside it says the same.
-function network_mini_map(array $lit): string {
-    $html = '<svg class="netprog__map" viewBox="19.3 0 481.5 880" aria-hidden="true" focusable="false">';
-    foreach (array_keys(network_thai_shapes()) as $code) {
-        $html .= '<use href="#tp-' . e($code) . '" data-code="' . e($code) . '"' . (isset($lit[$code]) ? ' class="is-on"' : '') . '/>';
-    }
-    return $html . '</svg>';
-}
-
-// The project-first list under the map of Thailand: one card per project, its reach drawn on a small map. The
-// per-province sections the big map's panel shows are printed after it, hidden (network-map.js copies one into the
+// The project-first list under the map of Thailand: one card per project, its number of provinces and years on a
+// night-purple panel at the left. The per-province sections the big map's panel shows are printed after it, hidden (network-map.js copies one into the
 // panel when a province is chosen).
 function render_network_programs(array $areas): void {
     $cfg = network_config('thailand');
@@ -147,15 +119,10 @@ function render_network_programs(array $areas): void {
     ?>
 <section class="netlist netlist--thailand" aria-labelledby="netlist-title"><div class="container">
   <div class="netlist__top"><h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2></div>
-  <?= network_shape_defs() ?>
   <div class="netprogs">
-<?php foreach ($programs as $program): $n++; $span = network_year_span($program['years']);
-    $lit = [];
-    foreach ($program['regions'] as $region) { foreach ($region['places'] as $code => $place) { $lit[$code] = true; } }
-    ?>
+<?php foreach ($programs as $program): $n++; $span = network_year_span($program['years']); ?>
     <article class="netprog" aria-labelledby="netprog-<?= $n ?>">
       <div class="netprog__reach">
-        <?= network_mini_map($lit) ?>
         <p class="netprog__count"><span class="netprog__big"><?= (int) $program['provinces'] ?></span> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
       </div>
       <div class="netprog__body">
@@ -181,7 +148,7 @@ function render_network_programs(array $areas): void {
     </article>
 <?php endforeach; ?>
 <?php foreach ($singles as $group): $n++;
-    $lit = array_fill_keys(array_column($group['rows'], 'code'), true);
+    $provinces = count(array_unique(array_column($group['rows'], 'code')));
     $years = array_values(array_unique(array_filter(array_map(static fn (array $r): int => (int) ($r['item']['year'] ?? 0), $group['rows']))));
     sort($years);
     $span = network_year_span($years);
@@ -196,8 +163,7 @@ function render_network_programs(array $areas): void {
     ?>
     <article class="netprog netprog--schools" aria-labelledby="netprog-<?= $n ?>">
       <div class="netprog__reach">
-        <?= network_mini_map($lit) ?>
-        <p class="netprog__count"><span class="netprog__big"><?= count($rows) ?></span> <?= e($cfg['item']) ?> ใน <?= count($lit) ?> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+        <p class="netprog__count"><span class="netprog__big"><?= count($rows) ?></span> <?= e($cfg['item']) ?> ใน <?= $provinces ?> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
       </div>
       <div class="netprog__body">
         <h3 class="netprog__title" id="netprog-<?= $n ?>"><?php if ($group['url'] !== ''): ?><a class="netitem__page" href="<?= e($group['url']) ?>"><?= e($group['title']) ?></a><?php else: ?><?= e($group['title']) ?><?php endif; ?></h3>

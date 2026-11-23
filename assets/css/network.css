@@ -285,21 +285,15 @@
 .netarea[hidden],.netitem[hidden]{display:none}
 
 /* ---- Project list under the map of Thailand (render_network_programs): one card per project.
-   The left of each card is the night purple of the big map with a small Thailand on it, the project's provinces lit
-   in the same light purple as the big map, so a glance says how far the project reached. The count and years sit
-   under it. The right holds the title and the provinces by region. Cards share the white, 14px-corner frame of the institution cards on the world
+   The left of each card is a panel in the night purple of the big map with the number of provinces and the years.
+   The right holds the title and the provinces by region. Cards share the white, 14px-corner frame of the institution cards on the world
    page. ---- */
 .netlist__areas[hidden]{display:none}
 .netlist--thailand .netlist__top h2{margin:0}
-.netprog__defs{position:absolute;width:0;height:0;overflow:hidden}
 .netprogs{display:grid;gap:clamp(16px,2vw,28px)}
-.netprog{display:grid;grid-template-columns:minmax(220px,3fr) minmax(0,8fr);overflow:hidden;border-radius:14px;background:#fff}
-.netprog__reach{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:20px;padding:clamp(22px,2.4vw,34px) clamp(20px,2.2vw,30px);background:var(--purple-900);color:#fff}
-.netprog__map{position:sticky;top:calc(var(--header-h, 72px) + 24px);display:block;width:100%;max-width:200px;height:auto;max-height:360px;margin-inline:auto}
-.netprog__count{position:sticky;bottom:24px}
-.netprog__map use{fill:#4b2a5a;stroke:#2b0f35;stroke-width:1.2px}
-.netprog__map use.is-on{fill:var(--purple-200)}
-.netprog__count{margin:0;font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;color:var(--purple-100)}
+.netprog{display:grid;grid-template-columns:minmax(190px,2fr) minmax(0,8fr);overflow:hidden;border-radius:14px;background:#fff}
+.netprog__reach{position:relative;display:flex;flex-direction:column;justify-content:flex-start;gap:20px;padding:clamp(22px,2.4vw,34px) clamp(20px,2.2vw,30px);background:var(--purple-900);color:#fff}
+.netprog__count{position:sticky;top:calc(var(--header-h, 72px) + 24px);margin:0;font-family:var(--font-thai);font-size:var(--fs-sm);line-height:1.4;color:var(--purple-100)}
 .netprog__big{margin-right:4px;font-family:var(--font-ui);font-size:clamp(2.5rem,2rem + 1.6vw,3.5rem);font-weight:600;line-height:1;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
 .netprog__span{display:block;margin-top:8px;color:var(--purple-200);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
 .netprog__body{min-width:0;padding:clamp(24px,3vw,44px) clamp(22px,3.2vw,48px) clamp(26px,3vw,40px)}
@@ -325,9 +319,7 @@
 @media(max-width:760px){
   .netprog{grid-template-columns:1fr}
   .netprog__reach{flex-direction:row;align-items:flex-end;padding:18px 20px}
-  .netprog__map{position:static;order:2;width:96px;max-width:none;margin:0}
   .netprog__count{position:static}
-  .netprog__count{order:1}
   .netprog__regions{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 18px}
   .netprog__places li{gap:8px}
 }
