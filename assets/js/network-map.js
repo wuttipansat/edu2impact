@@ -119,8 +119,12 @@
       listItems[code] = section;
     });
   }
+  // Map of Thailand: the province sections sit hidden after the project list (data-code, no id), and the first link to
+  // each province in that list holds the #TH-50 id for visitors without JavaScript, taken away here like the deck's.
+  document.querySelectorAll('.netprog__place[id]').forEach((a) => a.removeAttribute('id'));
   document.querySelectorAll('.netarea').forEach((section) => {
-    const code = section.id;
+    const code = section.id || section.dataset.code || '';
+    if (!code) return;
     const title = section.querySelector('.netarea__title');
     section.id = 'list-' + code;
     if (title) { title.id = 'list-' + code + '-title'; section.setAttribute('aria-labelledby', title.id); }
@@ -585,7 +589,7 @@
     select(code);
     goTo(fit(shapesOf(code), true));
     if (options.hash !== false) history.replaceState(null, '', '#' + code);
-    if (options.focus !== false) { lastTrigger = targets[code].el; panel.focus({ preventScroll: true }); }
+    if (options.focus !== false) { lastTrigger = options.trigger || targets[code].el; panel.focus({ preventScroll: true }); }
   };
 
   const close = (restoreFocus = true) => {
@@ -846,6 +850,24 @@
       seen.observe(canvas);
     } else intro();
   }
+
+  // A province in the project list opens it on the map, also when it is the one already open (no hashchange then).
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest ? event.target.closest('a[data-map]') : null;
+    if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const next = link.dataset.map;
+    if (!listItems[next] || !targets[next]) return;
+    event.preventDefault();
+    settle(); bring(); open(next, { trigger: link });
+    // The panel is still visibility:hidden while its slide-in starts, so focus has to wait until it can take it.
+    let tries = 0;
+    const focusPanel = () => {
+      if (openCode !== next || document.activeElement === panel) return;
+      panel.focus({ preventScroll: true });
+      if (document.activeElement !== panel && ++tries < 30) requestAnimationFrame(focusPanel);
+    };
+    requestAnimationFrame(focusPanel);
+  });
 
   window.addEventListener('hashchange', () => {
     let next = '';

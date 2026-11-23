@@ -283,6 +283,42 @@
   .netfilter::-webkit-scrollbar{display:none}
 }
 .netarea[hidden],.netitem[hidden]{display:none}
+
+/* ---- Project list under the map of Thailand (render_network_programs): one block per project, project first.
+   A programme run in many provinces lists them by region, name and year, in short runs that wrap; one-school projects
+   sit in a list with the province above each title. Same type and markers as the institution cards of the world list
+   (.netdeck__where, .netitem__tags); blocks are divided by a rule, not boxed, so the page does not turn into a grid of
+   equal cards. ---- */
+.netlist__areas[hidden]{display:none}
+.netlist--thailand .netlist__top h2{margin:0}
+.netprogs{display:grid;gap:0}
+.netprog{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(18px,3vw,56px);padding-block:clamp(26px,3vw,40px);border-top:1px solid var(--line)}
+.netprog:last-child{border-bottom:1px solid var(--line)}
+.netprog__head{min-width:0}
+.netprog__where{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0 0 10px;color:var(--ink-muted);font-family:var(--font-thai);font-size:var(--fs-sm)}
+.netprog__where>span:first-child{color:var(--purple-700);font-weight:600}
+.netprog__span{font-variant-numeric:tabular-nums}
+.netprog__title{margin:0 0 14px;font-family:var(--font-thai);font-size:clamp(1.25rem,1.1rem + .6vw,1.625rem);font-weight:600;line-height:1.4;color:var(--purple-900)}
+.netprog__head .netitem__tags{margin:0}
+.netprog__head .netitem__summary{margin-top:12px}
+.netprog__regions{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:22px clamp(18px,2.4vw,36px);align-content:start}
+.netprog__region-title{margin:0 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line);font-family:var(--font-thai);font-size:var(--fs-sm);font-weight:600;color:var(--ink)}
+.netprog__n{margin-left:4px;color:var(--ink-muted);font-family:var(--font-ui);font-weight:400;font-variant-numeric:tabular-nums}
+.netprog__places{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.netprog__places li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:var(--fs-sm);line-height:1.6}
+.netprog__place{color:var(--ink);text-decoration:none;border-radius:2px}
+.netprog__place:hover{color:var(--purple-700);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.netprog__place:focus-visible{outline:2px solid var(--purple-600);outline-offset:2px}
+.netprog__yr{color:var(--ink-muted);font-family:var(--font-ui);font-size:var(--fs-xs);font-variant-numeric:tabular-nums;white-space:nowrap}
+.netprog__schools{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:22px clamp(18px,2.4vw,36px);margin:0;padding:0;list-style:none;align-content:start}
+.netprog__school{padding-top:12px;border-top:1px solid var(--line)}
+.netprog__at{display:flex;align-items:baseline;gap:10px;margin:0 0 4px;font-size:var(--fs-xs)}
+.netprog__at .netprog__place{color:var(--purple-700);font-weight:600}
+.netprog__school-title{margin:0;font-family:var(--font-thai);font-size:var(--fs-base);font-weight:600;line-height:1.5;color:var(--ink)}
+@media(max-width:900px){
+  .netprog{grid-template-columns:1fr}
+  .netprog__regions{grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr))}
+}
 .netmap__svg path.is-tag-dim,.netmap__marker.is-tag-dim{opacity:.35}
 .netmap .netmap__arc.is-tag-dim,.netmap .netmap__arc-end.is-tag-dim{opacity:.06}
 

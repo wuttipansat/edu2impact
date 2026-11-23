@@ -172,6 +172,10 @@ def thailand(page, width):
     page.click('[data-zoom=reset]'); page.wait_for_timeout(700)
     page.goto(SITE + '/network-community.php#TH-83')
     page.wait_for_selector('.netmap.is-ready'); page.wait_for_timeout(500)
+    check(f'{tag} list is project first, ids taken away', page.locator('.netprog').count() >= 1 and page.locator('.netprog__place[id]').count() == 0)
+    page.locator('.netprog__place[data-map="TH-50"]').first.click(); page.wait_for_timeout(500)
+    check(f'{tag} a province in the list opens it on the map', 'TEST โครงการเชียงใหม่' in page.locator('.netmap__panel').inner_text())
+    page.keyboard.press('Escape')
     check(f'{tag} #TH-83 opens Phuket', 'ภูเก็ต' in page.locator('.netmap__panel').inner_text() and page.locator('.netmap__detail .netitem').count() == 4)
     menu(page, width, tag)
 
@@ -193,7 +197,12 @@ def no_js(browser):
     for path, areas in (('network-international.php', 11), ('network-community.php', 7)):
         page.goto(f'{SITE}/{path}')
         check(f'no-js {path} coloured areas', page.locator('path.is-active').count() == areas, page.locator('path.is-active').count())
-        check(f'no-js {path} full list', page.locator('.netarea').count() == areas)
+        if path == 'network-community.php':
+            # Project first: the list is .netprog blocks, the per-province sections stay hidden for the map panel.
+            check(f'no-js {path} project list', page.locator('.netprog').count() >= 1 and page.locator('.netlist__areas').is_hidden())
+            check(f'no-js {path} one #code anchor per province', page.locator('.netprog__place[id]').count() == areas, page.locator('.netprog__place[id]').count())
+        else:
+            check(f'no-js {path} full list', page.locator('.netarea').count() == areas)
         check(f'no-js {path} panel and tools hidden', page.locator('.netmap__panel').is_hidden() and all(t.is_hidden() for t in page.locator('.netmap__tools').all()))
     ctx.close()
 

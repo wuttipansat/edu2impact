@@ -32,7 +32,164 @@ function network_config(string $mode): array {
         'names' => $names, 'region_of' => $regionOf, 'region_labels' => $labels['thailand'], 'all_regions' => true,
         'area' => 'จังหวัด', 'item' => 'โครงการ', 'lead' => 'ลงพื้นที่แล้ว', 'stat_area' => 'จังหวัด', 'stat_item' => 'โครงการ', 'hint_mouse' => 'คลิกจังหวัดที่สว่างเพื่อดูโครงการ', 'hint_touch' => 'แตะจังหวัดที่สว่างเพื่อดูโครงการ',
         'map_label' => 'แผนที่ประเทศไทยแสดงจังหวัดที่มีงานวิจัยและนวัตกรรมเพื่อชุมชนและสังคม', 'list_title' => 'โครงการวิจัยและนวัตกรรมเพื่อชุมชนและสังคมทั้งหมด',
+        // Heading over the one-school projects that link to no post (see network_programs()). The rows on the site now
+        // all come from the คลังความรู้อาชีพ project (moveef.ku.ac.th); change it here if other one-school rows are added.
+        'single_title' => 'คลังความรู้อาชีพ สำหรับโรงเรียนห่างไกล',
     ];
+}
+
+// The list under the map of Thailand, project first (network-community.php). Rows with the same title in two or more
+// provinces are one programme run in many places (MOVE and Scaffolding with each province's Red Cross chapter): one
+// block each, its provinces grouped by region. Rows whose title is used in one province only are one-school projects:
+// they are grouped by the post they link to (its title is the heading), and the ones that link to nothing go under
+// network_config()['single_title']. Everything is counted from the records; nothing is filled in.
+// Returns ['programs' => [...], 'singles' => [...]], programmes with the most provinces first.
+function network_programs(array $areas): array {
+    $cfg = network_config('thailand');
+    $byTitle = [];
+    foreach ($areas as $code => $area) {
+        foreach ($area['items'] as $item) {
+            $title = trim((string) (preg_replace('~\s+~u', ' ', (string) ($item['title'] ?? '')) ?? ''));
+            if ($title === '') { continue; }
+            $byTitle[$title][] = ['code' => $code, 'area' => $area, 'item' => $item];
+        }
+    }
+    $programs = []; $singles = [];
+    foreach ($byTitle as $title => $rows) {
+        $codes = array_unique(array_column($rows, 'code'));
+        if (count($codes) < 2) {
+            foreach ($rows as $row) {
+                $post = network_related($row['item'])[0] ?? null;
+                $key = $post ? $post['url'] : '';
+                $singles[$key] ??= ['title' => $post ? $post['title'] : $cfg['single_title'], 'url' => $post ? $post['url'] : '', 'rows' => []];
+                $singles[$key]['rows'][] = $row;
+            }
+            continue;
+        }
+        $places = []; $years = []; $partners = []; $summaries = []; $related = [];
+        foreach ($rows as $row) {
+            $code = $row['code']; $name = $row['area']['name'];
+            $places[$code] ??= ['code' => $code, 'name' => $name, 'region' => $row['area']['region'], 'years' => []];
+            $year = (int) ($row['item']['year'] ?? 0);
+            if ($year > 0) { $places[$code]['years'][$year] = $year; $years[$year] = $year; }
+            // "เหล่ากาชาดจังหวัดกระบี่" minus the province's name: the same partner in every province when all agree.
+            $partners[trim(str_replace($name, '', (string) ($row['item']['community'] ?? '')))] = true;
+            $summaries[trim((string) ($row['item']['summary'] ?? ''))] = true;
+            foreach (network_related($row['item']) as $card) { $related[$card['url']] = $card; }
+        }
+        $regions = [];
+        foreach ($cfg['region_labels'] as $slug => $label) {
+            $in = array_filter($places, static fn (array $p): bool => $p['region'] === $slug);
+            if ($in) { $regions[$slug] = ['label' => $label, 'places' => $in]; }
+        }
+        $partner = count($partners) === 1 ? (string) array_key_first($partners) : '';
+        $summary = count($summaries) === 1 ? (string) array_key_first($summaries) : '';
+        ksort($years);
+        $programs[] = ['title' => $title, 'provinces' => count($places), 'years' => array_values($years), 'partner' => $partner,
+            'summary' => $summary, 'related' => array_values($related), 'regions' => $regions];
+    }
+    usort($programs, static fn (array $a, array $b): int => $b['provinces'] <=> $a['provinces']);
+    return ['programs' => $programs, 'singles' => array_values($singles)];
+}
+
+// "พ.ศ. 2565–2569", "พ.ศ. 2568" or '' from a sorted list of years.
+function network_year_span(array $years): string {
+    if (!$years) { return ''; }
+    $first = reset($years); $last = end($years);
+    return 'พ.ศ. ' . $first . ($last !== $first ? '–' . $last : '');
+}
+
+// A province name that opens it on the map. The first link to each province on the page also carries the id (#TH-50)
+// so that the address still lands in the list without JavaScript; network-map.js takes the ids away.
+function network_place_link(array $place, array &$anchored): string {
+    $id = '';
+    if (!isset($anchored[$place['code']])) { $anchored[$place['code']] = true; $id = ' id="' . e($place['code']) . '"'; }
+    return '<a class="netprog__place"' . $id . ' href="#' . e($place['code']) . '" data-map="' . e($place['code']) . '">'
+        . e($place['name']) . '<span class="visually-hidden"> (ดูบนแผนที่)</span></a>';
+}
+
+// The project-first list under the map of Thailand. The per-province sections the map panel shows are printed after it,
+// hidden (network-map.js copies one into the panel when a province is chosen).
+function render_network_programs(array $areas): void {
+    $cfg = network_config('thailand');
+    ['programs' => $programs, 'singles' => $singles] = network_programs($areas);
+    $anchored = [];
+    $n = 0;
+    ?>
+<section class="netlist netlist--thailand" aria-labelledby="netlist-title"><div class="container">
+  <div class="netlist__top"><h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2></div>
+  <div class="netprogs">
+<?php foreach ($programs as $program): $n++; $span = network_year_span($program['years']); ?>
+    <article class="netprog" aria-labelledby="netprog-<?= $n ?>">
+      <header class="netprog__head">
+        <p class="netprog__where"><span><?= (int) $program['provinces'] ?> <?= e($cfg['area']) ?></span><?php if ($span !== ''): ?> <span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+        <h3 class="netprog__title" id="netprog-<?= $n ?>"><?= e($program['title']) ?></h3>
+<?php if ($program['partner'] !== ''): ?>
+        <ul class="netitem__tags"><li>ร่วมกับ<?= e($program['partner']) ?></li></ul>
+<?php endif; ?>
+<?php if ($program['summary'] !== ''): ?>
+        <p class="netitem__summary"><?= e($program['summary']) ?></p>
+<?php endif; ?>
+<?php if ($program['related']): ?>
+        <ul class="netitem__related" aria-label="เนื้อหาที่เกี่ยวข้อง"><?php foreach ($program['related'] as $card): ?><li><a href="<?= e($card['url']) ?>"><span class="netitem__kind"><?= e($card['label']) ?></span> <?= e($card['title']) ?></a></li><?php endforeach; ?></ul>
+<?php endif; ?>
+      </header>
+      <div class="netprog__regions">
+<?php foreach ($program['regions'] as $slug => $region): ?>
+        <section class="netprog__region" aria-labelledby="netprog-<?= $n ?>-<?= e($slug) ?>">
+          <h4 class="netprog__region-title" id="netprog-<?= $n ?>-<?= e($slug) ?>"><?= e($region['label']) ?> <span class="netprog__n"><?= count($region['places']) ?></span></h4>
+          <ul class="netprog__places"><?php foreach ($region['places'] as $place): ksort($place['years']); ?><li><?= network_place_link($place, $anchored) ?><?php if ($place['years']): ?> <span class="netprog__yr"><?= e(implode(', ', $place['years'])) ?></span><?php endif; ?></li><?php endforeach; ?></ul>
+        </section>
+<?php endforeach; ?>
+      </div>
+    </article>
+<?php endforeach; ?>
+<?php foreach ($singles as $group): $n++;
+    $provinces = count(array_unique(array_column($group['rows'], 'code')));
+    $years = array_values(array_unique(array_filter(array_map(static fn (array $r): int => (int) ($r['item']['year'] ?? 0), $group['rows']))));
+    sort($years);
+    $span = network_year_span($years);
+    // Provinces in the order of the map's regions, then by name, so neighbouring schools sit together.
+    $order = array_flip(array_keys($cfg['region_labels']));
+    $rows = $group['rows'];
+    $collator = class_exists('Collator') ? new Collator('th_TH') : null;
+    usort($rows, static function (array $a, array $b) use ($order, $collator): int {
+        $r = ($order[$a['area']['region']] ?? 9) <=> ($order[$b['area']['region']] ?? 9);
+        return $r ?: ($collator ? (int) $collator->compare($a['area']['name'], $b['area']['name']) : strcmp($a['area']['name'], $b['area']['name']));
+    });
+    ?>
+    <article class="netprog netprog--schools" aria-labelledby="netprog-<?= $n ?>">
+      <header class="netprog__head">
+        <p class="netprog__where"><span><?= count($rows) ?> <?= e($cfg['item']) ?> · <?= $provinces ?> <?= e($cfg['area']) ?></span><?php if ($span !== ''): ?> <span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
+        <h3 class="netprog__title" id="netprog-<?= $n ?>"><?php if ($group['url'] !== ''): ?><a class="netitem__page" href="<?= e($group['url']) ?>"><?= e($group['title']) ?></a><?php else: ?><?= e($group['title']) ?><?php endif; ?></h3>
+      </header>
+      <ul class="netprog__schools">
+<?php foreach ($rows as $row): $item = $row['item']; $place = ['code' => $row['code'], 'name' => $row['area']['name']]; ?>
+        <li class="netprog__school">
+          <p class="netprog__at"><?= network_place_link($place, $anchored) ?><?php if (!empty($item['year'])): ?> <span class="netprog__yr"><?= (int) $item['year'] ?></span><?php endif; ?></p>
+          <h4 class="netprog__school-title"><?= e($item['title']) ?></h4>
+<?php if (!empty($item['community'])): ?>
+          <p class="netitem__sub"><?= e($item['community']) ?></p>
+<?php endif; ?>
+<?php if (!empty($item['summary'])): ?>
+          <p class="netitem__text"><?= e($item['summary']) ?></p>
+<?php endif; ?>
+        </li>
+<?php endforeach; ?>
+      </ul>
+    </article>
+<?php endforeach; ?>
+  </div>
+  <div class="netlist__areas" hidden>
+<?php foreach ($areas as $code => $area): $count = count($area['items']); ?>
+    <section class="netarea" data-code="<?= e($code) ?>" data-name="<?= e($area['name']) ?>">
+      <h3 class="netarea__title"><?= e($area['name']) ?> <span class="netarea__count"><span class="netarea__n"><?= $count ?></span> <?= e($cfg['item']) ?></span></h3>
+      <ul class="netarea__items"><?php foreach ($area['items'] as $item) { echo network_item_html('thailand', $item); } ?></ul>
+    </section>
+<?php endforeach; ?>
+  </div>
+</div></section>
+<?php
 }
 
 // Records grouped by area: code => ['code', 'name', 'region', 'items' => [...]]. Only areas that have a record and a
@@ -280,19 +437,7 @@ function render_network_page(string $mode): void {
     <p class="netdeck__count" aria-live="polite" hidden><span data-deck-count>1</span> / <span data-deck-total><?= $deckTotal ?></span></p>
   </div>
 </section>
-<?php elseif (!$empty): ?>
-<section class="netlist netlist--<?= e($mode) ?>" aria-labelledby="netlist-title"><div class="container">
-  <h2 id="netlist-title"><?= e($cfg['list_title']) ?></h2>
-  <div class="netlist__grid">
-<?php foreach ($areas as $code => $area): $n = count($area['items']); ?>
-    <section class="netarea" id="<?= e($code) ?>" data-name="<?= e($area['name']) ?>" aria-labelledby="<?= e($code) ?>-title">
-      <h3 class="netarea__title" id="<?= e($code) ?>-title"><?= e($area['name']) ?> <span class="netarea__count"><span class="netarea__n"><?= $n ?></span> <?= e($cfg['item']) ?></span></h3>
-      <ul class="netarea__items"><?php foreach ($area['items'] as $item) { echo network_item_html($mode, $item); } ?></ul>
-    </section>
-<?php endforeach; ?>
-  </div>
-</div></section>
-<?php endif; ?>
+<?php elseif (!$empty): render_network_programs($areas); endif; ?>
 <?php if ($mode === 'world') { render_network_photos(); } ?>
 <?php
 }
