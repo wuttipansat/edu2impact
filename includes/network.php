@@ -35,8 +35,6 @@ function network_config(string $mode): array {
         // Heading over the one-school projects that link to no post (see network_programs()). The rows on the site now
         // all come from the คลังความรู้อาชีพ project (moveef.ku.ac.th); change it here if other one-school rows are added.
         'single_title' => 'คลังความรู้อาชีพ สำหรับโรงเรียนห่างไกล',
-        // Picture on the left of that card: students at two of the schools, cropped from the project report (moveef).
-        'single_image' => 'assets/images/network/community-career-schools.webp',
     ];
 }
 
@@ -63,14 +61,12 @@ function network_programs(array $areas): array {
             foreach ($rows as $row) {
                 $post = network_related($row['item'])[0] ?? null;
                 $key = $post ? $post['url'] : '';
-                $singles[$key] ??= ['title' => $post ? $post['title'] : $cfg['single_title'], 'url' => $post ? $post['url'] : '', 'rows' => [],
-                    'image' => $post ? '' : image_path(['image' => $cfg['single_image']])];
+                $singles[$key] ??= ['title' => $post ? $post['title'] : $cfg['single_title'], 'url' => $post ? $post['url'] : '', 'rows' => []];
                 $singles[$key]['rows'][] = $row;
-                if ($singles[$key]['image'] === '') { $singles[$key]['image'] = image_path($row['item']); }
             }
             continue;
         }
-        $places = []; $years = []; $partners = []; $summaries = []; $related = []; $image = '';
+        $places = []; $years = []; $partners = []; $summaries = []; $related = [];
         foreach ($rows as $row) {
             $code = $row['code']; $name = $row['area']['name'];
             $places[$code] ??= ['code' => $code, 'name' => $name, 'region' => $row['area']['region'], 'years' => []];
@@ -80,7 +76,6 @@ function network_programs(array $areas): array {
             $partners[trim(str_replace($name, '', (string) ($row['item']['community'] ?? '')))] = true;
             $summaries[trim((string) ($row['item']['summary'] ?? ''))] = true;
             foreach (network_related($row['item']) as $card) { $related[$card['url']] = $card; }
-            if ($image === '') { $image = image_path($row['item']); } // the first row with a picture gives the card's
         }
         $regions = [];
         foreach ($cfg['region_labels'] as $slug => $label) {
@@ -91,7 +86,7 @@ function network_programs(array $areas): array {
         $summary = count($summaries) === 1 ? (string) array_key_first($summaries) : '';
         ksort($years);
         $programs[] = ['title' => $title, 'provinces' => count($places), 'years' => array_values($years), 'partner' => $partner,
-            'summary' => $summary, 'related' => array_values($related), 'regions' => $regions, 'image' => $image];
+            'summary' => $summary, 'related' => array_values($related), 'regions' => $regions];
     }
     usort($programs, static fn (array $a, array $b): int => $b['provinces'] <=> $a['provinces']);
     return ['programs' => $programs, 'singles' => array_values($singles)];
@@ -141,14 +136,6 @@ function network_mini_map(array $lit): string {
     return $html . '</svg>';
 }
 
-// The left of a card: the project's picture when it has one (from its rows, or config for the one-school group),
-// otherwise the small map with its provinces lit.
-function network_card_visual(string $src, array $lit): string {
-    if ($src === '') { return network_mini_map($lit); }
-    [$w, $h] = image_size($src);
-    return '<img class="netprog__photo" src="' . e($src) . '"' . ($w && $h ? ' width="' . (int) $w . '" height="' . (int) $h . '"' : '') . ' alt="" loading="lazy" decoding="async">';
-}
-
 // The project-first list under the map of Thailand: one card per project, its reach drawn on a small map. The
 // per-province sections the big map's panel shows are printed after it, hidden (network-map.js copies one into the
 // panel when a province is chosen).
@@ -167,8 +154,8 @@ function render_network_programs(array $areas): void {
     foreach ($program['regions'] as $region) { foreach ($region['places'] as $code => $place) { $lit[$code] = true; } }
     ?>
     <article class="netprog" aria-labelledby="netprog-<?= $n ?>">
-      <div class="netprog__reach<?= $program['image'] !== '' ? ' has-photo' : '' ?>">
-        <?= network_card_visual($program['image'], $lit) ?>
+      <div class="netprog__reach">
+        <?= network_mini_map($lit) ?>
         <p class="netprog__count"><span class="netprog__big"><?= (int) $program['provinces'] ?></span> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
       </div>
       <div class="netprog__body">
@@ -208,8 +195,8 @@ function render_network_programs(array $areas): void {
     });
     ?>
     <article class="netprog netprog--schools" aria-labelledby="netprog-<?= $n ?>">
-      <div class="netprog__reach<?= $group['image'] !== '' ? ' has-photo' : '' ?>">
-        <?= network_card_visual($group['image'], $lit) ?>
+      <div class="netprog__reach">
+        <?= network_mini_map($lit) ?>
         <p class="netprog__count"><span class="netprog__big"><?= count($rows) ?></span> <?= e($cfg['item']) ?> ใน <?= count($lit) ?> <?= e($cfg['area']) ?><?php if ($span !== ''): ?><span class="netprog__span"><?= e($span) ?></span><?php endif; ?></p>
       </div>
       <div class="netprog__body">
