@@ -66,14 +66,12 @@ function network_programs(array $areas): array {
             }
             continue;
         }
-        $places = []; $years = []; $partners = []; $summaries = []; $related = [];
+        $places = []; $years = []; $summaries = []; $related = [];
         foreach ($rows as $row) {
             $code = $row['code']; $name = $row['area']['name'];
             $places[$code] ??= ['code' => $code, 'name' => $name, 'region' => $row['area']['region'], 'years' => []];
             $year = (int) ($row['item']['year'] ?? 0);
             if ($year > 0) { $places[$code]['years'][$year] = $year; $years[$year] = $year; }
-            // "เหล่ากาชาดจังหวัดกระบี่" minus the province's name: the same partner in every province when all agree.
-            $partners[trim(str_replace($name, '', (string) ($row['item']['community'] ?? '')))] = true;
             $summaries[trim((string) ($row['item']['summary'] ?? ''))] = true;
             foreach (network_related($row['item']) as $card) { $related[$card['url']] = $card; }
         }
@@ -82,10 +80,9 @@ function network_programs(array $areas): array {
             $in = array_filter($places, static fn (array $p): bool => $p['region'] === $slug);
             if ($in) { $regions[$slug] = ['label' => $label, 'places' => $in]; }
         }
-        $partner = count($partners) === 1 ? (string) array_key_first($partners) : '';
         $summary = count($summaries) === 1 ? (string) array_key_first($summaries) : '';
         ksort($years);
-        $programs[] = ['title' => $title, 'provinces' => count($places), 'years' => array_values($years), 'partner' => $partner,
+        $programs[] = ['title' => $title, 'provinces' => count($places), 'years' => array_values($years),
             'summary' => $summary, 'related' => array_values($related), 'regions' => $regions];
     }
     usort($programs, static fn (array $a, array $b): int => $b['provinces'] <=> $a['provinces']);
@@ -127,9 +124,6 @@ function render_network_programs(array $areas): void {
       </div>
       <div class="netprog__body">
         <h3 class="netprog__title" id="netprog-<?= $n ?>"><?= e($program['title']) ?></h3>
-<?php if ($program['partner'] !== ''): ?>
-        <ul class="netitem__tags"><li>ร่วมกับ<?= e($program['partner']) ?></li></ul>
-<?php endif; ?>
 <?php if ($program['summary'] !== ''): ?>
         <p class="netitem__summary"><?= e($program['summary']) ?></p>
 <?php endif; ?>
