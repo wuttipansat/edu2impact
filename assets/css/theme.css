@@ -171,6 +171,7 @@ html{scroll-padding-top:84px}
 .hero-slide{overflow:hidden;background-color:var(--surface-dark);background-position:center;background-size:cover}
 .hero-slide-image{position:absolute;inset:0;z-index:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center;filter:saturate(.85)}
 .hero-slide--home .hero-slide-image{object-position:center 40%}
+.hero-slide--workshops .hero-slide-image{object-position:right center}
 /* Slow zoom on the active slide: the one orchestrated motion on the page. */
 .hero-slide .hero-slide-image{transform:scale(1);transition:transform 0s linear .7s}
 .hero-slide.is-active .hero-slide-image{transform:scale(1.06);transition:transform 9s ease-out}

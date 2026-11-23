@@ -52,10 +52,10 @@ $heroSlides = array_map(static function (array $slide): array {
     return $slide + ['eyebrow' => $hero['eyebrow'], 'title' => hero_title_html($hero), 'text' => $hero['intro']];
 }, [
     ['key' => 'home', 'label' => 'หน้าแรก', 'image' => 'home-hero-campus.webp', 'href' => $firstSection, 'cta' => 'ดูผลงานใหม่ล่าสุด'],
-    ['key' => 'research', 'label' => 'คลังความรู้', 'image' => 'hero-innovation.webp', 'href' => 'research.php', 'cta' => 'ดูงานวิจัย'],
+    ['key' => 'research', 'label' => 'คลังความรู้', 'image' => 'hero-research-classroom.webp', 'href' => 'research.php', 'cta' => 'ดูงานวิจัย'],
     ['key' => 'innovations', 'label' => 'นวัตกรรม', 'image' => 'hero-impact.webp', 'href' => 'innovations.php', 'cta' => 'ดูนวัตกรรม'],
-    ['key' => 'workshops', 'label' => 'บริการของเรา', 'image' => 'hero-resources.webp', 'href' => 'workshops.php', 'cta' => 'ดูเวิร์กช็อป'],
-    ['key' => 'contact', 'label' => 'ติดต่อเรา', 'image' => 'hero-partners.webp', 'href' => 'contact.php', 'cta' => 'ติดต่อเรา'],
+    ['key' => 'workshops', 'label' => 'บริการของเรา', 'image' => 'hero-workshop-session.webp', 'href' => 'workshops.php', 'cta' => 'ดูเวิร์กช็อป'],
+    ['key' => 'contact', 'label' => 'ติดต่อเรา', 'image' => 'hero-innovation.webp', 'href' => 'contact.php', 'cta' => 'ติดต่อเรา'],
 ]);
 require __DIR__ . '/includes/header.php';
 ?>
